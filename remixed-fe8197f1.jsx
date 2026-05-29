@@ -1,0 +1,1003 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+
+// ── STORAGE ────────────────────────────────────────────────────────────────────
+const SK = "dcc_v3";
+const persist = async (s) => { try { await window.storage?.set(SK, JSON.stringify(s), false); } catch {} };
+const hydrate = async () => { try { const r = await window.storage?.get(SK, false); return r?.value ? JSON.parse(r.value) : null; } catch { return null; } };
+
+// ── CONSTANTS ──────────────────────────────────────────────────────────────────
+const QUOTES = [
+  "O caos gera ideias. A disciplina constrói o legado.",
+  "Consistência vence motivação.",
+  "Visão clara + Execução consistente = Legado.",
+  "Proteja sua energia criativa.",
+  "Menos perfeição, mais progresso.",
+];
+
+const XP_TABLE = { habit: 50, task: 30, goal_milestone: 100 };
+const LEVELS = [
+  { min: 0, name: "Iniciante", color: "#6b7280" },
+  { min: 200, name: "Consistente", color: "#10b981" },
+  { min: 500, name: "Focado", color: "#3b82f6" },
+  { min: 1000, name: "Disciplinado", color: "#8b5cf6" },
+  { min: 2000, name: "Imparável", color: "#f97316" },
+  { min: 4000, name: "Lendário", color: "#eab308" },
+];
+
+const BADGES = [
+  { id: "first_habit", icon: "🌱", label: "Primeiro Passo", desc: "Complete seu primeiro hábito", req: (s) => s.totalHabitsCompleted >= 1 },
+  { id: "streak7", icon: "🔥", label: "Semana de Fogo", desc: "7 dias de streak em qualquer hábito", req: (s) => s.habits.some(h => h.streak >= 7) },
+  { id: "streak30", icon: "💎", label: "Diamante", desc: "30 dias de streak", req: (s) => s.habits.some(h => h.streak >= 30) },
+  { id: "tasks10", icon: "⚡", label: "Executor", desc: "Complete 10 tarefas", req: (s) => s.totalTasksCompleted >= 10 },
+  { id: "allhabits", icon: "🏆", label: "Perfeito", desc: "Todos os hábitos em um dia", req: (s) => { const t = new Date().toDateString(); return s.habits.length > 0 && s.habits.every(h => h.completedDates?.includes(t)); } },
+  { id: "xp500", icon: "🚀", label: "Decolando", desc: "Alcance 500 XP", req: (s) => s.xp >= 500 },
+  { id: "goals5", icon: "🎯", label: "Estrategista", desc: "Crie 5 metas", req: (s) => s.goals.length >= 5 },
+  { id: "note10", icon: "📝", label: "Cronista", desc: "Escreva 10 notas", req: (s) => s.notes.length >= 10 },
+];
+
+const INIT_HABITS = [
+  { id: 1, title: "Treinar", icon: "💪", color: "#f97316", streak: 0, best: 0, completedDates: [], xpEarned: 0 },
+  { id: 2, title: "Ler", icon: "📚", color: "#3b82f6", streak: 0, best: 0, completedDates: [], xpEarned: 0 },
+  { id: 3, title: "Meditar", icon: "🧘", color: "#8b5cf6", streak: 0, best: 0, completedDates: [], xpEarned: 0 },
+  { id: 4, title: "Criar conteúdo", icon: "🎬", color: "#10b981", streak: 0, best: 0, completedDates: [], xpEarned: 0 },
+  { id: 5, title: "Dormir bem", icon: "😴", color: "#fb923c", streak: 0, best: 0, completedDates: [], xpEarned: 0 },
+];
+
+const INIT_GOALS = [
+  { id: 1, level: "annual", title: "Consolidar marca e linguagem visual", progress: 35, status: "active" },
+  { id: 2, level: "annual", title: "Construir estúdio criativo", progress: 20, status: "active" },
+  { id: 3, level: "quarterly", title: "Lançar novo projeto audiovisual", progress: 60, status: "active" },
+  { id: 4, level: "monthly", title: "Criar 12 conteúdos premium", progress: 75, status: "active" },
+];
+
+const INIT = {
+  habits: INIT_HABITS, goals: INIT_GOALS, tasks: [], notes: [],
+  reviews: {}, xp: 0, totalHabitsCompleted: 0, totalTasksCompleted: 0,
+  unlockedBadges: [], pomodoroSettings: { work: 25, shortBreak: 5, longBreak: 15 },
+  dashboardWidgets: ["stats", "quote", "habits_today", "goals_snap", "tasks_snap", "analytics"],
+  mission: {
+    mission: "Construir linguagem, narrativa e direção criativa que inspire pessoas e deixe um legado cultural real.",
+    vision: "Ser referência mundial em direção criativa e narrativa visual.",
+    purpose: "Dar forma ao invisível. Transformar ideias e histórias em algo que permanece.",
+  },
+};
+
+// ── REDUCER ────────────────────────────────────────────────────────────────────
+function reducer(s, a) {
+  switch (a.type) {
+    case "HYDRATE": return { ...s, ...a.p };
+    case "ADD_HABIT": return { ...s, habits: [...s.habits, a.habit] };
+    case "REMOVE_HABIT": return { ...s, habits: s.habits.filter(h => h.id !== a.id) };
+    case "EDIT_HABIT": return { ...s, habits: s.habits.map(h => h.id === a.id ? { ...h, ...a.data } : h) };
+    case "TOGGLE_HABIT": {
+      const today = a.date;
+      let xpGain = 0;
+      const habits = s.habits.map(h => {
+        if (h.id !== a.id) return h;
+        const done = h.completedDates.includes(today);
+        const dates = done ? h.completedDates.filter(d => d !== today) : [...h.completedDates, today];
+        const streak = done ? Math.max(0, h.streak - 1) : h.streak + 1;
+        if (!done) xpGain = XP_TABLE.habit;
+        return { ...h, completedDates: dates, streak, best: Math.max(h.best, streak) };
+      });
+      return { ...s, habits, xp: s.xp + xpGain, totalHabitsCompleted: s.totalHabitsCompleted + (xpGain > 0 ? 1 : 0) };
+    }
+    case "ADD_TASK": return { ...s, tasks: [...s.tasks, { id: Date.now(), completed: false, priority: "medium", ...a.task }] };
+    case "TOGGLE_TASK": {
+      const t = s.tasks.find(t => t.id === a.id);
+      const gain = t && !t.completed ? XP_TABLE.task : 0;
+      return { ...s, tasks: s.tasks.map(t => t.id === a.id ? { ...t, completed: !t.completed } : t), xp: s.xp + gain, totalTasksCompleted: s.totalTasksCompleted + (gain > 0 ? 1 : 0) };
+    }
+    case "REMOVE_TASK": return { ...s, tasks: s.tasks.filter(t => t.id !== a.id) };
+    case "ADD_GOAL": return { ...s, goals: [...s.goals, a.goal] };
+    case "UPDATE_GOAL": return { ...s, goals: s.goals.map(g => g.id === a.id ? { ...g, ...a.data } : g) };
+    case "REMOVE_GOAL": return { ...s, goals: s.goals.filter(g => g.id !== a.id) };
+    case "ADD_NOTE": return { ...s, notes: [a.note, ...s.notes] };
+    case "REMOVE_NOTE": return { ...s, notes: s.notes.filter(n => n.id !== a.id) };
+    case "EDIT_NOTE": return { ...s, notes: s.notes.map(n => n.id === a.id ? { ...n, ...a.data } : n) };
+    case "UPDATE_REVIEW": return { ...s, reviews: { ...s.reviews, [a.weekKey]: { ...(s.reviews[a.weekKey] || {}), [a.field]: a.value } } };
+    case "UPDATE_MISSION": return { ...s, mission: { ...s.mission, [a.field]: a.value } };
+    case "UNLOCK_BADGE": return s.unlockedBadges.includes(a.id) ? s : { ...s, unlockedBadges: [...s.unlockedBadges, a.id] };
+    case "REORDER_WIDGETS": return { ...s, dashboardWidgets: a.widgets };
+    default: return s;
+  }
+}
+
+// ── UTILS ──────────────────────────────────────────────────────────────────────
+const getLevel = (xp) => [...LEVELS].reverse().find(l => xp >= l.min) || LEVELS[0];
+const xpToNext = (xp) => { const idx = LEVELS.findIndex(l => l.min > xp); return idx === -1 ? null : { next: LEVELS[idx].min, pct: Math.round((xp - (LEVELS[idx - 1]?.min || 0)) / (LEVELS[idx].min - (LEVELS[idx - 1]?.min || 0)) * 100) }; };
+const todayStr = () => new Date().toDateString();
+const weekKey = () => { const d = new Date(), day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1); return new Date(new Date(d).setDate(diff)).toDateString(); };
+
+// ── DESIGN TOKENS ──────────────────────────────────────────────────────────────
+const C = { bg: "#0d0d0d", surface: "rgba(255,255,255,0.04)", border: "rgba(255,255,255,0.07)", orange: "#f97316", orangeD: "#ea580c", text: "#e8e8e8", muted: "#666", faint: "#333" };
+
+// ── MICRO COMPONENTS ──────────────────────────────────────────────────────────
+const Bar = ({ v, color = C.orange, h = 6 }) => (
+  <div style={{ background: "rgba(255,255,255,0.06)", borderRadius: 99, height: h, overflow: "hidden" }}>
+    <div style={{ height: "100%", width: `${Math.min(100, Math.max(0, v))}%`, background: color, borderRadius: 99, transition: "width .6s cubic-bezier(.4,0,.2,1)", boxShadow: `0 0 8px ${color}50` }} />
+  </div>
+);
+
+const Tag = ({ children, color = C.orange }) => (
+  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", padding: "2px 8px", borderRadius: 99, border: `1px solid ${color}40`, background: `${color}15`, color }}>{children}</span>
+);
+
+const Ico = ({ d, size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: d }} />
+);
+
+const SVG = {
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  check: '<polyline points="20,6 9,17 4,12"/>',
+  edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+  trash: '<polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/>',
+  fire: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  timer: '<circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>',
+  note: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/>',
+  chart: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+  star: '<polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26 12,2"/>',
+  drag: '<circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>',
+};
+
+const Card = ({ children, style = {}, onClick }) => (
+  <div onClick={onClick} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: "18px 20px", backdropFilter: "blur(10px)", transition: "all .2s", cursor: onClick ? "pointer" : "default", ...style }}>{children}</div>
+);
+
+const Inp = ({ label, value, onChange, placeholder, type = "text" }) => (
+  <div style={{ marginBottom: 14 }}>
+    {label && <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</div>}
+    <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 13px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+      onFocus={e => e.target.style.borderColor = C.orange} onBlur={e => e.target.style.borderColor = C.border} />
+  </div>
+);
+
+const Txt = ({ label, value, onChange, placeholder, rows = 3 }) => (
+  <div style={{ marginBottom: 14 }}>
+    {label && <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</div>}
+    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+      style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 13px", color: "#fff", fontSize: 14, outline: "none", resize: "vertical", fontFamily: "inherit", boxSizing: "border-box" }}
+      onFocus={e => e.target.style.borderColor = C.orange} onBlur={e => e.target.style.borderColor = C.border} />
+  </div>
+);
+
+const Btn = ({ children, onClick, variant = "primary", size = "md", style = {}, disabled = false }) => {
+  const vs = { primary: { background: `linear-gradient(135deg,${C.orange},${C.orangeD})`, color: "#fff", boxShadow: "0 4px 16px rgba(249,115,22,.3)" }, ghost: { background: "rgba(255,255,255,.06)", color: "#ccc", border: `1px solid ${C.border}` }, danger: { background: "rgba(239,68,68,.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,.25)" } };
+  return <button onClick={onClick} disabled={disabled} style={{ border: "none", borderRadius: 10, cursor: disabled ? "not-allowed" : "pointer", fontWeight: 700, fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7, padding: size === "sm" ? "6px 13px" : "10px 20px", fontSize: size === "sm" ? 12 : 14, opacity: disabled ? .5 : 1, transition: "all .15s", ...vs[variant], ...style }}>{children}</button>;
+};
+
+const Modal = ({ open, onClose, title, children, wide }) => {
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.75)", backdropFilter: "blur(6px)" }} />
+      <div style={{ position: "relative", zIndex: 1, background: "#191919", border: `1px solid rgba(249,115,22,.25)`, borderRadius: 20, padding: "26px 28px", width: "100%", maxWidth: wide ? 640 : 420, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(0,0,0,.6)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "'Syne',sans-serif" }}>{title}</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><Ico d={SVG.x} size={18} /></button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// ── HABIT HEATMAP CALENDAR ─────────────────────────────────────────────────────
+const HabitCalendar = ({ habit }) => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const adj = firstDay === 0 ? 6 : firstDay - 1;
+  const days = [];
+  for (let i = 0; i < adj; i++) days.push(null);
+  for (let d = 1; d <= daysInMonth; d++) days.push(d);
+  const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: C.muted, marginBottom: 8, fontWeight: 600 }}>{months[month]} {year}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+        {["S", "T", "Q", "Q", "S", "S", "D"].map((d, i) => <div key={i} style={{ fontSize: 9, color: C.faint, textAlign: "center", fontWeight: 700 }}>{d}</div>)}
+        {days.map((d, i) => {
+          if (!d) return <div key={i} />;
+          const dateStr = new Date(year, month, d).toDateString();
+          const done = habit.completedDates?.includes(dateStr);
+          const isToday = dateStr === today.toDateString();
+          return (
+            <div key={i} title={`${d}/${month + 1}`} style={{
+              aspectRatio: "1", borderRadius: 5, fontSize: 9, fontWeight: 700,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: done ? habit.color || C.orange : "rgba(255,255,255,0.04)",
+              color: done ? "#fff" : isToday ? C.orange : C.faint,
+              border: isToday ? `1.5px solid ${C.orange}` : "1px solid transparent",
+              opacity: done ? 1 : 0.8,
+              boxShadow: done ? `0 0 6px ${habit.color || C.orange}60` : "none",
+            }}>{d}</div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ── ANALYTICS CHART ────────────────────────────────────────────────────────────
+const WeekChart = ({ habits }) => {
+  const days = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+  const today = new Date();
+  const dayOfWeek = today.getDay() === 0 ? 6 : today.getDay() - 1;
+  const weekData = days.map((d, i) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - (dayOfWeek - i));
+    const ds = date.toDateString();
+    const count = habits.filter(h => h.completedDates?.includes(ds)).length;
+    return { label: d, count, pct: habits.length ? Math.round(count / habits.length * 100) : 0, isToday: i === dayOfWeek };
+  });
+  const max = Math.max(...weekData.map(d => d.pct), 1);
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80, padding: "0 4px" }}>
+      {weekData.map((d, i) => (
+        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <div style={{ fontSize: 9, color: d.pct > 0 ? C.orange : C.faint, fontWeight: 700 }}>{d.pct > 0 ? `${d.pct}%` : ""}</div>
+          <div style={{ width: "100%", borderRadius: "4px 4px 0 0", background: d.isToday ? C.orange : d.pct > 0 ? `${C.orange}60` : "rgba(255,255,255,0.05)", height: `${Math.max(4, d.pct / max * 56)}px`, transition: "height .5s ease", boxShadow: d.isToday ? `0 0 10px ${C.orange}60` : "none" }} />
+          <div style={{ fontSize: 9, color: d.isToday ? C.orange : C.muted, fontWeight: d.isToday ? 800 : 400 }}>{d.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ── POMODORO ───────────────────────────────────────────────────────────────────
+const Pomodoro = ({ settings }) => {
+  const [mode, setMode] = useState("work");
+  const [secs, setSecs] = useState(settings.work * 60);
+  const [running, setRunning] = useState(false);
+  const [sessions, setSessions] = useState(0);
+  const ref = useRef(null);
+
+  const durations = { work: settings.work * 60, shortBreak: settings.shortBreak * 60, longBreak: settings.longBreak * 60 };
+  const labels = { work: "Foco", shortBreak: "Pausa Curta", longBreak: "Pausa Longa" };
+
+  useEffect(() => {
+    if (running) { ref.current = setInterval(() => setSecs(s => { if (s <= 1) { clearInterval(ref.current); setRunning(false); if (mode === "work") setSessions(n => n + 1); return 0; } return s - 1; }), 1000); }
+    else clearInterval(ref.current);
+    return () => clearInterval(ref.current);
+  }, [running, mode]);
+
+  const switchMode = (m) => { setMode(m); setSecs(durations[m]); setRunning(false); };
+  const m = String(Math.floor(secs / 60)).padStart(2, "0");
+  const s = String(secs % 60).padStart(2, "0");
+  const pct = Math.round((1 - secs / durations[mode]) * 100);
+  const r = 54; const circ = 2 * Math.PI * r;
+
+  return (
+    <Card style={{ textAlign: "center", padding: "24px 20px" }}>
+      <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 16 }}>POMODORO TIMER</div>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 20 }}>
+        {Object.entries(labels).map(([k, v]) => (
+          <button key={k} onClick={() => switchMode(k)} style={{ padding: "5px 11px", borderRadius: 8, border: `1px solid`, borderColor: mode === k ? C.orange : C.border, background: mode === k ? `${C.orange}15` : "transparent", color: mode === k ? C.orange : C.muted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{v}</button>
+        ))}
+      </div>
+      <div style={{ position: "relative", width: 140, height: 140, margin: "0 auto 20px" }}>
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="8" />
+          <circle cx="70" cy="70" r={r} fill="none" stroke={C.orange} strokeWidth="8" strokeLinecap="round"
+            strokeDasharray={circ} strokeDashoffset={circ * (1 - pct / 100)} transform="rotate(-90 70 70)"
+            style={{ transition: "stroke-dashoffset .5s ease", filter: `drop-shadow(0 0 8px ${C.orange}80)` }} />
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: "#fff", fontFamily: "'Syne',sans-serif", lineHeight: 1 }}>{m}:{s}</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>{labels[mode]}</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginBottom: 16 }}>
+        <Btn onClick={() => setRunning(r => !r)} style={{ minWidth: 100 }}>{running ? "⏸ Pausar" : "▶ Iniciar"}</Btn>
+        <Btn onClick={() => { setSecs(durations[mode]); setRunning(false); }} variant="ghost" size="sm">Reset</Btn>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
+        {Array.from({ length: 4 }).map((_, i) => <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: i < sessions % 4 ? C.orange : "rgba(255,255,255,.1)", boxShadow: i < sessions % 4 ? `0 0 6px ${C.orange}` : "none" }} />)}
+      </div>
+      <div style={{ fontSize: 11, color: C.muted, marginTop: 8 }}>Sessões: {sessions}</div>
+    </Card>
+  );
+};
+
+// ── NOTES ──────────────────────────────────────────────────────────────────────
+const Notes = ({ notes, dispatch }) => {
+  const [show, setShow] = useState(false);
+  const [form, setForm] = useState({ title: "", body: "", tag: "geral" });
+  const [editId, setEditId] = useState(null);
+  const tags = ["geral", "ideia", "projeto", "reflexão", "meta"];
+  const tagColors = { geral: "#6b7280", ideia: "#eab308", projeto: "#3b82f6", reflexão: "#8b5cf6", meta: C.orange };
+
+  const save = () => {
+    if (!form.body) return;
+    if (editId) { dispatch({ type: "EDIT_NOTE", id: editId, data: form }); setEditId(null); }
+    else dispatch({ type: "ADD_NOTE", note: { id: Date.now(), createdAt: new Date().toLocaleDateString("pt-BR"), ...form } });
+    setForm({ title: "", body: "", tag: "geral" }); setShow(false);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase" }}>NOTAS RÁPIDAS ({notes.length})</span>
+        <Btn onClick={() => { setForm({ title: "", body: "", tag: "geral" }); setEditId(null); setShow(true); }} size="sm"><Ico d={SVG.plus} size={13} /> Nova</Btn>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        {notes.slice(0, 6).map(n => (
+          <Card key={n.id} style={{ padding: "14px 16px", cursor: "default" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+              <Tag color={tagColors[n.tag] || C.orange}>{n.tag}</Tag>
+              <div style={{ display: "flex", gap: 4 }}>
+                <button onClick={() => { setForm({ title: n.title, body: n.body, tag: n.tag }); setEditId(n.id); setShow(true); }} style={{ background: "none", border: "none", color: C.faint, cursor: "pointer" }}><Ico d={SVG.edit} size={12} /></button>
+                <button onClick={() => dispatch({ type: "REMOVE_NOTE", id: n.id })} style={{ background: "none", border: "none", color: C.faint, cursor: "pointer" }}><Ico d={SVG.trash} size={12} /></button>
+              </div>
+            </div>
+            {n.title && <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e2e2", marginBottom: 4 }}>{n.title}</div>}
+            <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{n.body}</div>
+            <div style={{ fontSize: 10, color: C.faint, marginTop: 8 }}>{n.createdAt}</div>
+          </Card>
+        ))}
+      </div>
+      <Modal open={show} onClose={() => setShow(false)} title={editId ? "Editar Nota" : "Nova Nota"}>
+        <Inp label="Título (opcional)" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder="Título..." />
+        <Txt label="Conteúdo" value={form.body} onChange={v => setForm(f => ({ ...f, body: v }))} placeholder="Escreva aqui..." rows={5} />
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 7, fontWeight: 700, textTransform: "uppercase" }}>Tag</div>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            {tags.map(t => <button key={t} onClick={() => setForm(f => ({ ...f, tag: t }))} style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid`, borderColor: form.tag === t ? tagColors[t] : C.border, background: form.tag === t ? `${tagColors[t]}15` : "transparent", color: form.tag === t ? tagColors[t] : C.muted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{t}</button>)}
+          </div>
+        </div>
+        <Btn onClick={save}><Ico d={SVG.save} size={13} /> Salvar</Btn>
+      </Modal>
+    </div>
+  );
+};
+
+// ── BADGES PANEL ───────────────────────────────────────────────────────────────
+const BadgesPanel = ({ state }) => (
+  <div>
+    <div style={{ fontSize: 13, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 14 }}>CONQUISTAS</div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+      {BADGES.map(b => {
+        const unlocked = state.unlockedBadges.includes(b.id);
+        return (
+          <div key={b.id} title={`${b.label}: ${b.desc}`} style={{ textAlign: "center", padding: "14px 8px", borderRadius: 14, background: unlocked ? `rgba(249,115,22,.1)` : "rgba(255,255,255,.02)", border: `1px solid ${unlocked ? "rgba(249,115,22,.3)" : C.border}`, opacity: unlocked ? 1 : 0.35, transition: "all .2s" }}>
+            <div style={{ fontSize: 28, marginBottom: 6, filter: unlocked ? "none" : "grayscale(1)" }}>{b.icon}</div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: unlocked ? C.orange : C.muted, lineHeight: 1.3 }}>{b.label}</div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
+// ── XP / LEVEL BAR ─────────────────────────────────────────────────────────────
+const LevelBar = ({ xp }) => {
+  const lv = getLevel(xp); const nx = xpToNext(xp);
+  return (
+    <Card style={{ padding: "16px 20px", background: `linear-gradient(135deg, rgba(249,115,22,.08), transparent)`, border: `1px solid rgba(249,115,22,.2)` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div>
+          <span style={{ fontSize: 11, color: C.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em" }}>Nível: </span>
+          <span style={{ fontSize: 14, fontWeight: 800, color: lv.color, fontFamily: "'Syne',sans-serif" }}>{lv.name}</span>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <span style={{ fontSize: 20, fontWeight: 800, color: C.orange, fontFamily: "'Syne',sans-serif" }}>{xp}</span>
+          <span style={{ fontSize: 11, color: C.muted }}> XP</span>
+        </div>
+      </div>
+      {nx && <><Bar v={nx.pct} color={lv.color} h={7} /><div style={{ fontSize: 10, color: C.muted, marginTop: 5, textAlign: "right" }}>{nx.pct}% para próximo nível ({nx.next} XP)</div></>}
+      {!nx && <div style={{ fontSize: 12, color: "#eab308", textAlign: "center", padding: "4px 0" }}>🏆 Nível máximo atingido!</div>}
+    </Card>
+  );
+};
+
+// ── TAB: HÁBITOS (gamificado) ──────────────────────────────────────────────────
+const TabHabits = ({ state, dispatch }) => {
+  const [showAdd, setShowAdd] = useState(false);
+  const [showCal, setShowCal] = useState(null);
+  const [form, setForm] = useState({ title: "", icon: "⭐", color: C.orange });
+  const today = todayStr();
+  const icons = ["⭐", "💪", "📚", "🧘", "🎬", "💤", "🏃", "✍️", "🎯", "💡", "🔥", "🎸"];
+
+  const add = () => {
+    if (!form.title) return;
+    dispatch({ type: "ADD_HABIT", habit: { id: Date.now(), ...form, streak: 0, best: 0, completedDates: [], xpEarned: 0 } });
+    setForm({ title: "", icon: "⭐", color: C.orange }); setShowAdd(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <LevelBar xp={state.xp} />
+      <BadgesPanel state={state} />
+
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase" }}>HÁBITOS DE HOJE</span>
+          <Btn onClick={() => setShowAdd(true)} size="sm"><Ico d={SVG.plus} size={13} /> Novo</Btn>
+        </div>
+
+        {state.habits.map(h => {
+          const done = h.completedDates?.includes(today);
+          return (
+            <Card key={h.id} style={{ marginBottom: 10, background: done ? "rgba(249,115,22,.07)" : C.surface, borderColor: done ? "rgba(249,115,22,.25)" : C.border }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <button onClick={() => dispatch({ type: "TOGGLE_HABIT", id: h.id, date: today })} style={{
+                  width: 44, height: 44, borderRadius: 14, border: `2px solid ${done ? h.color : C.border}`,
+                  background: done ? `${h.color}25` : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, transition: "all .2s",
+                }}>{done ? "✅" : h.icon}</button>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: done ? h.color : "#e2e2e2", fontFamily: "'Syne',sans-serif" }}>{h.title}</div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                    <span style={{ fontSize: 11, color: C.muted }}>🔥 {h.streak} dias</span>
+                    <span style={{ fontSize: 11, color: C.faint }}>melhor: {h.best}</span>
+                    <span style={{ fontSize: 11, color: "#eab308" }}>+{XP_TABLE.habit} XP/dia</span>
+                  </div>
+                </div>
+                <button onClick={() => setShowCal(h)} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", padding: 4 }}>📅</button>
+                <button onClick={() => dispatch({ type: "REMOVE_HABIT", id: h.id })} style={{ background: "none", border: "none", color: C.faint, cursor: "pointer" }}><Ico d={SVG.x} size={14} /></button>
+              </div>
+              {done && <div style={{ marginTop: 10, fontSize: 12, color: h.color, fontWeight: 700 }}>+{XP_TABLE.habit} XP conquistados hoje! ⚡</div>}
+            </Card>
+          );
+        })}
+      </div>
+
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Novo Hábito">
+        <Inp label="Nome" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder="Ex: Acordar às 6h" />
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 7, fontWeight: 700, textTransform: "uppercase" }}>Ícone</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {icons.map(ic => <button key={ic} onClick={() => setForm(f => ({ ...f, icon: ic }))} style={{ width: 36, height: 36, borderRadius: 9, border: `1.5px solid ${form.icon === ic ? C.orange : C.border}`, background: form.icon === ic ? `${C.orange}15` : "transparent", fontSize: 18, cursor: "pointer" }}>{ic}</button>)}
+          </div>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 7, fontWeight: 700, textTransform: "uppercase" }}>Cor</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[C.orange, "#3b82f6", "#10b981", "#8b5cf6", "#ec4899", "#eab308"].map(c => <button key={c} onClick={() => setForm(f => ({ ...f, color: c }))} style={{ width: 30, height: 30, borderRadius: 8, background: c, border: form.color === c ? "2.5px solid #fff" : "2px solid transparent", cursor: "pointer" }} />)}
+          </div>
+        </div>
+        <Btn onClick={add}><Ico d={SVG.save} size={13} /> Salvar</Btn>
+      </Modal>
+
+      <Modal open={!!showCal} onClose={() => setShowCal(null)} title={`Calendário — ${showCal?.title}`}>
+        {showCal && (
+          <div>
+            <HabitCalendar habit={showCal} />
+            <div style={{ marginTop: 18, display: "flex", gap: 20, justifyContent: "center" }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: showCal.color, fontFamily: "'Syne',sans-serif" }}>{showCal.streak}</div>
+                <div style={{ fontSize: 11, color: C.muted }}>🔥 Streak atual</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#eab308", fontFamily: "'Syne',sans-serif" }}>{showCal.best}</div>
+                <div style={{ fontSize: 11, color: C.muted }}>🏆 Melhor streak</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: "#10b981", fontFamily: "'Syne',sans-serif" }}>{showCal.completedDates?.length || 0}</div>
+                <div style={{ fontSize: 11, color: C.muted }}>✅ Total dias</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+// ── TAB: METAS (editável) ──────────────────────────────────────────────────────
+const TabGoals = ({ state, dispatch }) => {
+  const [showAdd, setShowAdd] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({ title: "", level: "annual", progress: 0 });
+  const [filter, setFilter] = useState("all");
+  const levels = [{ k: "annual", l: "Anual", c: C.orange }, { k: "quarterly", l: "Trimestral", c: "#fb923c" }, { k: "monthly", l: "Mensal", c: "#ea580c" }];
+  const filtered = filter === "all" ? state.goals : state.goals.filter(g => g.level === filter);
+
+  const save = () => {
+    if (!form.title) return;
+    if (editId) { dispatch({ type: "UPDATE_GOAL", id: editId, data: form }); setEditId(null); }
+    else dispatch({ type: "ADD_GOAL", goal: { id: Date.now(), status: "active", ...form } });
+    setForm({ title: "", level: "annual", progress: 0 }); setShowAdd(false);
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 7, marginBottom: 18, flexWrap: "wrap" }}>
+        <button onClick={() => setFilter("all")} style={{ padding: "6px 13px", borderRadius: 9, border: `1px solid`, borderColor: filter === "all" ? C.orange : C.border, background: filter === "all" ? `${C.orange}12` : "transparent", color: filter === "all" ? C.orange : C.muted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>Todas</button>
+        {levels.map(l => <button key={l.k} onClick={() => setFilter(l.k)} style={{ padding: "6px 13px", borderRadius: 9, border: `1px solid`, borderColor: filter === l.k ? l.c : C.border, background: filter === l.k ? `${l.c}12` : "transparent", color: filter === l.k ? l.c : C.muted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{l.l}</button>)}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+        {filtered.map(g => {
+          const lv = levels.find(l => l.k === g.level);
+          return (
+            <Card key={g.id} style={{ padding: "16px 18px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div style={{ flex: 1, paddingRight: 10 }}>
+                  <Tag color={lv?.c || C.orange}>{lv?.l}</Tag>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#e2e2e2", marginTop: 6, lineHeight: 1.4 }}>{g.title}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: lv?.c || C.orange, fontFamily: "'Syne',sans-serif" }}>{g.progress}%</span>
+                  <button onClick={() => { setForm({ title: g.title, level: g.level, progress: g.progress }); setEditId(g.id); setShowAdd(true); }} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><Ico d={SVG.edit} size={13} /></button>
+                  <button onClick={() => dispatch({ type: "REMOVE_GOAL", id: g.id })} style={{ background: "none", border: "none", color: C.faint, cursor: "pointer" }}><Ico d={SVG.x} size={13} /></button>
+                </div>
+              </div>
+              <Bar v={g.progress} color={lv?.c || C.orange} h={7} />
+              <input type="range" min={0} max={100} value={g.progress}
+                onChange={e => dispatch({ type: "UPDATE_GOAL", id: g.id, data: { progress: +e.target.value } })}
+                style={{ width: "100%", marginTop: 8, accentColor: lv?.c || C.orange, height: 4 }} />
+            </Card>
+          );
+        })}
+      </div>
+      <Btn onClick={() => { setForm({ title: "", level: "annual", progress: 0 }); setEditId(null); setShowAdd(true); }} size="sm"><Ico d={SVG.plus} size={13} /> Nova Meta</Btn>
+
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title={editId ? "Editar Meta" : "Nova Meta"}>
+        <Inp label="Título" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder="Descreva sua meta..." />
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 7, fontWeight: 700, textTransform: "uppercase" }}>Nível</div>
+          <div style={{ display: "flex", gap: 7 }}>
+            {levels.map(l => <button key={l.k} onClick={() => setForm(f => ({ ...f, level: l.k }))} style={{ padding: "6px 13px", borderRadius: 9, border: `1px solid`, borderColor: form.level === l.k ? l.c : C.border, background: form.level === l.k ? `${l.c}15` : "transparent", color: form.level === l.k ? l.c : C.muted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{l.l}</button>)}
+          </div>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 5, fontWeight: 700, textTransform: "uppercase" }}>Progresso: {form.progress}%</div>
+          <input type="range" min={0} max={100} value={form.progress} onChange={e => setForm(f => ({ ...f, progress: +e.target.value }))} style={{ width: "100%", accentColor: C.orange }} />
+        </div>
+        <Btn onClick={save}><Ico d={SVG.save} size={13} /> Salvar</Btn>
+      </Modal>
+    </div>
+  );
+};
+
+// ── TAB: TAREFAS ───────────────────────────────────────────────────────────────
+const TabTasks = ({ state, dispatch }) => {
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ title: "", priority: "medium", tag: "" });
+  const prios = [["high", "#ef4444", "Alta"], ["medium", C.orange, "Média"], ["low", "#6b7280", "Baixa"]];
+  const incomplete = state.tasks.filter(t => !t.completed);
+  const complete = state.tasks.filter(t => t.completed);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase" }}>PENDENTES ({incomplete.length})</span>
+          <Btn onClick={() => setShowAdd(true)} size="sm"><Ico d={SVG.plus} size={13} /> Nova</Btn>
+        </div>
+        {incomplete.length === 0 && <div style={{ color: C.faint, fontSize: 14, padding: "16px 0", textAlign: "center" }}>🎉 Nenhuma tarefa pendente!</div>}
+        {incomplete.map(t => {
+          const p = prios.find(p => p[0] === t.priority);
+          return (
+            <Card key={t.id} style={{ marginBottom: 8, padding: "13px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <button onClick={() => dispatch({ type: "TOGGLE_TASK", id: t.id })} style={{ width: 22, height: 22, borderRadius: 7, border: `2px solid rgba(249,115,22,.4)`, background: "transparent", cursor: "pointer", flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 14, color: "#e2e2e2" }}>{t.title}</span>
+                {t.tag && <Tag color="#6b7280">{t.tag}</Tag>}
+                <Tag color={p?.[1] || C.orange}>{p?.[2]}</Tag>
+                <button onClick={() => dispatch({ type: "REMOVE_TASK", id: t.id })} style={{ background: "none", border: "none", color: C.faint, cursor: "pointer" }}><Ico d={SVG.x} size={13} /></button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+      {complete.length > 0 && (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.faint, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 10 }}>CONCLUÍDAS ({complete.length})</div>
+          {complete.slice(0, 5).map(t => (
+            <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8, opacity: .4 }}>
+              <button onClick={() => dispatch({ type: "TOGGLE_TASK", id: t.id })} style={{ width: 22, height: 22, borderRadius: 7, background: `${C.orange}30`, border: `2px solid ${C.orange}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Ico d={SVG.check} size={11} /></button>
+              <span style={{ flex: 1, fontSize: 13, color: C.muted, textDecoration: "line-through" }}>{t.title}</span>
+              <button onClick={() => dispatch({ type: "REMOVE_TASK", id: t.id })} style={{ background: "none", border: "none", color: C.faint, cursor: "pointer" }}><Ico d={SVG.x} size={12} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Nova Tarefa">
+        <Inp label="Título" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder="Descreva a tarefa..." />
+        <Inp label="Tag (opcional)" value={form.tag} onChange={v => setForm(f => ({ ...f, tag: v }))} placeholder="Ex: marca, projeto..." />
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 7, fontWeight: 700, textTransform: "uppercase" }}>Prioridade</div>
+          <div style={{ display: "flex", gap: 7 }}>
+            {prios.map(([k, c, l]) => <button key={k} onClick={() => setForm(f => ({ ...f, priority: k }))} style={{ padding: "6px 13px", borderRadius: 9, border: `1px solid`, borderColor: form.priority === k ? c : C.border, background: form.priority === k ? `${c}15` : "transparent", color: form.priority === k ? c : C.muted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{l}</button>)}
+          </div>
+        </div>
+        <Btn onClick={() => { if (!form.title) return; dispatch({ type: "ADD_TASK", task: form }); setForm({ title: "", priority: "medium", tag: "" }); setShowAdd(false); }}><Ico d={SVG.save} size={13} /> Criar</Btn>
+      </Modal>
+    </div>
+  );
+};
+
+// ── TAB: MISSÃO (editável) ─────────────────────────────────────────────────────
+const TabMission = ({ state, dispatch }) => {
+  const [editing, setEditing] = useState(null);
+  const [val, setVal] = useState("");
+  const fields = [
+    { key: "mission", label: "Missão", icon: "🎯" },
+    { key: "vision", label: "Visão", icon: "🔭" },
+    { key: "purpose", label: "Propósito", icon: "💎" },
+  ];
+  const PILARES = [
+    { key: "LIBERDADE", sub: "para criar", icon: "◈", c: C.orange },
+    { key: "VERDADE", sub: "nas ideias e ações", icon: "◉", c: "#3b82f6" },
+    { key: "DISCIPLINA", sub: "para construir", icon: "◆", c: "#8b5cf6" },
+    { key: "IMPACTO", sub: "para transformar", icon: "◐", c: "#10b981" },
+    { key: "LEGADO", sub: "para permanecer", icon: "★", c: "#eab308" },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {fields.map(f => (
+        <Card key={f.key} style={{ padding: "18px 20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase" }}>{f.icon} {f.label}</span>
+            <button onClick={() => { setEditing(f.key); setVal(state.mission[f.key]); }} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer" }}><Ico d={SVG.edit} size={14} /></button>
+          </div>
+          <p style={{ margin: 0, fontSize: 15, color: "#ccc", lineHeight: 1.7 }}>{state.mission[f.key]}</p>
+        </Card>
+      ))}
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 12 }}>OS 5 PILARES</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {PILARES.map((p, i) => (
+            <Card key={i} style={{ padding: "16px", background: `${p.c}08`, borderColor: `${p.c}20`, textAlign: "center" }}>
+              <div style={{ fontSize: 22, color: p.c, marginBottom: 6 }}>{p.icon}</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", fontFamily: "'Syne',sans-serif" }}>{p.key}</div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{p.sub}</div>
+            </Card>
+          ))}
+        </div>
+      </div>
+      <Modal open={!!editing} onClose={() => setEditing(null)} title={`Editar ${fields.find(f => f.key === editing)?.label || ""}`}>
+        <Txt value={val} onChange={setVal} rows={4} placeholder="Escreva aqui..." />
+        <Btn onClick={() => { dispatch({ type: "UPDATE_MISSION", field: editing, value: val }); setEditing(null); }}><Ico d={SVG.save} size={13} /> Salvar</Btn>
+      </Modal>
+    </div>
+  );
+};
+
+// ── TAB: REVISÃO ───────────────────────────────────────────────────────────────
+const TabReview = ({ state, dispatch }) => {
+  const wk = weekKey();
+  const cur = state.reviews[wk] || {};
+  const update = (f, v) => dispatch({ type: "UPDATE_REVIEW", weekKey: wk, field: f, value: v });
+  const qs = [
+    { key: "done", label: "O que foi feito?", icon: "✅" },
+    { key: "learned", label: "O que aprendi?", icon: "💡" },
+    { key: "improve", label: "O que melhorar?", icon: "🔧" },
+    { key: "prioritize", label: "O que priorizar?", icon: "🎯" },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <Card style={{ background: `${C.orange}08`, borderColor: `${C.orange}20`, padding: "14px 18px" }}>
+        <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: ".1em" }}>REVISÃO SEMANAL — {new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}</div>
+      </Card>
+      {qs.map(q => (
+        <Card key={q.key} style={{ padding: "16px 18px" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#e2e2e2", marginBottom: 10 }}>{q.icon} {q.label}</div>
+          <Txt value={cur[q.key] || ""} onChange={v => update(q.key, v)} placeholder="Escreva aqui..." rows={3} />
+        </Card>
+      ))}
+    </div>
+  );
+};
+
+// ── TAB: ANALYTICS ─────────────────────────────────────────────────────────────
+const TabAnalytics = ({ state }) => {
+  const totalHabits = state.habits.length;
+  const today = todayStr();
+  const todayDone = state.habits.filter(h => h.completedDates?.includes(today)).length;
+  const avgStreak = totalHabits ? Math.round(state.habits.reduce((a, h) => a + h.streak, 0) / totalHabits) : 0;
+  const bestStreak = state.habits.reduce((a, h) => Math.max(a, h.best), 0);
+  const tasksCompleted = state.tasks.filter(t => t.completed).length;
+  const tasksPending = state.tasks.filter(t => !t.completed).length;
+  const avgGoal = state.goals.length ? Math.round(state.goals.reduce((a, g) => a + g.progress, 0) / state.goals.length) : 0;
+  const lv = getLevel(state.xp);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <LevelBar xp={state.xp} />
+      <Card>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 14 }}>HÁBITOS — SEMANA ATUAL</div>
+        <WeekChart habits={state.habits} />
+      </Card>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        {[
+          { label: "Hábitos hoje", value: `${todayDone}/${totalHabits}`, sub: "completados", color: C.orange },
+          { label: "Streak médio", value: avgStreak, sub: "dias", color: "#fb923c" },
+          { label: "Melhor streak", value: bestStreak, sub: "dias consecutivos", color: "#eab308" },
+          { label: "XP Total", value: state.xp, sub: lv.name, color: lv.color },
+          { label: "Tarefas feitas", value: tasksCompleted, sub: `${tasksPending} pendentes`, color: "#10b981" },
+          { label: "Progresso metas", value: `${avgGoal}%`, sub: `${state.goals.length} metas`, color: "#8b5cf6" },
+        ].map((s, i) => (
+          <Card key={i} style={{ padding: "16px", textAlign: "center" }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: s.color, fontFamily: "'Syne',sans-serif" }}>{s.value}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginTop: 4 }}>{s.label}</div>
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{s.sub}</div>
+          </Card>
+        ))}
+      </div>
+      <Card>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 14 }}>PROGRESSO DAS METAS</div>
+        {state.goals.slice(0, 5).map(g => (
+          <div key={g.id} style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+              <span style={{ fontSize: 12, color: "#ccc" }}>{g.title.substring(0, 36)}{g.title.length > 36 ? "..." : ""}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.orange }}>{g.progress}%</span>
+            </div>
+            <Bar v={g.progress} h={5} />
+          </div>
+        ))}
+      </Card>
+      <Card>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 14 }}>CONQUISTAS DESBLOQUEADAS</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: C.orange, fontFamily: "'Syne',sans-serif" }}>{state.unlockedBadges.length}<span style={{ fontSize: 13, color: C.muted, fontWeight: 400 }}> / {BADGES.length}</span></div>
+        <Bar v={Math.round(state.unlockedBadges.length / BADGES.length * 100)} h={6} color="#eab308" />
+      </Card>
+    </div>
+  );
+};
+
+// ── DASHBOARD WIDGET RENDERER ──────────────────────────────────────────────────
+const DashWidget = ({ id, state, dispatch, quoteIdx }) => {
+  const today = todayStr();
+  const habitsToday = state.habits.filter(h => h.completedDates?.includes(today)).length;
+  const avgGoal = state.goals.length ? Math.round(state.goals.reduce((a, g) => a + g.progress, 0) / state.goals.length) : 0;
+  const lv = getLevel(state.xp);
+
+  if (id === "stats") return (
+    <Card style={{ padding: "16px 18px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        {[
+          { v: `${habitsToday}/${state.habits.length}`, l: "Hábitos", c: C.orange },
+          { v: state.tasks.filter(t => !t.completed).length, l: "Tarefas", c: "#fb923c" },
+          { v: `${avgGoal}%`, l: "Metas", c: "#ea580c" },
+        ].map((s, i) => (
+          <div key={i} style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: s.c, fontFamily: "'Syne',sans-serif" }}>{s.v}</div>
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{s.l}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+
+  if (id === "quote") return (
+    <Card style={{ background: `${C.orange}08`, borderColor: `${C.orange}18`, padding: "16px 18px" }}>
+      <p style={{ margin: 0, fontSize: 14, color: "#ddd", fontStyle: "italic", lineHeight: 1.6 }}>"{QUOTES[quoteIdx % QUOTES.length]}"</p>
+    </Card>
+  );
+
+  if (id === "habits_today") return (
+    <Card style={{ padding: "16px 18px" }}>
+      <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 12 }}>HÁBITOS HOJE</div>
+      {state.habits.map(h => {
+        const done = h.completedDates?.includes(today);
+        return (
+          <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <button onClick={() => dispatch({ type: "TOGGLE_HABIT", id: h.id, date: today })} style={{ width: 26, height: 26, borderRadius: 8, border: `1.5px solid ${done ? h.color : C.border}`, background: done ? `${h.color}25` : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>{done ? "✅" : h.icon}</button>
+            <span style={{ flex: 1, fontSize: 13, color: done ? h.color : "#ccc" }}>{h.title}</span>
+            {done && <span style={{ fontSize: 10, color: "#eab308" }}>+{XP_TABLE.habit}XP</span>}
+          </div>
+        );
+      })}
+    </Card>
+  );
+
+  if (id === "goals_snap") return (
+    <Card style={{ padding: "16px 18px" }}>
+      <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 12 }}>METAS EM PROGRESSO</div>
+      {state.goals.slice(0, 3).map(g => (
+        <div key={g.id} style={{ marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <span style={{ fontSize: 12, color: "#ccc", flex: 1, paddingRight: 8 }}>{g.title.substring(0, 34)}{g.title.length > 34 ? "..." : ""}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.orange }}>{g.progress}%</span>
+          </div>
+          <Bar v={g.progress} h={4} />
+        </div>
+      ))}
+    </Card>
+  );
+
+  if (id === "tasks_snap") {
+    const pending = state.tasks.filter(t => !t.completed).slice(0, 4);
+    return (
+      <Card style={{ padding: "16px 18px" }}>
+        <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 12 }}>TAREFAS PENDENTES</div>
+        {pending.length === 0 && <div style={{ fontSize: 13, color: C.faint, textAlign: "center", padding: "8px 0" }}>🎉 Tudo em dia!</div>}
+        {pending.map(t => (
+          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <button onClick={() => dispatch({ type: "TOGGLE_TASK", id: t.id })} style={{ width: 18, height: 18, borderRadius: 5, border: `1.5px solid ${C.border}`, background: "transparent", cursor: "pointer", flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: "#ccc", flex: 1 }}>{t.title}</span>
+          </div>
+        ))}
+      </Card>
+    );
+  }
+
+  if (id === "analytics") return (
+    <Card style={{ padding: "16px 18px" }}>
+      <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", marginBottom: 12 }}>SEMANA EM NÚMEROS</div>
+      <WeekChart habits={state.habits} />
+      <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 11, color: C.muted }}>Nível: <strong style={{ color: lv.color }}>{lv.name}</strong></span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: C.orange }}>{state.xp} XP</span>
+      </div>
+    </Card>
+  );
+
+  return null;
+};
+
+// ── TAB: DASHBOARD (com widgets reordenáveis) ──────────────────────────────────
+const TabDashboard = ({ state, dispatch, quoteIdx }) => {
+  const [editing, setEditing] = useState(false);
+  const [dragging, setDragging] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  const widgets = state.dashboardWidgets || INIT.dashboardWidgets;
+  const allWidgets = { stats: "Stats Rápidos", quote: "Frase do Dia", habits_today: "Hábitos Hoje", goals_snap: "Snapshot Metas", tasks_snap: "Tarefas Pendentes", analytics: "Análise Semanal" };
+
+  const onDrop = (toId) => {
+    if (!dragging || dragging === toId) return;
+    const w = [...widgets];
+    const from = w.indexOf(dragging), to = w.indexOf(toId);
+    if (from < 0 || to < 0) return;
+    w.splice(from, 1); w.splice(to, 0, dragging);
+    dispatch({ type: "REORDER_WIDGETS", widgets: w });
+  };
+
+  const toggle = (id) => {
+    const w = widgets.includes(id) ? widgets.filter(x => x !== id) : [...widgets, id];
+    dispatch({ type: "REORDER_WIDGETS", widgets: w });
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div>
+          <div style={{ fontSize: 13, color: C.orange, fontWeight: 700 }}>{new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: "#fff", fontFamily: "'Syne',sans-serif" }}>Olá, Dante <span style={{ color: C.orange }}>Dnz</span> 👋</div>
+        </div>
+        <Btn onClick={() => setEditing(e => !e)} variant={editing ? "primary" : "ghost"} size="sm"><Ico d={SVG.edit} size={13} /> {editing ? "Salvar" : "Editar"}</Btn>
+      </div>
+
+      {editing && (
+        <Card style={{ marginBottom: 14, padding: "14px 18px", borderColor: `${C.orange}30` }}>
+          <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: ".08em" }}>Selecionar e reordenar widgets</div>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            {Object.entries(allWidgets).map(([id, label]) => (
+              <button key={id} onClick={() => toggle(id)} style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid`, borderColor: widgets.includes(id) ? C.orange : C.border, background: widgets.includes(id) ? `${C.orange}15` : "transparent", color: widgets.includes(id) ? C.orange : C.muted, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>{label}</button>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {widgets.map(id => (
+          <div key={id}
+            draggable={editing}
+            onDragStart={() => setDragging(id)}
+            onDragEnd={() => { setDragging(null); setDragOver(null); }}
+            onDragOver={e => { e.preventDefault(); setDragOver(id); }}
+            onDrop={() => onDrop(id)}
+            style={{ opacity: dragging === id ? .5 : 1, outline: dragOver === id && dragging !== id ? `2px dashed ${C.orange}` : "none", borderRadius: 16, transition: "opacity .2s", cursor: editing ? "grab" : "default" }}
+          >
+            {editing && <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, paddingLeft: 4 }}><Ico d={SVG.drag} size={12} /><span style={{ fontSize: 10, color: C.faint }}>arrastar</span></div>}
+            <DashWidget id={id} state={state} dispatch={dispatch} quoteIdx={quoteIdx} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ── MAIN ───────────────────────────────────────────────────────────────────────
+const TABS = [
+  { id: "dashboard", label: "Dashboard", icon: "⊞" },
+  { id: "mission", label: "Missão", icon: "◎" },
+  { id: "habits", label: "Hábitos", icon: "🔥" },
+  { id: "goals", label: "Metas", icon: "◈" },
+  { id: "tasks", label: "Tarefas", icon: "✓" },
+  { id: "notes", label: "Notas", icon: "✏" },
+  { id: "pomodoro", label: "Pomodoro", icon: "⏱" },
+  { id: "analytics", label: "Analytics", icon: "▲" },
+  { id: "review", label: "Revisão", icon: "◉" },
+];
+
+export default function App() {
+  const [state, setRaw] = useState(INIT);
+  const [tab, setTab] = useState("dashboard");
+  const [quoteIdx, setQuoteIdx] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+
+  const dispatch = useCallback((action) => {
+    setRaw(prev => {
+      const next = reducer(prev, action);
+      // Check badges
+      const newBadges = BADGES.filter(b => !next.unlockedBadges.includes(b.id) && b.req(next)).map(b => b.id);
+      const final = newBadges.length ? { ...next, unlockedBadges: [...next.unlockedBadges, ...newBadges] } : next;
+      if (action.type !== "HYDRATE") persist(final);
+      return final;
+    });
+  }, []);
+
+  useEffect(() => { hydrate().then(s => { if (s) dispatch({ type: "HYDRATE", p: s }); setLoaded(true); }); }, []);
+  useEffect(() => { const t = setInterval(() => setQuoteIdx(i => (i + 1) % QUOTES.length), 9000); return () => clearInterval(t); }, []);
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{background:#0d0d0d;font-family:'DM Sans',sans-serif;color:#fff;}
+        ::-webkit-scrollbar{width:3px;height:3px;}
+        ::-webkit-scrollbar-thumb{background:rgba(249,115,22,.3);border-radius:99px;}
+        input[type=range]{-webkit-appearance:none;width:100%;height:4px;border-radius:99px;background:rgba(255,255,255,.08);}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:#f97316;cursor:pointer;}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+        .fade{animation:fadeUp .22s ease;}
+      `}</style>
+
+      <div style={{ minHeight: "100vh", background: "#0d0d0d" }}>
+        <div style={{ position: "fixed", top: -160, right: -80, width: 500, height: 500, background: "radial-gradient(circle, rgba(249,115,22,.05) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
+
+        {/* Header */}
+        <div style={{ position: "sticky", top: 0, zIndex: 200, background: "rgba(13,13,13,.95)", backdropFilter: "blur(20px)", borderBottom: `1px solid rgba(249,115,22,.1)` }}>
+          <div style={{ maxWidth: 740, margin: "0 auto", padding: "0 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 52 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 9, background: `linear-gradient(135deg,${C.orange},${C.orangeD})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, boxShadow: `0 4px 12px ${C.orange}50` }}>⚡</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", fontFamily: "'Syne',sans-serif", lineHeight: 1 }}>DANTE DNZ</div>
+                  <div style={{ fontSize: 8, color: C.orange, fontWeight: 700, letterSpacing: ".18em" }}>CONTROL CENTER</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ fontSize: 11, color: C.muted }}>{new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</div>
+                <div style={{ padding: "3px 10px", borderRadius: 20, background: `${getLevel(state.xp).color}20`, border: `1px solid ${getLevel(state.xp).color}40` }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: getLevel(state.xp).color }}>{getLevel(state.xp).name}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabs scroll */}
+            <div style={{ display: "flex", gap: 0, overflowX: "auto", paddingBottom: 1, scrollbarWidth: "none" }}>
+              {TABS.map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)} style={{
+                  display: "flex", alignItems: "center", gap: 5, padding: "9px 12px",
+                  background: "transparent", border: "none", cursor: "pointer",
+                  color: tab === t.id ? C.orange : C.muted,
+                  borderBottom: `2px solid ${tab === t.id ? C.orange : "transparent"}`,
+                  fontSize: 11, fontWeight: 700, letterSpacing: ".03em",
+                  transition: "all .15s", whiteSpace: "nowrap", flexShrink: 0,
+                }}>
+                  <span style={{ fontSize: 13 }}>{t.icon}</span> {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{ maxWidth: 740, margin: "0 auto", padding: "22px 16px 90px", position: "relative", zIndex: 1 }}>
+          <div className="fade" key={tab}>
+            {tab === "dashboard" && <TabDashboard state={state} dispatch={dispatch} quoteIdx={quoteIdx} />}
+            {tab === "mission" && <TabMission state={state} dispatch={dispatch} />}
+            {tab === "habits" && <TabHabits state={state} dispatch={dispatch} />}
+            {tab === "goals" && <TabGoals state={state} dispatch={dispatch} />}
+            {tab === "tasks" && <TabTasks state={state} dispatch={dispatch} />}
+            {tab === "notes" && <Notes notes={state.notes} dispatch={dispatch} />}
+            {tab === "pomodoro" && <Pomodoro settings={state.pomodoroSettings} />}
+            {tab === "analytics" && <TabAnalytics state={state} />}
+            {tab === "review" && <TabReview state={state} dispatch={dispatch} />}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
