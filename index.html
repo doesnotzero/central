@@ -470,7 +470,7 @@ const TabGoals = ({state,dispatch}) => {
           <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Checklist de ações</div>
           <div style={{display:"flex",gap:7,marginBottom:7}}>
             <input value={logForm.checkInput} onChange={e=>setLogForm(f=>({...f,checkInput:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter"&&logForm.checkInput.trim()){setLogForm(f=>({...f,checks:[...f.checks,f.checkInput.trim()],checkInput:""}));}}} placeholder="Digite e pressione Enter..." style={{flex:1,background:"rgba(255,255,255,.05)",border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 12px",color:"#fff",fontSize:13,outline:"none",fontFamily:"inherit"}}/>
-            <Btn onClick={()=>{if(logForm.checkInput.trim())setLogForm(f=>({...f,checks:[...f.checks,f.checkInput.trim()],checkInput:""})};} size="sm">+</Btn>
+            <Btn onClick={()=>{if(logForm.checkInput.trim())setLogForm(f=>({...f,checks:[...f.checks,f.checkInput.trim()],checkInput:""}));}} size="sm">+</Btn>
           </div>
           {logForm.checks.map((c,i)=>(
             <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
