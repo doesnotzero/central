@@ -718,6 +718,7 @@ const inputDate = ()=>new Date().toISOString().slice(0,10);
 const weekKey  = ()=>{const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);return new Date(new Date(d).setDate(diff)).toDateString();};
 const fmtCurrency = v=>`R$ ${Number(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}`;
 const fmtMoney = (v,priv)=>priv?"R$ ••••••":fmtCurrency(v);
+const fmtDashboardMoney = (v,priv)=>priv?"Oculto":fmtCurrency(v);
 const fmtTimecode = seconds => {
   const total = Math.max(0, Math.floor(Number(seconds) || 0));
   const h = Math.floor(total / 3600);
@@ -798,6 +799,15 @@ const Bar = ({v,color=C.orange,h=6})=>(
 );
 const Tag = ({children,color=C.orange})=>(
   <span style={{fontSize:10,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",padding:"2px 8px",borderRadius:99,border:`1px solid ${color}40`,background:`${color}15`,color,whiteSpace:"nowrap"}}>{children}</span>
+);
+const EyeToggle = ({hidden,onClick,label})=>(
+  <button type="button" onClick={onClick} title={hidden?"Mostrar valores":"Ocultar valores"} aria-label={hidden?"Mostrar valores":"Ocultar valores"} style={{height:34,borderRadius:12,border:`1px solid ${hidden?C.border:C.orange}`,background:hidden?"rgba(255,255,255,.045)":"rgba(249,115,22,.14)",color:hidden?C.muted:C.orange,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:7,padding:"0 11px",whiteSpace:"nowrap"}}>
+    <span style={{width:16,height:10,border:"1.8px solid currentColor",borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
+      <span style={{width:4,height:4,borderRadius:"50%",background:"currentColor",display:"block"}}/>
+      {hidden&&<span style={{position:"absolute",width:20,height:2,background:"currentColor",transform:"rotate(-35deg)",borderRadius:99}}/>}
+    </span>
+    {label || (hidden ? "Ver valores" : "Ocultar")}
+  </button>
 );
 const Card = ({children,style={},onClick,className=""})=>(
   <div onClick={onClick} className={`card-hover ${className}`} style={{background:style.background||"var(--glass-bg)",border:style.border||`1px solid var(--glass-border)`,borderRadius:style.borderRadius||26,padding:style.padding||"26px 28px",cursor:onClick?"pointer":"default",boxShadow:style.boxShadow||"var(--glass-shadow)",backdropFilter:style.backdropFilter||"var(--glass-blur)",WebkitBackdropFilter:style.WebkitBackdropFilter||"var(--glass-blur)",...style}}>{children}</div>
@@ -4247,7 +4257,7 @@ const TabTemplates = ({state,dispatch,setTab,isAdmin})=>{
 };
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────
-const RevenueOSScore = ({state,setTab,privacyMode,isAdmin})=>{
+const RevenueOSScore = ({state,setTab,privacyMode,isAdmin,onToggleMoney})=>{
   const clients=state.clients||[],projects=clients.flatMap(c=>(c.videos||[])),entries=state.financeEntries||[];
   const proposals=clients.flatMap(c=>(c.proposals||[]));
   const checks=[
@@ -4261,7 +4271,7 @@ const RevenueOSScore = ({state,setTab,privacyMode,isAdmin})=>{
   const score=Math.round(checks.filter(c=>c.done).length/checks.length*100);
   const pipeline=clients.filter(c=>c.status!=="concluido").reduce((a,c)=>a+Number(c.value||0)*(Number(c.closeProbability||c.probability||50)/100),0);
   return (
-    <Card style={{padding:"18px",background:"linear-gradient(135deg,rgba(249,115,22,.08),rgba(255,255,255,.025))",borderColor:"rgba(249,115,22,.2)"}}>
+    <Card style={{padding:"18px",background:"linear-gradient(135deg,rgba(249,115,22,.08),rgba(255,255,255,.025))",borderColor:"rgba(249,115,22,.2)",overflow:"hidden"}}>
       <div className="revenue-score-grid">
         <div style={{textAlign:"center"}}>
           <div style={{width:128,height:128,borderRadius:"50%",margin:"0 auto",display:"grid",placeItems:"center",background:`conic-gradient(${score>=70?"#10b981":score>=40?C.orange:"#eab308"} ${score*3.6}deg, rgba(255,255,255,.07) 0deg)`,boxShadow:"0 24px 70px rgba(0,0,0,.35)"}}>
@@ -4271,12 +4281,15 @@ const RevenueOSScore = ({state,setTab,privacyMode,isAdmin})=>{
           </div>
         </div>
         <div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,marginBottom:10}}>
-            <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+            <div style={{minWidth:0,flex:"1 1 220px"}}>
               <div style={{fontSize:11,color:C.orange,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase"}}>Score de maturidade</div>
               <div style={{fontSize:17,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif",marginTop:4}}>Venda, entrega e recebimento conectados</div>
             </div>
-            <Tag color="#10b981">{fmtMoney(pipeline,privacyMode)} pipeline</Tag>
+            <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"flex-end",flexWrap:"wrap",maxWidth:"100%"}}>
+              <EyeToggle hidden={privacyMode} onClick={onToggleMoney}/>
+              <Tag color="#10b981">{privacyMode?"Pipeline oculto":`${fmtCurrency(pipeline)} pipeline`}</Tag>
+            </div>
           </div>
           <div style={{display:"grid",gap:7}}>
             {checks.map(c=><button key={c.label} onClick={()=>setTab(c.tab)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"8px 0",border:"none",borderBottom:`1px solid ${C.border}`,background:"transparent",color:"#ddd",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
@@ -4300,9 +4313,9 @@ const ExecutiveBriefing = ({state,setTab,privacyMode})=>{
   const receivable=clients.filter(c=>c.payment!=="pago").reduce((a,c)=>a+Number(c.value||0),0)+entries.filter(e=>e.type==="entrada"&&e.status!=="pago").reduce((a,e)=>a+Number(e.value||0),0);
   const tasksDue=(state.tasks||[]).filter(t=>!t.completed&&["overdue","today"].includes(taskBucket(t))).length;
   const cards=[
-    {label:"Pipeline ponderado",value:fmtMoney(pipelineValue,privacyMode),note:`${activeClients} cliente${activeClients===1?" ativo":"s ativos"}`,tab:"clients",color:"#10b981"},
+    {label:"Pipeline ponderado",value:fmtDashboardMoney(pipelineValue,privacyMode),note:`${activeClients} cliente${activeClients===1?" ativo":"s ativos"}`,tab:"clients",color:"#10b981"},
     {label:"Produção aberta",value:productionOpen,note:"projetos ainda não entregues",tab:"projects",color:"#8b5cf6"},
-    {label:"A receber",value:fmtMoney(receivable,privacyMode),note:"contratos e lançamentos pendentes",tab:"finance",color:"#3b82f6"},
+    {label:"A receber",value:fmtDashboardMoney(receivable,privacyMode),note:"contratos e lançamentos pendentes",tab:"finance",color:"#3b82f6"},
     {label:"Agenda crítica",value:tasksDue,note:"tarefas para hoje ou atrasadas",tab:"tasks",color:C.orange},
   ];
   return (
@@ -4319,7 +4332,7 @@ const ExecutiveBriefing = ({state,setTab,privacyMode})=>{
   );
 };
 
-const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdmin})=>{
+const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode,userName,isAdmin})=>{
   const [revealDashboardMoney,setRevealDashboardMoney]=useState(false);
   const today=todayStr(),lv=getLevel(state.xp);
   const habitsToday=state.habits.filter(h=>h.completedDates?.includes(today)).length;
@@ -4360,6 +4373,14 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
   ].filter(Boolean);
   const primaryAction=dailyActions[0]||{title:"Comece por um cliente",text:"Cadastre ou atualize um cliente para o NEXO montar o resto da operação.",tab:"clients",color:C.orange};
   const dashboardPrivacy=privacyMode||!revealDashboardMoney;
+  const toggleDashboardMoney=()=>{
+    if(dashboardPrivacy){
+      setPrivacyMode?.(false);
+      setRevealDashboardMoney(true);
+    }else{
+      setRevealDashboardMoney(false);
+    }
+  };
   const selectProfile=p=>{
     dispatch({type:"UPDATE_BUSINESS",data:{profile:p.id,type:p.type,ticketAverage:p.ticket,mainServices:p.services,onboarded:true}});
   };
@@ -4381,7 +4402,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
               <Tag color={lv.color}>{lv.name}</Tag>
               <span style={{fontSize:11,color:C.muted,fontWeight:900}}>{state.xp} XP</span>
               <span style={{fontSize:11,color:C.muted}}>Atualizado {new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span>
-              <button onClick={()=>setRevealDashboardMoney(v=>!v)} style={{height:26,borderRadius:9,border:`1px solid ${revealDashboardMoney&&!privacyMode?C.orange:C.border}`,background:revealDashboardMoney&&!privacyMode?"rgba(249,115,22,.13)":"rgba(255,255,255,.045)",color:revealDashboardMoney&&!privacyMode?C.orange:C.muted,fontFamily:"inherit",fontSize:10,fontWeight:900,cursor:"pointer",padding:"0 9px"}}>{dashboardPrivacy?"Mostrar valores":"Ocultar valores"}</button>
+              <EyeToggle hidden={dashboardPrivacy} onClick={toggleDashboardMoney}/>
             </div>
           </div>
           <div className="elite-command-panel">
@@ -4410,7 +4431,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
                 {label:"Clientes para responder",value:pendingFollowUps.length,color:"#f97316",tab:"clients"},
                 {label:"Projetos ativos",value:pendingVideos,color:"#8b5cf6",tab:"projects"},
                 {label:"Docs salvos",value:(state.studioDocs||[]).length,color:"#06b6d4",tab:"studio"},
-                {label:"A receber",value:fmtMoney(totalReceivable,dashboardPrivacy),color:"#eab308",tab:"finance"},
+                {label:"A receber",value:fmtDashboardMoney(totalReceivable,dashboardPrivacy),color:"#eab308",tab:"finance"},
               ].map(item=><button key={item.label} onClick={()=>setTab(item.tab)} className="metric-tile" style={{textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
                 <div className="metric-value" style={{color:item.color}}>{item.value}</div>
                 <div className="metric-label">{item.label}</div>
@@ -4427,7 +4448,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
           </Card>
         </div>
         <aside className="dashboard-rail">
-          <RevenueOSScore state={state} setTab={setTab} privacyMode={dashboardPrivacy} isAdmin={isAdmin}/>
+          <RevenueOSScore state={state} setTab={setTab} privacyMode={dashboardPrivacy} isAdmin={isAdmin} onToggleMoney={toggleDashboardMoney}/>
           <Card>
             <SectionTitle>COMEÇAR RÁPIDO</SectionTitle>
             <div className="dashboard-quick-grid">
@@ -4443,7 +4464,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {PROFILE_PRESETS.map(p=><button key={p.id} onClick={()=>selectProfile(p)} style={{textAlign:"left",padding:"11px",borderRadius:13,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)",color:"#eee",cursor:"pointer",fontFamily:"inherit"}}>
                 <div style={{fontSize:12,color:"#fff",fontWeight:900,marginBottom:5}}>{p.label}</div>
-                <Tag color={C.orange}>{fmtMoney(p.ticket,dashboardPrivacy)}</Tag>
+                <Tag color={C.orange}>{fmtDashboardMoney(p.ticket,dashboardPrivacy)}</Tag>
               </button>)}
             </div>
           </Card>}
@@ -4505,7 +4526,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
           {totalReceivable>0&&(
             <Card style={{padding:"16px 18px",background:"rgba(234,179,8,.05)",borderColor:"rgba(234,179,8,.2)"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div><div style={{fontSize:11,color:"#eab308",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em"}}>VALORES A RECEBER</div><div style={{fontSize:22,fontWeight:800,color:"#eab308",fontFamily:"'Syne',sans-serif",marginTop:4}}>{fmtMoney(totalReceivable,dashboardPrivacy)}</div></div>
+                <div><div style={{fontSize:11,color:"#eab308",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em"}}>VALORES A RECEBER</div><div style={{fontSize:22,fontWeight:800,color:"#eab308",fontFamily:"'Syne',sans-serif",marginTop:4}}>{fmtDashboardMoney(totalReceivable,dashboardPrivacy)}</div></div>
                 <span style={{fontSize:28}}>R$</span>
               </div>
             </Card>
@@ -4944,7 +4965,7 @@ function App(){
           {!canUseWorkspace&&!publicTabs.includes(tab)&&<AccessWall onLogin={signInGitHub} onPlans={()=>goTab("plans")}/>}
           {(canUseWorkspace||publicTabs.includes(tab))&&<>
           {tab==="about"     &&<TabAbout      session={session} onEnter={()=>session?goTab("dashboard"):signInGitHub()} onPlans={()=>goTab("plans")}/>}
-          {tab==="dashboard" &&<TabDashboard  state={state} dispatch={dispatch} quoteIdx={quoteIdx} setTab={goTab} privacyMode={privacyMode} userName={userName} isAdmin={isAdmin}/>}
+          {tab==="dashboard" &&<TabDashboard  state={state} dispatch={dispatch} quoteIdx={quoteIdx} setTab={goTab} privacyMode={privacyMode} setPrivacyMode={setPrivacyMode} userName={userName} isAdmin={isAdmin}/>}
           {tab==="focus"     &&<TabFocus      state={state} dispatch={dispatch}/>}
           {tab==="habits"    &&<TabHabits     state={state} dispatch={dispatch}/>}
           {tab==="goals"     &&<TabGoals      state={state} dispatch={dispatch}/>}
