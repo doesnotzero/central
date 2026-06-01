@@ -4334,6 +4334,7 @@ const ExecutiveBriefing = ({state,setTab,privacyMode})=>{
 
 const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode,userName,isAdmin})=>{
   const [revealDashboardMoney,setRevealDashboardMoney]=useState(false);
+  const [showDashboardDetails,setShowDashboardDetails]=useState(false);
   const today=todayStr(),lv=getLevel(state.xp);
   const habitsToday=state.habits.filter(h=>h.completedDates?.includes(today)).length;
   const avgGoal=state.goals.length?Math.round(state.goals.reduce((a,g)=>a+g.progress,0)/state.goals.length):0;
@@ -4468,12 +4469,17 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
               </button>)}
             </div>
           </Card>}
-          <PlanGate state={state} isAdmin={isAdmin} required="pro" setTab={setTab} title="Camada Pro" text="Benchmarks, automações e IA entram aqui."/>
         </aside>
-      </div>
+	      </div>
 
-      {focusPriorities.length>0&&(
-        <Card style={{padding:"14px 18px",background:"rgba(139,92,246,.07)",borderColor:"rgba(139,92,246,.2)",cursor:"pointer"}} onClick={()=>setTab("focus")}>
+	      <div style={{display:"flex",justifyContent:"center"}}>
+	        <button onClick={()=>setShowDashboardDetails(v=>!v)} className="elite-secondary" style={{minHeight:38,padding:"0 14px"}}>
+	          {showDashboardDetails?"Ocultar detalhes":"Ver detalhes do dia"}
+	        </button>
+	      </div>
+
+	      {showDashboardDetails&&focusPriorities.length>0&&(
+	        <Card style={{padding:"14px 18px",background:"rgba(139,92,246,.07)",borderColor:"rgba(139,92,246,.2)",cursor:"pointer"}} onClick={()=>setTab("focus")}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <span style={{fontSize:11,color:"#8b5cf6",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase"}}>🧠 FOCO DO DIA</span>
             <Tag color="#8b5cf6">{focusDone}/{focusPriorities.length}</Tag>
@@ -4483,8 +4489,8 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
         </Card>
       )}
 
-      <div className="summary-strip">
-        {[
+	      {showDashboardDetails&&<div className="summary-strip">
+	        {[
           {v:`${habitsToday}/${state.habits.length}`,l:"Hábitos",c:C.orange,icon:"🔥"},
           {v:pendingTasks.length,l:"Atividades",c:"#fb923c",icon:"✅"},
           {v:`${avgGoal}%`,l:"Metas",c:"#8b5cf6",icon:"🎯"},
@@ -4496,9 +4502,9 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
             <div style={{fontSize:10,color:C.muted,marginTop:2}}>{s.l}</div>
           </Card>
         ))}
-      </div>
+	      </div>}
 
-      <div className="split-layout">
+	      {showDashboardDetails&&<div className="split-layout">
         <div className="dense-list">
           {pendingTasks.length>0&&(
             <Card style={{padding:"16px 18px"}}>
@@ -4547,8 +4553,8 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
             ))}
           </Card>
         </aside>
-      </div>
-    </div>
+	      </div>}
+	    </div>
   );
 };
 
