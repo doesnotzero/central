@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ErrorBoundary } from './components/system/ErrorBoundary.jsx';
-import { useDebouncedValue } from './hooks/useDebouncedValue.js';
 import { loadAppState, saveAppState } from './services/appStateService.js';
 import { getSupabase } from './services/supabaseClient.js';
 import { isAdminSession } from './services/permissions.js';
 
 const TabVideoReview = React.lazy(() => import('./tabs/TabVideoReview.jsx'));
+const TabStudioDocs = React.lazy(() => import('./tabs/TabStudioDocs.jsx'));
+const TabFinance = React.lazy(() => import('./tabs/TabFinance.jsx'));
+const TabAnalytics = React.lazy(() => import('./tabs/TabAnalytics.jsx'));
+const CommandPalette = React.lazy(() => import('./components/CommandPalette.jsx'));
 
 // ── STORAGE ────────────────────────────────────────────────────────────
 const SK = "dcc_v5";
@@ -1087,44 +1090,7 @@ const AccessWall = ({onLogin,onPlans})=>(
   </div>
 );
 
-const GlobalSearch = ({open,onClose,state,setTab,dispatch})=>{
-  const [q,setQ]=useState("");
-  useEffect(()=>{if(open)setQ("");},[open]);
-  const debouncedQ=useDebouncedValue(q,180);
-  const term=debouncedQ.trim().toLowerCase();
-  const commands=useMemo(()=>[
-    {type:"Ação",title:"Nova tarefa rápida",meta:"Cria uma tarefa sem prazo para classificar depois",color:C.orange,run:()=>dispatch({type:"ADD_TASK",task:{title:debouncedQ.trim()||"Nova tarefa",priority:"medium",tag:"inbox",dueDate:""}})},
-    {type:"Ação",title:"Abrir CRM",meta:"Ir para clientes e pipeline comercial",color:"#10b981",run:()=>setTab("clients")},
-    {type:"Ação",title:"Novo projeto",meta:"Ir para produção audiovisual",color:"#8b5cf6",run:()=>setTab("projects")},
-    {type:"Ação",title:"Agenda inteligente",meta:"Ver próximos prazos e compromissos",color:"#3b82f6",run:()=>setTab("agenda")},
-    {type:"Ação",title:"Templates",meta:"Aplicar modelos prontos",color:"#eab308",run:()=>setTab("templates")},
-    {type:"Ação",title:"Ver planos",meta:"Solo, Pro, Studio e White Label",color:"#10b981",run:()=>setTab("plans")},
-    {type:"Ação",title:"Configurar negócio",meta:"Marca, WhatsApp, ticket médio e dados de proposta",color:"#f97316",run:()=>setTab("business")},
-    {type:"Ação",title:"Criar proposta",meta:"Montar proposta e salvar no CRM",color:"#3b82f6",run:()=>setTab("proposta")},
-  ].filter(i=>!term||`${i.title} ${i.meta}`.toLowerCase().includes(term)).slice(0,5),[term,debouncedQ,dispatch,setTab]);
-  const items=useMemo(()=>[
-    ...state.tasks.map(t=>({type:"Tarefa",tab:"tasks",title:t.title,meta:[t.tag,t.dueDate,t.completed?"concluída":"pendente"].filter(Boolean).join(" · "),color:t.completed?"#6b7280":C.orange})),
-    ...state.goals.map(g=>({type:"Meta",tab:"goals",title:g.title,meta:`${g.progress}% · ${g.level}`,color:"#8b5cf6"})),
-    ...(state.clients||[]).map(c=>({type:"Cliente",tab:"clients",title:c.name,meta:[c.service,c.status,c.payment,c.leadTemp,c.nextAction].filter(Boolean).join(" · "),color:STATUS_COLORS[c.status]||"#10b981"})),
-    ...(state.clients||[]).flatMap(c=>(c.videos||[]).map(v=>({type:"Projeto",tab:"projects",title:v.title,meta:[c.name,v.type,v.status,v.deadline].filter(Boolean).join(" · "),color:VIDEO_COLORS[v.status]||"#8b5cf6"}))),
-    ...state.notes.map(n=>({type:"Nota",tab:"notes",title:n.title||n.body?.substring(0,42)||"Nota",meta:n.tag,color:"#eab308"})),
-  ].filter(i=>!term||`${i.type} ${i.title} ${i.meta}`.toLowerCase().includes(term)).slice(0,18),[state,term]);
-  return (
-    <Modal open={open} onClose={onClose} title="Busca Global" wide>
-      <input autoFocus aria-label="Buscar no sistema" value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar ou digitar uma ação..." style={{width:"100%",background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:"#fff",fontSize:14,outline:"none",fontFamily:"inherit",marginBottom:14}}/>
-      {commands.length>0&&<><SectionTitle>COMANDOS RÁPIDOS</SectionTitle><div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8,marginBottom:14}}>{commands.map((i,idx)=><button key={idx} onClick={()=>{i.run();onClose();}} style={{display:"flex",alignItems:"center",gap:10,textAlign:"left",padding:"11px 12px",borderRadius:12,border:`1px solid ${i.color}35`,background:`${i.color}10`,cursor:"pointer",fontFamily:"inherit"}}><Tag color={i.color}>{i.type}</Tag><span style={{minWidth:0}}><span style={{display:"block",fontSize:12,fontWeight:900,color:"#eee"}}>{i.title}</span><span style={{display:"block",fontSize:10,color:C.muted,marginTop:2}}>{i.meta}</span></span></button>)}</div></>}
-      {items.length===0&&commands.length===0&&<div style={{fontSize:13,color:C.muted,textAlign:"center",padding:"18px 0"}}>Nada encontrado.</div>}
-      <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:420,overflowY:"auto"}}>
-        {items.map((i,idx)=>(
-          <button key={idx} onClick={()=>{setTab(i.tab);onClose();}} style={{display:"flex",alignItems:"center",gap:12,textAlign:"left",padding:"12px 14px",borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)",cursor:"pointer",fontFamily:"inherit"}}>
-            <Tag color={i.color}>{i.type}</Tag>
-            <span style={{flex:1,minWidth:0}}><span className={["Cliente","Projeto","Nota"].includes(i.type)?"private-data":""} style={{display:"block",fontSize:13,fontWeight:800,color:"#eee",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{i.title}</span><span className={["Cliente","Projeto","Nota"].includes(i.type)?"private-data":""} style={{display:"block",fontSize:11,color:C.muted,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{i.meta||"Sem detalhes"}</span></span>
-          </button>
-        ))}
-      </div>
-    </Modal>
-  );
-};
+
 
 // ── NOTIFICATIONS BANNER ───────────────────────────────────────────────
 const NotificationsBanner = ({state,setTab})=>{
@@ -2840,234 +2806,7 @@ const TabProjects = ({state,dispatch})=>{
   );
 };
 
-// ── TAB: STUDIO DE DOCUMENTOS ─────────────────────────────────────────
-const TabStudioDocs = ({state,dispatch})=>{
-  const business=normalizeBusiness(state.business);
-  const clients=state.clients||[];
-  const projects=clients.flatMap(c=>(c.videos||[]).map(v=>({client:c,video:v,key:`${c.id}:${v.id}`})));
-  const [form,setForm]=useState({
-    docType:"callsheet",
-    presetId:"institucional",
-    clientId:"",
-    projectKey:"",
-    title:"Documento de produção",
-    clientName:"",
-    objective:"",
-    audience:"",
-    location:"",
-    shootDate:"",
-    deadline:addDaysInput(14),
-    format:"16:9",
-    duration:"60-120s",
-    budget:"",
-    reference:"",
-    scope:"",
-    crew:"",
-    equipment:"",
-    risks:"",
-    notes:"",
-    brandMessage:"",toneOfVoice:"",approvalCriteria:"",mandatoryPoints:"",logline:"",hook:"",cta:"",scenes:"",voiceover:"",callTime:"",wrapTime:"",producerContact:"",scheduleRows:"",talent:"",sceneCount:"",lenses:"",cameraMovement:"",audioPlan:"",shotList:"",coverageNotes:"",crewCost:"",equipmentCost:"",postCost:"",paymentTerms:"",assumptions:"",startDate:"",firstCutDate:"",approvalRounds:"",buffer:"",milestones:"",dependencies:"",productionType:"",cameraPackage:"",audioPackage:"",lightPackage:"",dataWorkflow:"",preflight:"",wrapChecklist:"",deliveryLinks:"",formats:"",versions:"",storagePolicy:"",acceptanceCriteria:"",deliveryNotes:""
-  });
-  const [generating,setGenerating]=useState(false);
-  const selectedDoc=studioDocById(form.docType);
-  const activeDocConfig=docConfig(form.docType);
-  const selectedClient=clients.find(c=>String(c.id)===String(form.clientId));
-  const selectedProject=projects.find(p=>p.key===form.projectKey);
-  const selectedPreset=presetById(form.presetId);
-  const html=studioDocTemplates({form,business,client:selectedClient,project:selectedProject});
-  const update=(key,value)=>setForm(f=>({...f,[key]:value}));
-  const applyDocType=d=>setForm(f=>({...f,docType:d.id,title:f.title==="Documento de produção"?`${d.label} · ${presetById(f.presetId).title}`:f.title}));
-  const applyPreset=p=>{
-    const brief=presetBriefing(p);
-    setForm(f=>({
-      ...f,
-      presetId:p.id,
-      title:f.title==="Documento de produção"||f.title.includes(" · ")?`${studioDocById(f.docType).label} · ${p.title}`:f.title,
-      format:brief.format,
-      duration:brief.duration,
-      objective:f.objective||brief.objective,
-      scope:presetDeliverables(p).map(x=>x.text).join("\n"),
-      budget:f.budget||p.value
-    }));
-  };
-  const loadClient=id=>{
-    const c=clients.find(x=>String(x.id)===String(id));
-    setForm(f=>({...f,clientId:id,clientName:c?.name||"",projectKey:"",budget:c?.value||f.budget}));
-  };
-  const loadProject=key=>{
-    const p=projects.find(x=>x.key===key);
-    if(!p){update("projectKey","");return;}
-    const preset=presetById(p.video.presetId||p.video.type);
-    const brief={...presetBriefing(preset),...(p.video.briefing||{})};
-    setForm(f=>({
-      ...f,
-      projectKey:key,
-      clientId:String(p.client.id),
-      clientName:p.client.name,
-      presetId:preset.id,
-      title:p.video.title||`${studioDocById(f.docType).label} · ${preset.title}`,
-      objective:brief.objective||f.objective,
-      audience:brief.audience||f.audience,
-      location:brief.location||f.location,
-      shootDate:brief.shootDate||f.shootDate,
-      deadline:p.video.deadline||f.deadline,
-      format:brief.format||preset.type,
-      duration:brief.duration||f.duration,
-      budget:p.client.value||preset.value||f.budget,
-      reference:brief.reference||f.reference,
-      scope:(p.video.deliverables||presetDeliverables(preset)).map(x=>x.text||x).join("\n")
-    }));
-  };
-  const exportPDF=()=>{
-    setGenerating(true);
-    const w=window.open("","_blank");
-    if(!w){setGenerating(false);alert("Permita pop-ups para gerar o PDF.");return;}
-    w.document.write(html);w.document.close();
-    setTimeout(()=>{w.print();setGenerating(false);},800);
-  };
-  const saveDoc=()=>{
-    dispatch({type:"ADD_STUDIO_DOC",doc:{
-      title:form.title||selectedDoc.label,
-      docType:form.docType,
-      docLabel:selectedDoc.label,
-      clientId:form.clientId||null,
-      clientName:selectedClient?.name||form.clientName||"",
-      projectKey:form.projectKey||"",
-      presetId:form.presetId,
-      html,
-      form
-    }});
-    if(selectedClient)dispatch({type:"ADD_CLIENT_INTERACTION",id:selectedClient.id,interaction:{type:"documento",note:`${selectedDoc.label} salvo no Studio: ${form.title||selectedPreset.title}`},silent:true});
-    const step=PRODUCTION_PIPELINE.find(s=>s.docType===form.docType);
-    if(selectedProject&&step)dispatch({type:"UPDATE_CLIENT_VIDEO",clientId:selectedProject.client.id,videoId:selectedProject.video.id,data:{productionPipeline:{...(selectedProject.video.productionPipeline||{}),[step.key]:true}},silent:true});
-  };
-  const restoreDoc=doc=>{
-    if(doc.form)setForm({...form,...doc.form});
-  };
-  return (
-    <div className="page-stack">
-      <Card className="studio-frame-hero" style={{padding:"20px 22px"}}>
-        <div className="page-hero-row">
-          <div>
-            <div className="page-eyebrow" style={{color:C.orange}}>NEXO STUDIO</div>
-            <div className="page-title">Documentos audiovisuais prontos para PDF</div>
-            <p className="page-subtitle">Escolha o tipo de documento, use presets de produção e gere um arquivo com padrão profissional, identidade da marca e estrutura operacional.</p>
-          </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <Tag color={selectedDoc.color}>{selectedDoc.label}</Tag>
-            <Tag color="#10b981">{(state.studioDocs||[]).length} salvos</Tag>
-          </div>
-        </div>
-      </Card>
 
-      <div className="studio-doc-grid">
-        <div>
-          <Card style={{padding:"16px"}}>
-            <SectionTitle>TIPO DE DOCUMENTO</SectionTitle>
-            <div className="studio-preset-grid">
-              {STUDIO_DOCUMENTS.map(d=>(
-                <button key={d.id} onClick={()=>applyDocType(d)} className={`studio-option ${form.docType===d.id?"active":""}`} style={{"--accent":d.color}}>
-                  <div style={{fontSize:11,color:form.docType===d.id?d.color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginBottom:5}}>{d.label}</div>
-                  <div style={{fontSize:11,color:"#aaa",lineHeight:1.4}}>{d.desc}</div>
-                </button>
-              ))}
-            </div>
-          </Card>
-
-          <Card style={{padding:"16px"}}>
-            <SectionTitle>PRESET DE PRODUÇÃO</SectionTitle>
-            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-              {AUDIOVISUAL_PRESETS.map(p=>(
-                <button key={p.id} onClick={()=>applyPreset(p)} style={{padding:"7px 11px",borderRadius:2,border:"1px solid",borderColor:form.presetId===p.id?C.orange:C.border,background:form.presetId===p.id?`${C.orange}16`:"rgba(255,255,255,.03)",color:form.presetId===p.id?C.orange:C.muted,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer",textTransform:"uppercase",letterSpacing:".08em"}}>{p.label}</button>
-              ))}
-            </div>
-          </Card>
-
-          <div className="studio-form-band">
-            <SectionTitle>BASE DO DOCUMENTO</SectionTitle>
-            {(clients.length>0||projects.length>0)&&<div className="form-grid-2">
-              <div style={{marginBottom:13}}>
-                <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Cliente</div>
-                <select value={form.clientId} onChange={e=>loadClient(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,borderRadius:2,padding:"9px 12px",color:"#fff",fontFamily:"inherit"}}>
-                  <option value="">Sem cliente vinculado</option>
-                  {clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div style={{marginBottom:13}}>
-                <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Projeto</div>
-                <select value={form.projectKey} onChange={e=>loadProject(e.target.value)} style={{width:"100%",background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,borderRadius:2,padding:"9px 12px",color:"#fff",fontFamily:"inherit"}}>
-                  <option value="">Criar do zero</option>
-                  {projects.map(p=><option key={p.key} value={p.key}>{p.video.title} · {p.client.name}</option>)}
-                </select>
-              </div>
-            </div>}
-            <div className="form-grid-2">
-              <Inp label="Título" value={form.title} onChange={v=>update("title",v)} placeholder={`Ex: ${selectedDoc.label} campanha inverno`}/>
-              <Inp label="Cliente avulso" value={form.clientName} onChange={v=>update("clientName",v)} placeholder="Nome do cliente se não estiver no CRM"/>
-            </div>
-            <div style={{margin:"8px 0 14px",padding:"12px",borderRadius:2,border:`1px solid ${selectedDoc.color}33`,background:`${selectedDoc.color}0d`}}>
-              <div style={{fontSize:10,color:selectedDoc.color,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginBottom:4}}>{activeDocConfig.title}</div>
-              <div style={{fontSize:12,color:"#aaa",lineHeight:1.45}}>{activeDocConfig.tone}</div>
-            </div>
-            <div className="form-grid-2">
-              {(activeDocConfig.fields||[]).map(field=><Inp key={field.key} label={field.label} type={field.type||"text"} value={form[field.key]||""} onChange={v=>update(field.key,v)} placeholder={field.placeholder||""}/>) }
-            </div>
-            {(activeDocConfig.areas||[]).map(area=><Txt key={area.key} label={area.label} value={form[area.key]||""} onChange={v=>update(area.key,v)} placeholder={area.placeholder||""} rows={3}/>) }
-            <div style={{marginTop:6}}>
-              <SectionTitle>CAMADAS UNIVERSAIS</SectionTitle>
-            </div>
-            <div className="form-grid-2">
-              <Inp label="Locação" value={form.location} onChange={v=>update("location",v)} placeholder="Estúdio, cliente, externa..."/>
-              <Inp label="Referência" value={form.reference} onChange={v=>update("reference",v)} placeholder="Filme, link, campanha, mood"/>
-              <Inp label="Data de captação" type="date" value={form.shootDate} onChange={v=>update("shootDate",v)}/>
-              <Inp label="Prazo final" type="date" value={form.deadline} onChange={v=>update("deadline",v)}/>
-              <Inp label="Formato" value={form.format} onChange={v=>update("format",v)} placeholder="16:9, 9:16, multicam..."/>
-              <Inp label="Duração" value={form.duration} onChange={v=>update("duration",v)} placeholder="15s, 60s, 5-15min..."/>
-              <Inp label="Orçamento base (R$)" type="number" value={form.budget} onChange={v=>update("budget",v)} placeholder="0"/>
-            </div>
-            <Txt label="Escopo / entregáveis" value={form.scope} onChange={v=>update("scope",v)} placeholder="Um item por linha" rows={4}/>
-            <Txt label="Equipe específica" value={form.crew} onChange={v=>update("crew",v)} placeholder="Opcional. Se vazio, o Studio usa equipe recomendada pelo preset." rows={3}/>
-            <Txt label="Equipamentos específicos" value={form.equipment} onChange={v=>update("equipment",v)} placeholder="Opcional. Se vazio, o Studio usa o pacote técnico recomendado." rows={3}/>
-            <Txt label="Riscos / cuidados" value={form.risks} onChange={v=>update("risks",v)} placeholder="Clima, autorização, ruído, compliance, prazo..." rows={3}/>
-            <Txt label="Notas adicionais" value={form.notes} onChange={v=>update("notes",v)} placeholder="Observações que devem aparecer no documento" rows={3}/>
-            <div className="mobile-actions" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <Btn onClick={saveDoc} variant="ghost" style={{justifyContent:"center",borderRadius:2}}>Salvar histórico</Btn>
-              <Btn onClick={exportPDF} disabled={generating} style={{justifyContent:"center",borderRadius:2}}>{generating?"Gerando...":"Exportar PDF"}</Btn>
-            </div>
-          </div>
-
-          {(state.studioDocs||[]).length>0&&<Card style={{padding:"16px"}}>
-            <SectionTitle>HISTÓRICO DO STUDIO</SectionTitle>
-            <div className="studio-history-list">
-              {(state.studioDocs||[]).slice(0,8).map(doc=>(
-                <div key={doc.id} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:10,alignItems:"center",padding:"10px 12px",borderRadius:2,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.03)"}}>
-                  <button onClick={()=>restoreDoc(doc)} style={{background:"transparent",border:"none",textAlign:"left",color:"#ddd",fontFamily:"inherit",cursor:"pointer",padding:0}}>
-                    <div style={{fontSize:12,fontWeight:900,color:"#fff"}}>{doc.title}</div>
-                    <div style={{fontSize:10,color:C.muted,marginTop:3}}>{doc.docLabel} · {doc.clientName||"sem cliente"} · {new Date(doc.createdAt).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</div>
-                  </button>
-                  <div style={{display:"flex",gap:6}}>
-                    <button onClick={()=>{const w=window.open("","_blank");w.document.write(doc.html);w.document.close();setTimeout(()=>w.print(),500);}} style={{height:30,borderRadius:2,border:`1px solid ${C.orange}55`,background:`${C.orange}12`,color:C.orange,fontFamily:"inherit",fontSize:10,fontWeight:900,cursor:"pointer",padding:"0 9px"}}>PDF</button>
-                    <button onClick={()=>dispatch({type:"REMOVE_STUDIO_DOC",id:doc.id})} style={{height:30,borderRadius:2,border:"1px solid rgba(239,68,68,.35)",background:"rgba(239,68,68,.08)",color:"#ef4444",fontFamily:"inherit",fontSize:10,fontWeight:900,cursor:"pointer",padding:"0 9px"}}>Excluir</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>}
-        </div>
-
-        <aside className="studio-preview-shell">
-          <div className="studio-preview-top">
-            <span style={{fontSize:10,color:C.orange,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase"}}>Preview PDF</span>
-            <span style={{fontSize:10,color:C.muted,fontWeight:900}}>{selectedPreset.label}</span>
-          </div>
-          <div className="studio-preview" style={{padding:0}}>
-            <iframe title="Preview do documento" srcDoc={html} style={{width:"100%",height:"100%",border:"none",background:"#f7f4ee"}}/>
-          </div>
-        </aside>
-      </div>
-    </div>
-  );
-};
 
 // ── TAB: NOTAS ─────────────────────────────────────────────────────────
 const TabNotes = ({state,dispatch})=>{
@@ -3171,176 +2910,9 @@ const TabReview = ({state,dispatch})=>{
   );
 };
 
-// ── TAB: ANALYTICS ─────────────────────────────────────────────────────
-const TabAnalytics = ({state,privacyMode})=>{
-  const today=todayStr(),lv=getLevel(state.xp);
-  const todayDone=state.habits.filter(h=>h.completedDates?.includes(today)).length;
-  const avgStreak=state.habits.length?Math.round(state.habits.reduce((a,h)=>a+h.streak,0)/state.habits.length):0;
-  const avgGoal=state.goals.length?Math.round(state.goals.reduce((a,g)=>a+g.progress,0)/state.goals.length):0;
-  const totalRev=(state.clients||[]).reduce((a,c)=>a+Number(c.value||0),0);
-  const paidRev=(state.clients||[]).filter(c=>c.payment==="pago").reduce((a,c)=>a+Number(c.value||0),0);
-  const pendingTasks=state.tasks.filter(t=>!t.completed).length;
-  const overdue=(state.clients||[]).filter(c=>c.payment==="atrasado").length;
-  const pendingVideos=(state.clients||[]).reduce((a,c)=>(c.videos||[]).filter(v=>v.status!=="entregue").length+a,0);
-  const pipelineStats=["prospecto","ativo","pausado","concluido"].map(k=>({key:k,count:(state.clients||[]).filter(c=>c.status===k).length,color:STATUS_COLORS[k]||C.orange}));
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <Card style={{background:"rgba(59,130,246,.06)",borderColor:"rgba(59,130,246,.2)",padding:"18px 20px"}}>
-        <div style={{fontSize:11,color:"#3b82f6",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",marginBottom:6}}>ANALYTICS OPERACIONAL</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}} className="mobile-kpi-grid">
-          {[
-            {v:pendingTasks,l:"Atividades abertas",c:"#eab308"},
-            {v:pendingVideos,l:"Vídeos em produção",c:"#8b5cf6"},
-            {v:overdue,l:"Pagamentos atrasados",c:"#ef4444"},
-          ].map((s,i)=><div key={i} style={{background:"rgba(255,255,255,.035)",border:`1px solid ${C.border}`,borderRadius:12,padding:"12px",textAlign:"center"}}><div style={{fontSize:22,fontWeight:800,color:s.c,fontFamily:"'Syne',sans-serif"}}>{s.v}</div><div style={{fontSize:10,color:C.muted,marginTop:3}}>{s.l}</div></div>)}
-        </div>
-      </Card>
-      <Card style={{background:`${lv.color}08`,borderColor:`${lv.color}20`,padding:"16px 20px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div><span style={{fontSize:11,color:C.muted,fontWeight:700,textTransform:"uppercase"}}>Nível: </span><span style={{fontSize:15,fontWeight:800,color:lv.color,fontFamily:"'Syne',sans-serif"}}>{lv.name}</span></div>
-          <span style={{fontSize:22,fontWeight:800,color:C.orange,fontFamily:"'Syne',sans-serif"}}>{state.xp} XP</span>
-        </div>
-        {xpToNext(state.xp)&&<Bar v={xpToNext(state.xp).pct} color={lv.color} h={7}/>}
-      </Card>
-      <Card><div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}}>HÁBITOS — SEMANA ATUAL</div><WeekChart habits={state.habits}/></Card>
-      {(state.clients||[]).length>0&&<Card><div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}}>RECEITA — ÚLTIMOS 6 MESES</div><RevenueChart clients={state.clients} privacyMode={privacyMode}/></Card>}
-      {(state.clients||[]).length>0&&(
-        <Card>
-          <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}}>PIPELINE COMERCIAL</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}} className="mobile-kpi-grid">
-            {pipelineStats.map(p=><div key={p.key} style={{textAlign:"center",padding:"12px 8px",borderRadius:12,background:`${p.color}0c`,border:`1px solid ${p.color}25`}}><div style={{fontSize:22,fontWeight:800,color:p.color,fontFamily:"'Syne',sans-serif"}}>{p.count}</div><div style={{fontSize:10,color:C.muted,marginTop:3,textTransform:"capitalize"}}>{p.key}</div></div>)}
-          </div>
-        </Card>
-      )}
-      <div className="mobile-two-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {[
-          {v:`${todayDone}/${state.habits.length}`,l:"Hábitos hoje",c:C.orange},
-          {v:avgStreak,l:"Streak médio",c:"#fb923c"},
-          {v:`${avgGoal}%`,l:"Progresso metas",c:"#8b5cf6"},
-          {v:state.xp,l:"XP Total",c:lv.color},
-          {v:fmtMoney(paidRev,privacyMode),l:"Receita recebida",c:"#10b981"},
-          {v:fmtMoney(totalRev-paidRev,privacyMode),l:"A receber",c:"#eab308"},
-        ].map((s,i)=><Card key={i} style={{padding:"14px",textAlign:"center"}}><div style={{fontSize:i>3?12:22,fontWeight:800,color:s.c,fontFamily:"'Syne',sans-serif"}}>{s.v}</div><div style={{fontSize:11,color:C.muted,marginTop:3}}>{s.l}</div></Card>)}
-      </div>
-      <Card>
-        <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}}>PROGRESSO DAS METAS</div>
-        {state.goals.map(g=>(
-          <div key={g.id} style={{marginBottom:12}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:12,color:"#ccc",flex:1,paddingRight:8}}>{g.title.substring(0,38)}{g.title.length>38?"...":""}</span><span style={{fontSize:12,fontWeight:700,color:C.orange}}>{g.progress}%</span></div>
-            <Bar v={g.progress} h={5}/>
-          </div>
-        ))}
-      </Card>
-      <Card>
-        <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:12}}>CONQUISTAS</div>
-        <div style={{fontSize:24,fontWeight:800,color:C.orange,fontFamily:"'Syne',sans-serif"}}>{(state.unlockedBadges||[]).length}<span style={{fontSize:13,color:C.muted,fontWeight:400}}> / {BADGES.length}</span></div>
-        <Bar v={Math.round((state.unlockedBadges||[]).length/BADGES.length*100)} h={6} color="#eab308"/>
-      </Card>
-    </div>
-  );
-};
 
-// ── TAB: FINANCEIRO ────────────────────────────────────────────────────
-const TabFinance = ({state,dispatch,privacyMode})=>{
-  const clients=state.clients||[];
-  const entries=state.financeEntries||[];
-  const [showAdd,setShowAdd]=useState(false);
-  const [filter,setFilter]=useState("all");
-  const FE={type:"entrada",title:"",value:"",status:"pago",category:"serviço",date:inputDate(),clientId:"",notes:""};
-  const [form,setForm]=useState(FE);
-  const total=clients.reduce((a,c)=>a+Number(c.value||0),0);
-  const contractEntries=clients.map(c=>({id:`client-${c.id}`,source:"client",type:"entrada",title:c.name,value:Number(c.value||0),status:c.payment||"pendente",category:c.service||"Contrato",date:c.contract||c.nextMeeting||todayStr(),clientId:c.id,clientName:c.name}));
-  const ledger=[...entries.map(e=>({...e,source:"manual",clientName:clients.find(c=>String(c.id)===String(e.clientId))?.name})),...contractEntries].filter(e=>Number(e.value||0)>0);
-  const paid=ledger.filter(e=>e.type==="entrada"&&e.status==="pago").reduce((a,e)=>a+Number(e.value||0),0);
-  const expensesPaid=ledger.filter(e=>e.type==="despesa"&&e.status==="pago").reduce((a,e)=>a+Number(e.value||0),0);
-  const overdue=ledger.filter(e=>e.status==="atrasado").reduce((a,e)=>a+Number(e.value||0),0);
-  const receivable=ledger.filter(e=>e.type==="entrada"&&e.status!=="pago").reduce((a,e)=>a+Number(e.value||0),0);
-  const payable=ledger.filter(e=>e.type==="despesa"&&e.status!=="pago").reduce((a,e)=>a+Number(e.value||0),0);
-  const profit=paid-expensesPaid;
-  const weighted=clients.reduce((a,c)=>a+Math.round(Number(c.value||0)*Number(c.probability??50)/100),0);
-  const avgTicket=clients.length?Math.round(total/clients.length):0;
-  const categoryMap=ledger.reduce((m,e)=>{const k=e.category||"Sem categoria";m[k]=(m[k]||0)+Number(e.value||0)*(e.type==="despesa"?-1:1);return m;},{});
-  const topServices=Object.entries(categoryMap).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,5);
-  const topClients=[...clients].sort((a,b)=>Number(b.value||0)-Number(a.value||0)).slice(0,5);
-  const now=new Date();
-  const forecastMonths=Array.from({length:4},(_,i)=>{
-    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
-    const value=ledger.filter(e=>{
-      const base=e.date;
-      if(!base)return i===0&&e.status!=="pago";
-      const bd=parseDateOnly(base);
-      return bd.getMonth()===d.getMonth()&&bd.getFullYear()===d.getFullYear();
-    }).reduce((a,e)=>a+Number(e.value||0)*(e.type==="despesa"?-1:1),0);
-    return {label:MONTHS[d.getMonth()].slice(0,3),value};
-  });
-  const maxForecast=Math.max(...forecastMonths.map(m=>Math.abs(m.value)),1);
-  const filtered=ledger.filter(e=>filter==="all"||e.type===filter||e.status===filter).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  const save=()=>{if(!form.title||!form.value)return;dispatch({type:"ADD_FINANCE_ENTRY",entry:{...form,value:Number(form.value)}});setForm(FE);setShowAdd(false);};
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <Card style={{background:"rgba(16,185,129,.06)",borderColor:"rgba(16,185,129,.22)",padding:"18px 20px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",flexWrap:"wrap"}}>
-          <div><div style={{fontSize:11,color:"#10b981",fontWeight:800,letterSpacing:".12em",textTransform:"uppercase",marginBottom:6}}>FINANCEIRO</div>
-          <p style={{margin:0,fontSize:13,color:"#aaa",lineHeight:1.5}}>Fluxo de caixa com contratos, lançamentos manuais, despesas e lucro.</p></div>
-          <Btn onClick={()=>setShowAdd(true)} size="sm">Novo lançamento</Btn>
-        </div>
-      </Card>
-      <div className="mobile-kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
-        {[
-          {v:fmtMoney(paid,privacyMode),l:"Recebido",c:"#10b981"},
-          {v:fmtMoney(receivable,privacyMode),l:"A receber",c:"#eab308"},
-          {v:fmtMoney(expensesPaid,privacyMode),l:"Despesas",c:"#ef4444"},
-          {v:fmtMoney(profit,privacyMode),l:"Lucro",c:profit>=0?"#3b82f6":"#ef4444"},
-        ].map((k,i)=><Card key={i} style={{padding:"14px",textAlign:"center"}}><div style={{fontSize:12,fontWeight:900,color:k.c,fontFamily:"'Syne',sans-serif"}}>{k.v}</div><div style={{fontSize:10,color:C.muted,marginTop:4}}>{k.l}</div></Card>)}
-      </div>
-      <div className="mobile-two-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        <Card style={{padding:"16px",textAlign:"center"}}><div style={{fontSize:22,fontWeight:900,color:C.orange,fontFamily:"'Syne',sans-serif"}}>{fmtMoney(avgTicket,privacyMode)}</div><div style={{fontSize:11,color:C.muted,marginTop:4}}>Ticket médio</div></Card>
-        <Card style={{padding:"16px",textAlign:"center"}}><div style={{fontSize:22,fontWeight:900,color:"#8b5cf6",fontFamily:"'Syne',sans-serif"}}>{fmtMoney(payable+overdue,privacyMode)}</div><div style={{fontSize:11,color:C.muted,marginTop:4}}>Compromissos</div></Card>
-      </div>
-      <Card>
-        <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}}>PREVISÃO POR MÊS</div>
-        <div style={{display:"flex",alignItems:"flex-end",gap:10,height:110}}>
-          {forecastMonths.map(m=><div key={m.label} style={{flex:1,textAlign:"center"}}><div style={{height:`${Math.max(8,Math.abs(m.value)/maxForecast*76)}px`,background:m.value>=0?"#3b82f6":"#ef4444",borderRadius:"6px 6px 0 0",boxShadow:"0 0 12px rgba(59,130,246,.25)"}}/><div style={{fontSize:10,color:C.muted,marginTop:6}}>{m.label}</div><div style={{fontSize:10,color:m.value>=0?"#3b82f6":"#ef4444",fontWeight:800}}>{privacyMode?"••••":fmtCurrency(m.value).replace("R$ ","")}</div></div>)}
-        </div>
-      </Card>
-      <Card>
-        <SectionTitle action={<div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{["all","entrada","despesa","pendente","atrasado"].map(f=><button key={f} onClick={()=>setFilter(f)} style={{padding:"5px 10px",borderRadius:8,border:`1px solid ${filter===f?C.orange:C.border}`,background:filter===f?`${C.orange}14`:"transparent",color:filter===f?C.orange:C.muted,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{f==="all"?"todos":f}</button>)}</div>}>LANÇAMENTOS</SectionTitle>
-        {filtered.length===0&&<div style={{fontSize:13,color:C.muted,textAlign:"center",padding:"12px 0"}}>Nenhum lançamento nesse filtro.</div>}
-        {filtered.slice(0,12).map(e=><div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
-          <div style={{minWidth:0}}><div className="private-data" style={{fontSize:13,color:"#eee",fontWeight:800,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{e.title}</div><div className={e.clientName?"private-data":""} style={{fontSize:11,color:C.muted,marginTop:2}}>{e.category} {e.clientName?`· ${e.clientName}`:""} · {e.date||"sem data"}</div></div>
-          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}><Tag color={e.type==="despesa"?"#ef4444":"#10b981"}>{e.type}</Tag><Tag color={PAG_COLORS[e.status]||C.orange}>{e.status}</Tag><span style={{fontSize:12,color:e.type==="despesa"?"#ef4444":"#10b981",fontWeight:900}}>{e.type==="despesa"?"-":"+"}{fmtMoney(e.value,privacyMode)}</span>{e.source==="manual"&&<button onClick={()=>dispatch({type:"REMOVE_FINANCE_ENTRY",id:e.id})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:15}}>×</button>}</div>
-        </div>)}
-      </Card>
-      <div className="mobile-two-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        <Card>
-          <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:12}}>CATEGORIAS</div>
-          {topServices.length===0&&<div style={{fontSize:13,color:C.muted}}>Sem dados ainda.</div>}
-          {topServices.map(([name,value])=><div key={name} style={{display:"flex",justifyContent:"space-between",gap:10,marginBottom:10}}><span style={{fontSize:12,color:"#ccc"}}>{name}</span><span style={{fontSize:12,color:value>=0?"#10b981":"#ef4444",fontWeight:800}}>{fmtMoney(value,privacyMode)}</span></div>)}
-        </Card>
-        <Card>
-          <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:12}}>CLIENTES MAIS VALIOSOS</div>
-          {topClients.length===0&&<div style={{fontSize:13,color:C.muted}}>Sem dados ainda.</div>}
-          {topClients.map(c=><div key={c.id} style={{display:"flex",justifyContent:"space-between",gap:10,marginBottom:10}}><span className="private-data" style={{fontSize:12,color:"#ccc"}}>{c.name}</span><span style={{fontSize:12,color:"#10b981",fontWeight:800}}>{fmtMoney(c.value,privacyMode)}</span></div>)}
-        </Card>
-      </div>
-      <Modal open={showAdd} onClose={()=>setShowAdd(false)} title="Novo lançamento" wide>
-        <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 14px"}}>
-          <Inp label="Título" value={form.title} onChange={v=>setForm(f=>({...f,title:v}))} placeholder="Ex: Equipamento, sinal cliente..."/>
-          <Inp label="Valor (R$)" value={form.value} onChange={v=>setForm(f=>({...f,value:v}))} type="number" placeholder="0"/>
-          <Inp label="Categoria" value={form.category} onChange={v=>setForm(f=>({...f,category:v}))} placeholder="serviço, equipe, tráfego..."/>
-          <Inp label="Data" value={form.date} onChange={v=>setForm(f=>({...f,date:v}))} type="date"/>
-        </div>
-        <div className="modal-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"0 14px"}}>
-          <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Tipo</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{["entrada","despesa"].map(t=><button key={t} onClick={()=>setForm(f=>({...f,type:t}))} style={{padding:"6px 12px",borderRadius:8,border:"1px solid",borderColor:form.type===t?(t==="entrada"?"#10b981":"#ef4444"):C.border,background:form.type===t?`${t==="entrada"?"#10b981":"#ef4444"}15`:"transparent",color:form.type===t?(t==="entrada"?"#10b981":"#ef4444"):C.muted,fontSize:11,fontWeight:800,cursor:"pointer"}}>{t}</button>)}</div></div>
-          <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Status</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(PAG_COLORS).map(([k,c])=><button key={k} onClick={()=>setForm(f=>({...f,status:k}))} style={{padding:"6px 12px",borderRadius:8,border:"1px solid",borderColor:form.status===k?c:C.border,background:form.status===k?`${c}15`:"transparent",color:form.status===k?c:C.muted,fontSize:11,fontWeight:800,cursor:"pointer"}}>{k}</button>)}</div></div>
-          <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Cliente</div><select value={form.clientId} onChange={e=>setForm(f=>({...f,clientId:e.target.value}))} style={{width:"100%",background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 13px",color:"#fff",fontSize:14,outline:"none"}}><option value="">Sem vínculo</option>{clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-        </div>
-        <Txt label="Notas" value={form.notes} onChange={v=>setForm(f=>({...f,notes:v}))} rows={2}/>
-        <Btn onClick={save} disabled={!form.title||!form.value} style={{width:"100%",justifyContent:"center"}}>Salvar lançamento</Btn>
-      </Modal>
-    </div>
-  );
-};
+
+
 
 // ── TAB: EXPORTAR PDF ──────────────────────────────────────────────────
 const TabExport = ({state,dispatch})=>{
@@ -4566,6 +4138,13 @@ function App(){
     }
   };
   const unlockApp=()=>{setLocked(false);notify("Tela desbloqueada.","info",false);};
+  const lazyTabShared=useMemo(()=>({
+    C,Card,Tag,Btn,SectionTitle,Inp,Txt,Modal,Bar,WeekChart,RevenueChart,
+    normalizeBusiness,addDaysInput,studioDocById,docConfig,presetById,studioDocTemplates,
+    presetBriefing,presetDeliverables,PRODUCTION_PIPELINE,AUDIOVISUAL_PRESETS,STUDIO_DOCUMENTS,
+    getLevel,xpToNext,todayStr,inputDate,parseDateOnly,fmtMoney,fmtCurrency,
+    STATUS_COLORS,VIDEO_COLORS,BADGES,MONTHS,PAG_COLORS
+  }),[]);
   const Brand=()=>(
     <div style={{display:"flex",alignItems:"center",gap:10}}>
       <div style={{width:34,height:34,borderRadius:11,background:business.logoUrl?"rgba(255,255,255,.06)":`linear-gradient(135deg,${business.primaryColor||C.orange},${C.orangeD})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#111",boxShadow:`0 8px 24px ${(business.primaryColor||C.orange)}45`,overflow:"hidden"}}><LogoMark business={business} size={34} textColor={business.logoUrl?undefined:"#111"}/></div>
@@ -4690,7 +4269,11 @@ function App(){
           <button className="float-action secondary" onClick={()=>goTab("studio")}>PDF</button>
         </div>
       )}
-      <GlobalSearch open={searchOpen} onClose={()=>setSearchOpen(false)} state={state} setTab={goTab} dispatch={dispatch}/>
+      {searchOpen&&(
+        <React.Suspense fallback={null}>
+          <CommandPalette open={searchOpen} onClose={()=>setSearchOpen(false)} state={state} setTab={goTab} dispatch={dispatch} shared={lazyTabShared}/>
+        </React.Suspense>
+      )}
       <BusinessOnboarding open={businessOnboardingOpen} business={business} dispatch={dispatch} onClose={()=>setBusinessOnboardingOpen(false)}/>
       {session?.user&&!hasFullAccess&&(!salesDismissed||trialRemaining<=0)&&<SalesTrialNotice session={session} userName={userName} remaining={trialRemaining} onClose={()=>setSalesDismissed(true)} onAbout={()=>{setTab("about");setSalesDismissed(true);}}/>}
       {!onboardingDismissed&&session?.user&&<OnboardingGuide session={session} state={state} setTab={goTab} onDone={()=>{localStorage.setItem(onboardingKey(session),"done");setOnboardingDismissed(true);}}/>}
@@ -4740,15 +4323,27 @@ function App(){
               <TabVideoReview state={state} dispatch={dispatch}/>
             </React.Suspense>
           )}
-          {tab==="studio"    &&<TabStudioDocs state={state} dispatch={dispatch}/>}
-          {tab==="finance"   &&<TabFinance    state={state} dispatch={dispatch} privacyMode={privacyMode}/>}
+          {tab==="studio"    &&(
+            <React.Suspense fallback={<LazyTabFallback label="Carregando Studio Docs..." />}>
+              <TabStudioDocs state={state} dispatch={dispatch} shared={lazyTabShared}/>
+            </React.Suspense>
+          )}
+          {tab==="finance"   &&(
+            <React.Suspense fallback={<LazyTabFallback label="Carregando Financeiro..." />}>
+              <TabFinance state={state} dispatch={dispatch} privacyMode={privacyMode} shared={lazyTabShared}/>
+            </React.Suspense>
+          )}
           {tab==="proposta"  &&<TabProposta state={state} dispatch={dispatch}/>}
           {tab==="plans"     &&<TabPlans state={state} dispatch={dispatch} isAdmin={isAdmin} setTab={goTab}/>}
           {tab==="templates" &&<TabTemplates  state={state} dispatch={dispatch} setTab={goTab} isAdmin={isAdmin}/>}
           {tab==="business"  &&<TabBusinessSettings state={state} dispatch={dispatch}/>}
           {tab==="notes"     &&<TabNotes      state={state} dispatch={dispatch}/>}
           {tab==="pomodoro"  &&<Pomodoro      settings={state.pomodoroSettings}/>}
-          {tab==="analytics" &&<TabAnalytics  state={state} privacyMode={privacyMode}/>}
+          {tab==="analytics" &&(
+            <React.Suspense fallback={<LazyTabFallback label="Carregando Analytics..." />}>
+              <TabAnalytics state={state} privacyMode={privacyMode} shared={lazyTabShared}/>
+            </React.Suspense>
+          )}
           {tab==="review"    &&<TabReview     state={state} dispatch={dispatch}/>}
           {tab==="mission"   &&<TabMission    state={state} dispatch={dispatch}/>}
           {tab==="export"    &&<TabExport     state={state} dispatch={dispatch}/>}

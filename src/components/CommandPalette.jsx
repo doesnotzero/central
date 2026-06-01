@@ -1,0 +1,42 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
+
+export default function CommandPalette({open,onClose,state,setTab,dispatch,shared}){
+  const {C,Modal,Tag,SectionTitle,STATUS_COLORS,VIDEO_COLORS} = shared;
+  const [q,setQ]=useState("");
+  useEffect(()=>{if(open)setQ("");},[open]);
+  const debouncedQ=useDebouncedValue(q,180);
+  const term=debouncedQ.trim().toLowerCase();
+  const commands=useMemo(()=>[
+    {type:"Ação",title:"Nova tarefa rápida",meta:"Cria uma tarefa sem prazo para classificar depois",color:C.orange,run:()=>dispatch({type:"ADD_TASK",task:{title:debouncedQ.trim()||"Nova tarefa",priority:"medium",tag:"inbox",dueDate:""}})},
+    {type:"Ação",title:"Abrir CRM",meta:"Ir para clientes e pipeline comercial",color:"#10b981",run:()=>setTab("clients")},
+    {type:"Ação",title:"Novo projeto",meta:"Ir para produção audiovisual",color:"#8b5cf6",run:()=>setTab("projects")},
+    {type:"Ação",title:"Agenda inteligente",meta:"Ver próximos prazos e compromissos",color:"#3b82f6",run:()=>setTab("agenda")},
+    {type:"Ação",title:"Templates",meta:"Aplicar modelos prontos",color:"#eab308",run:()=>setTab("templates")},
+    {type:"Ação",title:"Ver planos",meta:"Solo, Pro, Studio e White Label",color:"#10b981",run:()=>setTab("plans")},
+    {type:"Ação",title:"Configurar negócio",meta:"Marca, WhatsApp, ticket médio e dados de proposta",color:"#f97316",run:()=>setTab("business")},
+    {type:"Ação",title:"Criar proposta",meta:"Montar proposta e salvar no CRM",color:"#3b82f6",run:()=>setTab("proposta")},
+  ].filter(i=>!term||`${i.title} ${i.meta}`.toLowerCase().includes(term)).slice(0,5),[term,debouncedQ,dispatch,setTab]);
+  const items=useMemo(()=>[
+    ...state.tasks.map(t=>({type:"Tarefa",tab:"tasks",title:t.title,meta:[t.tag,t.dueDate,t.completed?"concluída":"pendente"].filter(Boolean).join(" · "),color:t.completed?"#6b7280":C.orange})),
+    ...state.goals.map(g=>({type:"Meta",tab:"goals",title:g.title,meta:`${g.progress}% · ${g.level}`,color:"#8b5cf6"})),
+    ...(state.clients||[]).map(c=>({type:"Cliente",tab:"clients",title:c.name,meta:[c.service,c.status,c.payment,c.leadTemp,c.nextAction].filter(Boolean).join(" · "),color:STATUS_COLORS[c.status]||"#10b981"})),
+    ...(state.clients||[]).flatMap(c=>(c.videos||[]).map(v=>({type:"Projeto",tab:"projects",title:v.title,meta:[c.name,v.type,v.status,v.deadline].filter(Boolean).join(" · "),color:VIDEO_COLORS[v.status]||"#8b5cf6"}))),
+    ...state.notes.map(n=>({type:"Nota",tab:"notes",title:n.title||n.body?.substring(0,42)||"Nota",meta:n.tag,color:"#eab308"})),
+  ].filter(i=>!term||`${i.type} ${i.title} ${i.meta}`.toLowerCase().includes(term)).slice(0,18),[state,term]);
+  return (
+    <Modal open={open} onClose={onClose} title="Busca Global" wide>
+      <input autoFocus aria-label="Buscar no sistema" value={q} onChange={e=>setQ(e.target.value)} placeholder="Buscar ou digitar uma ação..." style={{width:"100%",background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,borderRadius:12,padding:"12px 14px",color:"#fff",fontSize:14,outline:"none",fontFamily:"inherit",marginBottom:14}}/>
+      {commands.length>0&&<><SectionTitle>COMANDOS RÁPIDOS</SectionTitle><div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8,marginBottom:14}}>{commands.map((i,idx)=><button key={idx} onClick={()=>{i.run();onClose();}} style={{display:"flex",alignItems:"center",gap:10,textAlign:"left",padding:"11px 12px",borderRadius:12,border:`1px solid ${i.color}35`,background:`${i.color}10`,cursor:"pointer",fontFamily:"inherit"}}><Tag color={i.color}>{i.type}</Tag><span style={{minWidth:0}}><span style={{display:"block",fontSize:12,fontWeight:900,color:"#eee"}}>{i.title}</span><span style={{display:"block",fontSize:10,color:C.muted,marginTop:2}}>{i.meta}</span></span></button>)}</div></>}
+      {items.length===0&&commands.length===0&&<div style={{fontSize:13,color:C.muted,textAlign:"center",padding:"18px 0"}}>Nada encontrado.</div>}
+      <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:420,overflowY:"auto"}}>
+        {items.map((i,idx)=>(
+          <button key={idx} onClick={()=>{setTab(i.tab);onClose();}} style={{display:"flex",alignItems:"center",gap:12,textAlign:"left",padding:"12px 14px",borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)",cursor:"pointer",fontFamily:"inherit"}}>
+            <Tag color={i.color}>{i.type}</Tag>
+            <span style={{flex:1,minWidth:0}}><span className={["Cliente","Projeto","Nota"].includes(i.type)?"private-data":""} style={{display:"block",fontSize:13,fontWeight:800,color:"#eee",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{i.title}</span><span className={["Cliente","Projeto","Nota"].includes(i.type)?"private-data":""} style={{display:"block",fontSize:11,color:C.muted,marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{i.meta||"Sem detalhes"}</span></span>
+          </button>
+        ))}
+      </div>
+    </Modal>
+  );
+};
