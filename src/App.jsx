@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ErrorBoundary } from './components/system/ErrorBoundary.jsx';
 import { useDebouncedValue } from './hooks/useDebouncedValue.js';
+import { drivePreviewUrl, driveViewUrl, extractDriveFileId } from './services/driveService.js';
 import { loadAppState, saveAppState } from './services/appStateService.js';
 import { getSupabase } from './services/supabaseClient.js';
 import { isAdminSession } from './services/permissions.js';
@@ -594,7 +595,7 @@ const INIT = {
     {id:2,level:"quarterly",title:"Lançar novo projeto audiovisual",     progress:60,status:"active",logs:[]},
     {id:3,level:"monthly",  title:"Criar 12 conteúdos premium",          progress:75,status:"active",logs:[]},
   ],
-  tasks:[], notes:[], clients:[], financeEntries:[], studioDocs:[], reviews:{},
+  tasks:[], notes:[], clients:[], financeEntries:[], studioDocs:[], reviews:{}, reviewDeliverables:[],
   business:DEFAULT_BUSINESS,
   subscription:DEFAULT_SUBSCRIPTION,
   scheduleBlocks:{}, focusDayPriorities:[], focusSessions:0,
@@ -644,6 +645,10 @@ function reducer(s, a) {
     case "ADD_STUDIO_DOC": return {...s,studioDocs:[{id:Date.now(),createdAt:new Date().toISOString(),...a.doc},...(s.studioDocs||[])]};
     case "REMOVE_STUDIO_DOC": return {...s,studioDocs:(s.studioDocs||[]).filter(d=>d.id!==a.id)};
     case "UPDATE_REVIEW": return {...s,reviews:{...s.reviews,[a.weekKey]:{...(s.reviews[a.weekKey]||{}),[a.field]:a.value}}};
+    case "ADD_REVIEW_DELIVERABLE": return {...s,reviewDeliverables:[{id:Date.now(),version:1,status:"waiting_review",revision_round:1,createdAt:new Date().toISOString(),comments:[],...a.deliverable},...(s.reviewDeliverables||[])]};
+    case "UPDATE_REVIEW_DELIVERABLE": return {...s,reviewDeliverables:(s.reviewDeliverables||[]).map(d=>d.id===a.id?{...d,...a.data,updatedAt:new Date().toISOString()}:d)};
+    case "REMOVE_REVIEW_DELIVERABLE": return {...s,reviewDeliverables:(s.reviewDeliverables||[]).filter(d=>d.id!==a.id)};
+    case "ADD_REVIEW_COMMENT": return {...s,reviewDeliverables:(s.reviewDeliverables||[]).map(d=>d.id===a.deliverableId?{...d,comments:[...(d.comments||[]),{id:Date.now(),createdAt:new Date().toISOString(),resolved:false,...a.comment}]}:d)};
     case "UPDATE_MISSION": return {...s,mission:{...s.mission,[a.field]:a.value}};
     case "UNLOCK_BADGE": return (s.unlockedBadges||[]).includes(a.id)?s:{...s,unlockedBadges:[...(s.unlockedBadges||[]),a.id]};
     case "ADD_CLIENT": return {...s,clients:[...(s.clients||[]),{id:Date.now(),interactions:[],videos:[],createdAt:new Date().toLocaleDateString("pt-BR"),...a.client}]};
@@ -3110,6 +3115,120 @@ const TabMission = ({state,dispatch})=>{
 };
 
 // ── TAB: REVISÃO ───────────────────────────────────────────────────────
+const TabVideoReview = ({state,dispatch})=>{
+  const [showAdd,setShowAdd]=useState(false);
+  const [selected,setSelected]=useState(null);
+  const [form,setForm]=useState({title:"",videoUrl:"",source:"direct",projectTitle:"",clientName:""});
+  const items=state.reviewDeliverables||[];
+  const current=selected&&items.find(i=>i.id===selected);
+  const statusMeta={
+    waiting_review:{label:"Aguardando revisão",color:"#eab308"},
+    revision_requested:{label:"Ajustes pedidos",color:"#f97316"},
+    approved:{label:"Aprovado",color:"#10b981"}
+  };
+  const create=()=>{
+    if(!form.title||!form.videoUrl)return;
+    const driveId=form.source==="drive"?extractDriveFileId(form.videoUrl):"";
+    dispatch({type:"ADD_REVIEW_DELIVERABLE",deliverable:{
+      title:form.title,
+      video_url:driveId?drivePreviewUrl(driveId):form.videoUrl,
+      public_url:driveId?driveViewUrl(driveId):form.videoUrl,
+      drive_file_id:driveId||"",
+      video_source:form.source,
+      project_title:form.projectTitle,
+      client_name:form.clientName,
+      review_token:Math.random().toString(36).slice(2)+Date.now().toString(36),
+      status:"waiting_review"
+    }});
+    setForm({title:"",videoUrl:"",source:"direct",projectTitle:"",clientName:""});
+    setShowAdd(false);
+  };
+  if(current){
+    const meta=statusMeta[current.status]||statusMeta.waiting_review;
+    return (
+      <div className="page-stack">
+        <button onClick={()=>setSelected(null)} style={{background:"none",border:"none",color:C.orange,cursor:"pointer",fontSize:13,fontWeight:800,width:"max-content"}}>← Voltar</button>
+        <Card className="page-hero">
+          <div className="page-hero-row">
+            <div>
+              <div className="page-eyebrow" style={{color:meta.color}}>VIDEO REVIEW</div>
+              <div className="page-title">{current.title}</div>
+              <p className="page-subtitle">{current.project_title||"Projeto sem nome"} {current.client_name?`· ${current.client_name}`:""} · v{current.version||1}</p>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:12}}>
+                <Tag color={meta.color}>{meta.label}</Tag>
+                <Tag color="#3b82f6">{current.video_source==="drive"?"Google Drive":"Link direto"}</Tag>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <Btn onClick={()=>dispatch({type:"UPDATE_REVIEW_DELIVERABLE",id:current.id,data:{status:"approved"}})} variant="success">Aprovar</Btn>
+              <Btn onClick={()=>dispatch({type:"UPDATE_REVIEW_DELIVERABLE",id:current.id,data:{status:"revision_requested"}})} variant="ghost">Pedir ajustes</Btn>
+            </div>
+          </div>
+        </Card>
+        <div className="split-layout">
+          <Card style={{padding:0,overflow:"hidden"}}>
+            {current.video_url?(
+              current.video_source==="drive"?<iframe title={`Review ${current.title}`} src={current.video_url} style={{width:"100%",aspectRatio:"16/9",border:"none",background:"#050505"}} allow="autoplay; fullscreen"/>:
+              <video src={current.video_url} controls style={{width:"100%",aspectRatio:"16/9",background:"#050505",display:"block"}}/>
+            ):<div style={{padding:30,color:C.muted}}>Sem vídeo vinculado.</div>}
+          </Card>
+          <aside className="side-panel">
+            <Card>
+              <SectionTitle>COMENTÁRIOS</SectionTitle>
+              {(current.comments||[]).length===0&&<div style={{fontSize:13,color:C.muted,marginBottom:12}}>Nenhum comentário ainda.</div>}
+              {(current.comments||[]).map(c=><div key={c.id} style={{padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
+                <div style={{fontSize:11,color:C.orange,fontWeight:900}}>{c.timestamp_seconds?`${c.timestamp_seconds}s`:"Geral"} · {c.author_name}</div>
+                <div style={{fontSize:13,color:"#ddd",lineHeight:1.45,marginTop:4}}>{c.content}</div>
+              </div>)}
+              <Btn onClick={()=>dispatch({type:"ADD_REVIEW_COMMENT",deliverableId:current.id,comment:{author_name:"Produção",author_type:"producer",content:"Ponto registrado para revisão.",timestamp_seconds:null}})} size="sm" style={{marginTop:12}}>+ Nota rápida</Btn>
+            </Card>
+            <Card>
+              <SectionTitle>LINK DO CLIENTE</SectionTitle>
+              <div style={{fontSize:12,color:C.muted,lineHeight:1.5,wordBreak:"break-all"}}>{`${location.origin}${location.pathname}?review=${current.review_token}`}</div>
+              <Btn onClick={()=>navigator.clipboard?.writeText(`${location.origin}${location.pathname}?review=${current.review_token}`)} size="sm" variant="ghost" style={{marginTop:12}}>Copiar link</Btn>
+            </Card>
+          </aside>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="page-stack">
+      <Card className="page-hero">
+        <div className="page-hero-row">
+          <div>
+            <div className="page-eyebrow" style={{color:"#06b6d4"}}>VIDEO REVIEW NATIVO</div>
+            <div className="page-title">Revisões de vídeo sem fricção</div>
+            <p className="page-subtitle">Central para versões, links do cliente, comentários por timestamp e aprovações. A base Supabase/Drive já está preparada para evoluir para link público sem login.</p>
+          </div>
+          <Btn onClick={()=>setShowAdd(true)}>+ Novo review</Btn>
+        </div>
+      </Card>
+      {items.length===0&&<PremiumEmpty icon="▶" title="Nenhum vídeo em revisão" text="Crie um review com link direto ou Google Drive. Depois você acompanha status, comentários e aprovação." action={<Btn onClick={()=>setShowAdd(true)} size="sm">Criar review</Btn>}/>}
+      <div className="elite-briefing">
+        {items.map(item=>{const meta=statusMeta[item.status]||statusMeta.waiting_review;return <button key={item.id} onClick={()=>setSelected(item.id)} className="elite-brief-card" style={{"--accent":meta.color,textAlign:"left",fontFamily:"inherit"}}>
+          <div className="elite-brief-label">{item.video_source==="drive"?"Google Drive":"Link direto"}</div>
+          <div className="elite-brief-value" style={{fontSize:20,lineHeight:1.1}}>{item.title}</div>
+          <div className="elite-brief-note">{item.project_title||"Sem projeto"} · {(item.comments||[]).length} comentário{(item.comments||[]).length===1?"":"s"}</div>
+          <div className="elite-brief-action">{meta.label}</div>
+        </button>;})}
+      </div>
+      <Modal open={showAdd} onClose={()=>setShowAdd(false)} title="Novo Video Review" wide>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          {[["direct","Link direto"],["drive","Google Drive"]].map(([id,label])=><button key={id} onClick={()=>setForm(f=>({...f,source:id}))} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${form.source===id?C.orange:C.border}`,background:form.source===id?"rgba(249,115,22,.14)":"rgba(255,255,255,.035)",color:form.source===id?C.orange:C.muted,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer"}}>{label}</button>)}
+        </div>
+        <div className="form-grid-2">
+          <Inp label="Título do vídeo" value={form.title} onChange={v=>setForm(f=>({...f,title:v}))} placeholder="Ex: Institucional v1"/>
+          <Inp label="Projeto" value={form.projectTitle} onChange={v=>setForm(f=>({...f,projectTitle:v}))} placeholder="Nome do projeto"/>
+          <Inp label="Cliente" value={form.clientName} onChange={v=>setForm(f=>({...f,clientName:v}))} placeholder="Nome do cliente"/>
+          <Inp label={form.source==="drive"?"Link ou ID do Google Drive":"URL do vídeo"} value={form.videoUrl} onChange={v=>setForm(f=>({...f,videoUrl:v}))} placeholder={form.source==="drive"?"https://drive.google.com/file/d/...":"https://...mp4"}/>
+        </div>
+        <Btn onClick={create} disabled={!form.title||!form.videoUrl}>Criar review</Btn>
+      </Modal>
+    </div>
+  );
+};
+
 const TabReview = ({state,dispatch})=>{
   const wk=weekKey(),cur=state.reviews[wk]||{};
   const [showHistory,setShowHistory]=useState(false);
@@ -4060,6 +4179,7 @@ const ExecutiveBriefing = ({state,setTab,privacyMode})=>{
 };
 
 const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdmin})=>{
+  const [revealDashboardMoney,setRevealDashboardMoney]=useState(false);
   const today=todayStr(),lv=getLevel(state.xp);
   const habitsToday=state.habits.filter(h=>h.completedDates?.includes(today)).length;
   const avgGoal=state.goals.length?Math.round(state.goals.reduce((a,g)=>a+g.progress,0)/state.goals.length):0;
@@ -4098,6 +4218,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
     upcomingMeetings.length&&{title:"Preparar reunião",text:`${upcomingMeetings.length} reunião${upcomingMeetings.length>1?"ões":"ão"} nos próximos dias.`,tab:"clients",color:"#3b82f6"},
   ].filter(Boolean);
   const primaryAction=dailyActions[0]||{title:"Comece por um cliente",text:"Cadastre ou atualize um cliente para o NEXO montar o resto da operação.",tab:"clients",color:C.orange};
+  const dashboardPrivacy=privacyMode||!revealDashboardMoney;
   const selectProfile=p=>{
     dispatch({type:"UPDATE_BUSINESS",data:{profile:p.id,type:p.type,ticketAverage:p.ticket,mainServices:p.services,onboarded:true}});
   };
@@ -4119,6 +4240,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
               <Tag color={lv.color}>{lv.name}</Tag>
               <span style={{fontSize:11,color:C.muted,fontWeight:900}}>{state.xp} XP</span>
               <span style={{fontSize:11,color:C.muted}}>Atualizado {new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span>
+              <button onClick={()=>setRevealDashboardMoney(v=>!v)} style={{height:26,borderRadius:9,border:`1px solid ${revealDashboardMoney&&!privacyMode?C.orange:C.border}`,background:revealDashboardMoney&&!privacyMode?"rgba(249,115,22,.13)":"rgba(255,255,255,.045)",color:revealDashboardMoney&&!privacyMode?C.orange:C.muted,fontFamily:"inherit",fontSize:10,fontWeight:900,cursor:"pointer",padding:"0 9px"}}>{dashboardPrivacy?"Mostrar valores":"Ocultar valores"}</button>
             </div>
           </div>
           <div className="elite-command-panel">
@@ -4147,14 +4269,14 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
                 {label:"Clientes para responder",value:pendingFollowUps.length,color:"#f97316",tab:"clients"},
                 {label:"Projetos ativos",value:pendingVideos,color:"#8b5cf6",tab:"projects"},
                 {label:"Docs salvos",value:(state.studioDocs||[]).length,color:"#06b6d4",tab:"studio"},
-                {label:"A receber",value:fmtMoney(totalReceivable,privacyMode),color:"#eab308",tab:"finance"},
+                {label:"A receber",value:fmtMoney(totalReceivable,dashboardPrivacy),color:"#eab308",tab:"finance"},
               ].map(item=><button key={item.label} onClick={()=>setTab(item.tab)} className="metric-tile" style={{textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
                 <div className="metric-value" style={{color:item.color}}>{item.value}</div>
                 <div className="metric-label">{item.label}</div>
               </button>)}
             </div>
           </Card>
-          <ExecutiveBriefing state={state} setTab={setTab} privacyMode={privacyMode}/>
+          <ExecutiveBriefing state={state} setTab={setTab} privacyMode={dashboardPrivacy}/>
           <Card style={{padding:"16px 18px",background:"rgba(255,255,255,.035)",borderColor:"rgba(255,255,255,.09)"}}>
             <SectionTitle>ALERTAS E DECISÕES</SectionTitle>
             {attention.length===0&&<div style={{fontSize:13,color:C.muted}}>Sem alertas críticos agora. O sistema está limpo para execução.</div>}
@@ -4164,7 +4286,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
           </Card>
         </div>
         <aside className="dashboard-rail">
-          <RevenueOSScore state={state} setTab={setTab} privacyMode={privacyMode} isAdmin={isAdmin}/>
+          <RevenueOSScore state={state} setTab={setTab} privacyMode={dashboardPrivacy} isAdmin={isAdmin}/>
           <Card>
             <SectionTitle>COMEÇAR RÁPIDO</SectionTitle>
             <div className="dashboard-quick-grid">
@@ -4180,7 +4302,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {PROFILE_PRESETS.map(p=><button key={p.id} onClick={()=>selectProfile(p)} style={{textAlign:"left",padding:"11px",borderRadius:13,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)",color:"#eee",cursor:"pointer",fontFamily:"inherit"}}>
                 <div style={{fontSize:12,color:"#fff",fontWeight:900,marginBottom:5}}>{p.label}</div>
-                <Tag color={C.orange}>{fmtCurrency(p.ticket)}</Tag>
+                <Tag color={C.orange}>{fmtMoney(p.ticket,dashboardPrivacy)}</Tag>
               </button>)}
             </div>
           </Card>}
@@ -4242,7 +4364,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,userName,isAdm
           {totalReceivable>0&&(
             <Card style={{padding:"16px 18px",background:"rgba(234,179,8,.05)",borderColor:"rgba(234,179,8,.2)"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div><div style={{fontSize:11,color:"#eab308",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em"}}>VALORES A RECEBER</div><div style={{fontSize:22,fontWeight:800,color:"#eab308",fontFamily:"'Syne',sans-serif",marginTop:4}}>{fmtMoney(totalReceivable,privacyMode)}</div></div>
+                <div><div style={{fontSize:11,color:"#eab308",fontWeight:700,textTransform:"uppercase",letterSpacing:".08em"}}>VALORES A RECEBER</div><div style={{fontSize:22,fontWeight:800,color:"#eab308",fontFamily:"'Syne',sans-serif",marginTop:4}}>{fmtMoney(totalReceivable,dashboardPrivacy)}</div></div>
                 <span style={{fontSize:28}}>R$</span>
               </div>
             </Card>
@@ -4279,6 +4401,7 @@ const TABS=[
   {id:"agenda",    label:"Agenda",    icon:"□"},
   {id:"clients",   label:"Clientes",  icon:"◈"},
   {id:"projects",  label:"Projetos",  icon:"▦"},
+  {id:"videoReview",label:"Video Review",icon:"▶"},
   {id:"studio",    label:"Documentos",    icon:"▣"},
   {id:"finance",   label:"Dinheiro",icon:"◆"},
   {id:"proposta",  label:"Propostas",  icon:"§"},
@@ -4288,19 +4411,19 @@ const TABS=[
   {id:"notes",     label:"Notas",     icon:"✎"},
   {id:"pomodoro",  label:"Pomodoro",  icon:"◷"},
   {id:"analytics", label:"Resultados", icon:"▲"},
-  {id:"review",    label:"Revisão",   icon:"◉"},
+  {id:"review",    label:"Revisão Semanal",   icon:"◉"},
   {id:"mission",   label:"Missão",    icon:"◎"},
   {id:"export",    label:"Relatórios",icon:"▤"},
 ];
 const NAV_GROUPS=[
   {label:"Entrada",items:["about","plans"]},
   {label:"Central",items:["dashboard","focus"]},
-  {label:"Operação",items:["tasks","agenda","projects","studio","pomodoro"]},
+  {label:"Operação",items:["tasks","agenda","projects","videoReview","studio","pomodoro"]},
   {label:"Comercial",items:["clients","finance","proposta"]},
   {label:"Estratégia",items:["habits","goals","analytics","review","mission"]},
   {label:"Sistema",items:["templates","business","notes","export"]},
 ];
-const BEGINNER_TABS = ["about","plans","dashboard","clients","projects","studio","finance","tasks","business"];
+const BEGINNER_TABS = ["about","plans","dashboard","clients","projects","videoReview","studio","finance","tasks","business"];
 const PROFILE_PRESETS = [
   {id:"filmmaker",label:"Filmmaker",type:"Filmmaker / produtor audiovisual",services:["Vídeo Institucional","Reels","Eventos","Drone"],ticket:2500,first:"Cadastrar cliente e criar projeto de captação."},
   {id:"editor",label:"Editor",type:"Editor de vídeo",services:["Edição de Reels","Edição para YouTube","Motion simples","Pacote mensal"],ticket:1200,first:"Cadastrar cliente recorrente e acompanhar revisões."},
@@ -4371,7 +4494,7 @@ function App(){
   },[session]);
 
   const dispatch=useCallback(action=>{
-    const destructive=["REMOVE_HABIT","REMOVE_TASK","REMOVE_GOAL","REMOVE_NOTE","REMOVE_STUDIO_DOC","REMOVE_CLIENT","REMOVE_CLIENT_VIDEO","REMOVE_CLIENT_INTERACTION","REMOVE_CLIENT_PROPOSAL","REMOVE_GOAL_LOG","REMOVE_SCHEDULE_BLOCK","REMOVE_FINANCE_ENTRY"];
+    const destructive=["REMOVE_HABIT","REMOVE_TASK","REMOVE_GOAL","REMOVE_NOTE","REMOVE_STUDIO_DOC","REMOVE_CLIENT","REMOVE_CLIENT_VIDEO","REMOVE_CLIENT_INTERACTION","REMOVE_CLIENT_PROPOSAL","REMOVE_GOAL_LOG","REMOVE_SCHEDULE_BLOCK","REMOVE_FINANCE_ENTRY","REMOVE_REVIEW_DELIVERABLE"];
     if(destructive.includes(action.type)&&!action.skipConfirm&&!window.confirm("Tem certeza que quer excluir este item?")) return;
     setRaw(prev=>{
       const next=reducer(prev,action);
@@ -4386,7 +4509,8 @@ function App(){
         ADD_GOAL:"Meta salva",UPDATE_GOAL:"Meta atualizada",ADD_NOTE:"Nota salva",ADD_HABIT:"Hábito salvo",
         RESTORE:"Backup importado",CLEAR_DATA:"Dados apagados",ADD_CLIENT_VIDEO:"Vídeo adicionado",ADD_CLIENT_INTERACTION:"Interação registrada",
         UPDATE_BUSINESS:"Negócio atualizado",ADD_CLIENT_PROPOSAL:"Proposta salva no CRM",UPDATE_CLIENT_PROPOSAL:"Proposta atualizada",
-        ADD_FINANCE_ENTRY:"Lançamento salvo",REMOVE_FINANCE_ENTRY:"Lançamento removido",ADD_STUDIO_DOC:"Documento salvo",REMOVE_STUDIO_DOC:"Documento removido",SET_SUBSCRIPTION:"Plano atualizado"
+        ADD_FINANCE_ENTRY:"Lançamento salvo",REMOVE_FINANCE_ENTRY:"Lançamento removido",ADD_STUDIO_DOC:"Documento salvo",REMOVE_STUDIO_DOC:"Documento removido",SET_SUBSCRIPTION:"Plano atualizado",
+        ADD_REVIEW_DELIVERABLE:"Review criado",UPDATE_REVIEW_DELIVERABLE:"Review atualizado",ADD_REVIEW_COMMENT:"Comentário salvo",REMOVE_REVIEW_DELIVERABLE:"Review removido"
       }[action.type]||"Atualizado";
       notify(msg,"success");
     }
@@ -4671,6 +4795,7 @@ function App(){
           {tab==="agenda"    &&<TabAgenda     state={state} dispatch={dispatch} setTab={goTab}/>}
           {tab==="clients"   &&<TabClients    state={state} dispatch={dispatch} privacyMode={privacyMode}/>}
           {tab==="projects"  &&<TabProjects   state={state} dispatch={dispatch}/>}
+          {tab==="videoReview"&&<TabVideoReview state={state} dispatch={dispatch}/>}
           {tab==="studio"    &&<TabStudioDocs state={state} dispatch={dispatch}/>}
           {tab==="finance"   &&<TabFinance    state={state} dispatch={dispatch} privacyMode={privacyMode}/>}
           {tab==="proposta"  &&<TabProposta state={state} dispatch={dispatch}/>}
