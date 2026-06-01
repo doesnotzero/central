@@ -13,7 +13,7 @@ create table deliverables (
   duration_seconds numeric(8,2),
   review_token text unique not null default encode(gen_random_bytes(32), 'hex'),
   status text not null default 'waiting_review',
-  -- valores: 'waiting_review' | 'revision_requested' | 'approved'
+  -- valores: 'waiting_review' | 'revision_requested' | 'approved_with_changes' | 'rejected' | 'approved'
   revision_round int default 1,
   expires_at timestamptz,
   password_hash text,
@@ -28,6 +28,7 @@ create table video_comments (
   deliverable_id uuid references deliverables(id) on delete cascade,
   parent_id uuid references video_comments(id),
   timestamp_seconds numeric(8,2),
+  timecode text,
   author_name text not null,
   author_email text,
   author_type text not null default 'client',
