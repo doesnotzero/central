@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { ErrorBoundary } from './components/system/ErrorBoundary.jsx';
 import { useDebouncedValue } from './hooks/useDebouncedValue.js';
 import { drivePreviewUrl, driveViewUrl, extractDriveFileId } from './services/driveService.js';
+import { createDeliverable, createVideoComment, getCommentsByDeliverable, getDeliverableByToken, updateDeliverableStatus } from './services/reviewService.js';
 import { loadAppState, saveAppState } from './services/appStateService.js';
 import { getSupabase } from './services/supabaseClient.js';
 import { isAdminSession } from './services/permissions.js';
@@ -3115,21 +3116,51 @@ const TabMission = ({state,dispatch})=>{
 };
 
 // ── TAB: REVISÃO ───────────────────────────────────────────────────────
-const TabVideoReview = ({state,dispatch})=>{
+const TabVideoReview = ({state,dispatch,publicToken="",isPublic=false})=>{
   const [showAdd,setShowAdd]=useState(false);
   const [selected,setSelected]=useState(null);
+  const [publicItem,setPublicItem]=useState(null);
+  const [reviewLoading,setReviewLoading]=useState(()=>!!publicToken);
+  const [reviewError,setReviewError]=useState("");
+  const [commentForm,setCommentForm]=useState({name:"",content:"",timestamp:""});
   const [form,setForm]=useState({title:"",videoUrl:"",source:"direct",projectTitle:"",clientName:""});
   const items=state.reviewDeliverables||[];
-  const current=selected&&items.find(i=>i.id===selected);
+  const current=publicItem||(selected&&items.find(i=>i.id===selected));
   const statusMeta={
     waiting_review:{label:"Aguardando revisão",color:"#eab308"},
     revision_requested:{label:"Ajustes pedidos",color:"#f97316"},
     approved:{label:"Aprovado",color:"#10b981"}
   };
-  const create=()=>{
+  useEffect(()=>{
+    if(!publicToken)return;
+    const local=items.find(i=>String(i.review_token)===String(publicToken));
+    if(local){setSelected(local.id);setPublicItem(null);setReviewError("");setReviewLoading(false);return;}
+    let active=true;
+    setReviewLoading(true);
+    setReviewError("");
+    (async()=>{
+      const deliverable=await getDeliverableByToken(publicToken);
+      if(!active)return;
+      if(!deliverable){
+        setPublicItem(null);
+        setReviewError("Esse link de revisão não foi encontrado ou ainda não foi sincronizado com o banco.");
+        setReviewLoading(false);
+        return;
+      }
+      const comments=await getCommentsByDeliverable(deliverable.id);
+      if(!active)return;
+      setPublicItem({...deliverable,supabaseId:deliverable.id,comments});
+      setReviewLoading(false);
+    })().catch(()=>{
+      if(active){setReviewError("Não foi possível carregar esse review agora.");setReviewLoading(false);}
+    });
+    return()=>{active=false;};
+  },[publicToken,items]);
+  const create=async()=>{
     if(!form.title||!form.videoUrl)return;
     const driveId=form.source==="drive"?extractDriveFileId(form.videoUrl):"";
-    dispatch({type:"ADD_REVIEW_DELIVERABLE",deliverable:{
+    const token=Math.random().toString(36).slice(2)+Date.now().toString(36);
+    const payload={
       title:form.title,
       video_url:driveId?drivePreviewUrl(driveId):form.videoUrl,
       public_url:driveId?driveViewUrl(driveId):form.videoUrl,
@@ -3137,17 +3168,61 @@ const TabVideoReview = ({state,dispatch})=>{
       video_source:form.source,
       project_title:form.projectTitle,
       client_name:form.clientName,
-      review_token:Math.random().toString(36).slice(2)+Date.now().toString(36),
+      review_token:token,
       status:"waiting_review"
+    };
+    const {data}=await createDeliverable({
+      title:payload.title,
+      video_url:payload.video_url,
+      drive_file_id:payload.drive_file_id||null,
+      video_source:payload.video_source,
+      review_token:payload.review_token,
+      status:payload.status
+    });
+    dispatch({type:"ADD_REVIEW_DELIVERABLE",deliverable:{
+      ...payload,
+      supabaseId:data?.id||"",
+      review_token:data?.review_token||payload.review_token
     }});
     setForm({title:"",videoUrl:"",source:"direct",projectTitle:"",clientName:""});
     setShowAdd(false);
   };
+  const setStatus=async status=>{
+    if(!current)return;
+    if(current.supabaseId){
+      const {error}=await updateDeliverableStatus(current.supabaseId,status);
+      if(!error)setPublicItem(p=>p?{...p,status}:p);
+      return;
+    }
+    dispatch({type:"UPDATE_REVIEW_DELIVERABLE",id:current.id,data:{status}});
+  };
+  const saveComment=async()=>{
+    if(!current||!commentForm.content.trim())return;
+    const comment={
+      author_name:commentForm.name.trim()||(isPublic?"Cliente":"Produção"),
+      author_type:isPublic?"client":"producer",
+      content:commentForm.content.trim(),
+      timestamp_seconds:commentForm.timestamp?Number(commentForm.timestamp):null
+    };
+    if(current.supabaseId){
+      const {data,error}=await createVideoComment({deliverable_id:current.supabaseId,...comment});
+      if(!error)setPublicItem(p=>p?{...p,comments:[...(p.comments||[]),data||{...comment,id:Date.now(),created_at:new Date().toISOString()}]}:p);
+    }else{
+      dispatch({type:"ADD_REVIEW_COMMENT",deliverableId:current.id,comment});
+    }
+    setCommentForm({name:"",content:"",timestamp:""});
+  };
+  if(publicToken&&reviewLoading){
+    return <div className="page-stack"><Card className="page-hero"><div className="page-eyebrow" style={{color:"#06b6d4"}}>VIDEO REVIEW</div><div className="page-title">Carregando revisão...</div><p className="page-subtitle">Buscando vídeo, status e comentários.</p></Card></div>;
+  }
+  if(publicToken&&reviewError&&!current){
+    return <div className="page-stack"><Card className="page-hero"><div className="page-eyebrow" style={{color:"#ef4444"}}>LINK INDISPONÍVEL</div><div className="page-title">Review não encontrado</div><p className="page-subtitle">{reviewError}</p></Card></div>;
+  }
   if(current){
     const meta=statusMeta[current.status]||statusMeta.waiting_review;
     return (
       <div className="page-stack">
-        <button onClick={()=>setSelected(null)} style={{background:"none",border:"none",color:C.orange,cursor:"pointer",fontSize:13,fontWeight:800,width:"max-content"}}>← Voltar</button>
+        {!isPublic&&<button onClick={()=>setSelected(null)} style={{background:"none",border:"none",color:C.orange,cursor:"pointer",fontSize:13,fontWeight:800,width:"max-content"}}>← Voltar</button>}
         <Card className="page-hero">
           <div className="page-hero-row">
             <div>
@@ -3160,8 +3235,8 @@ const TabVideoReview = ({state,dispatch})=>{
               </div>
             </div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              <Btn onClick={()=>dispatch({type:"UPDATE_REVIEW_DELIVERABLE",id:current.id,data:{status:"approved"}})} variant="success">Aprovar</Btn>
-              <Btn onClick={()=>dispatch({type:"UPDATE_REVIEW_DELIVERABLE",id:current.id,data:{status:"revision_requested"}})} variant="ghost">Pedir ajustes</Btn>
+              <Btn onClick={()=>setStatus("approved")} variant="success">Aprovar</Btn>
+              <Btn onClick={()=>setStatus("revision_requested")} variant="ghost">Pedir ajustes</Btn>
             </div>
           </div>
         </Card>
@@ -3180,13 +3255,18 @@ const TabVideoReview = ({state,dispatch})=>{
                 <div style={{fontSize:11,color:C.orange,fontWeight:900}}>{c.timestamp_seconds?`${c.timestamp_seconds}s`:"Geral"} · {c.author_name}</div>
                 <div style={{fontSize:13,color:"#ddd",lineHeight:1.45,marginTop:4}}>{c.content}</div>
               </div>)}
-              <Btn onClick={()=>dispatch({type:"ADD_REVIEW_COMMENT",deliverableId:current.id,comment:{author_name:"Produção",author_type:"producer",content:"Ponto registrado para revisão.",timestamp_seconds:null}})} size="sm" style={{marginTop:12}}>+ Nota rápida</Btn>
+              <div style={{display:"grid",gap:8,marginTop:12}}>
+                <input value={commentForm.name} onChange={e=>setCommentForm(f=>({...f,name:e.target.value}))} placeholder={isPublic?"Seu nome":"Autor"} style={{height:36,borderRadius:10,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.045)",color:"#fff",padding:"0 10px",fontFamily:"inherit",outline:"none"}}/>
+                <input type="number" min="0" value={commentForm.timestamp} onChange={e=>setCommentForm(f=>({...f,timestamp:e.target.value}))} placeholder="Segundo do vídeo (opcional)" style={{height:36,borderRadius:10,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.045)",color:"#fff",padding:"0 10px",fontFamily:"inherit",outline:"none"}}/>
+                <textarea value={commentForm.content} onChange={e=>setCommentForm(f=>({...f,content:e.target.value}))} placeholder="Escreva o ajuste ou comentário..." rows={4} style={{borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.045)",color:"#fff",padding:10,fontFamily:"inherit",outline:"none",resize:"vertical"}}/>
+                <Btn onClick={saveComment} size="sm" disabled={!commentForm.content.trim()}>Enviar comentário</Btn>
+              </div>
             </Card>
-            <Card>
+            {!isPublic&&<Card>
               <SectionTitle>LINK DO CLIENTE</SectionTitle>
               <div style={{fontSize:12,color:C.muted,lineHeight:1.5,wordBreak:"break-all"}}>{`${location.origin}${location.pathname}?review=${current.review_token}`}</div>
               <Btn onClick={()=>navigator.clipboard?.writeText(`${location.origin}${location.pathname}?review=${current.review_token}`)} size="sm" variant="ghost" style={{marginTop:12}}>Copiar link</Btn>
-            </Card>
+            </Card>}
           </aside>
         </div>
       </div>
@@ -4467,6 +4547,7 @@ function App(){
   const business=normalizeBusiness(state.business);
   const userName=getUserName(session);
   const isAdmin=isAdminSession(session);
+  const publicReviewToken=new URLSearchParams(window.location.search).get("review")||"";
   const hasFullAccess=isAdmin||hasPlanAccess(state,"solo",false)&&getSubscription(state).status==="active";
   const publicTabs=["about","plans"];
   const canUseWorkspace=!!session?.user||hasFullAccess;
@@ -4668,6 +4749,22 @@ function App(){
       })}
     </div>
   );
+  if(publicReviewToken){
+    return (
+      <div className="app-shell public-review-shell">
+        <div style={{position:"fixed",top:-160,right:-80,width:600,height:600,background:"radial-gradient(circle,rgba(6,182,212,.05) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
+        <main id="main-content" className="app-content" tabIndex="-1" style={{marginLeft:0}}>
+          <div className="content-inner" style={{maxWidth:1180}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:18}}>
+              <Brand/>
+              <Tag color="#06b6d4">Link público</Tag>
+            </div>
+            <TabVideoReview state={state} dispatch={dispatch} publicToken={publicReviewToken} isPublic/>
+          </div>
+        </main>
+      </div>
+    );
+  }
   return (
     <div className={`app-shell ${!canUseWorkspace?"public-shell":""} ${compactMode?"compact":""} ${privacyMode?"privacy":""} ${sidebarCollapsed?"sidebar-collapsed":""}`}>
       <div style={{position:"fixed",top:-160,right:-80,width:600,height:600,background:"radial-gradient(circle,rgba(249,115,22,.04) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
@@ -4782,7 +4879,6 @@ function App(){
         <div className="content-inner">
           {canUseWorkspace&&<NotificationsBanner state={state} setTab={goTab}/>}
           {canUseWorkspace&&<ContextAlert tab={tab} state={state} setTab={goTab} notify={notify}/>}
-          {tab==="dashboard"&&<SystemHealth state={state} setTab={goTab}/>}
           <div className="fade" key={tab}>
           {!canUseWorkspace&&!publicTabs.includes(tab)&&<AccessWall onLogin={signInGitHub} onPlans={()=>goTab("plans")}/>}
           {(canUseWorkspace||publicTabs.includes(tab))&&<>

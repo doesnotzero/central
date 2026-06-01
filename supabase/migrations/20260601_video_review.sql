@@ -55,6 +55,9 @@ alter table drive_access_tokens enable row level security;
 create policy "Public can read deliverable by token"
   on deliverables for select using (true);
 
+create policy "Producer can manage deliverables"
+  on deliverables for all using (auth.uid() is not null) with check (auth.uid() is not null);
+
 create policy "Public can insert comments"
   on video_comments for insert with check (true);
 
