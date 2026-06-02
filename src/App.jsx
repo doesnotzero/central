@@ -3,6 +3,10 @@ import { ErrorBoundary } from './components/system/ErrorBoundary.jsx';
 import { loadAppState, saveAppState } from './services/appStateService.js';
 import { getSupabase } from './services/supabaseClient.js';
 import { isAdminSession } from './services/permissions.js';
+import { ChipSelector } from './components/form-fields/ChipSelector.jsx';
+import { CurrencyInput } from './components/form-fields/CurrencyInput.jsx';
+import { MaskedInput } from './components/form-fields/MaskedInput.jsx';
+import { OptionCards } from './components/form-fields/OptionCards.jsx';
 
 const TabVideoReview = React.lazy(() => import('./tabs/TabVideoReview.jsx'));
 const TabStudioDocs = React.lazy(() => import('./tabs/TabStudioDocs.jsx'));
@@ -498,7 +502,11 @@ const relationMeta = c=>{
   const type=relationType(c);
   if(type==="recorrente")return c.monthlyValue?`Mensal: ${fmtCurrency(c.monthlyValue)}`:"Contrato mensal";
   if(type==="parceria")return c.barterDetails||c.partnerTerms||"Parceria / permuta";
-  if(type==="freelancer")return [c.freelancerRole,c.freelancerRate].filter(Boolean).join(" · ")||"Freelancer";
+  if(type==="freelancer"){
+    const rate=Number(c.freelancerRate);
+    const formattedRate=c.freelancerRate?(Number.isFinite(rate)?fmtCurrency(rate):c.freelancerRate):"";
+    return [c.freelancerRole,formattedRate].filter(Boolean).join(" · ")||"Freelancer";
+  }
   return c.service||"Cliente comercial";
 };
 const productionProfile = presetId=>PRODUCTION_KNOWLEDGE[presetId]||PRODUCTION_KNOWLEDGE.institucional;
@@ -2124,8 +2132,31 @@ const TabClients = ({state,dispatch,privacyMode})=>{
   ];
   const pipelineKeys=pipeline.map(p=>p.key);
   const origins=[...new Set(clients.map(c=>c.leadSource).filter(Boolean))];
-  const leadSourceChips=["Indicação","Instagram","WhatsApp","Site","Evento","Prospecção"];
+  const leadSourceChips=["Indicação","Instagram","WhatsApp","Site","Evento","Prospecção","Networking","Parceria local"];
   const nextActionChips=["Enviar proposta","Pedir briefing","Marcar reunião","Cobrar retorno","Enviar contrato","Criar projeto"];
+  const clientPresetOptions=AUDIOVISUAL_PRESETS.map(p=>({value:p.id,label:p.label,description:`${p.service} · ${fmtCurrency(p.value)}`,icon:"▦"}));
+  const selectedPresetId=AUDIOVISUAL_PRESETS.find(p=>p.service===cf.service)?.id||"";
+  const clientFlowOptions=[
+    {value:"cliente",label:"Cliente novo",icon:"+"},
+    {value:"recorrente",label:"Mensalista",icon:"↻"},
+    {value:"parceria",label:"Permuta",icon:"◇"},
+    {value:"freelancer",label:"Freelancer",icon:"✦"},
+  ];
+  const relationshipOptions=RELATIONSHIP_TYPES.filter(r=>r.id!=="all").map(r=>({value:r.id,label:r.label,description:r.desc,icon:r.id==="recorrente"?"↻":r.id==="parceria"?"◇":r.id==="freelancer"?"✦":"+"}));
+  const leadSourceOptions=leadSourceChips.map(item=>({value:item,label:item}));
+  const nextActionOptions=nextActionChips.map(item=>({value:item,label:item}));
+  const followUpOptions=[
+    {value:addDaysInput(0),label:"Hoje"},
+    {value:addDaysInput(1),label:"Amanhã"},
+    {value:addDaysInput(2),label:"+2 dias"},
+    {value:addDaysInput(7),label:"+7 dias"},
+  ];
+  const meetingShortcutOptions=[
+    {value:addDaysInput(0),label:"Hoje"},
+    {value:addDaysInput(1),label:"Amanhã"},
+    {value:addDaysInput(7),label:"+7 dias"},
+    {value:addDaysInput(14),label:"+14 dias"},
+  ];
   const filteredClients=clients.filter(c=>
     (segment==="all"||relationType(c)===segment)&&
     (filters.temp==="all"||(c.leadTemp||"morno")===filters.temp)&&
@@ -2134,6 +2165,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
     (filters.follow==="all"||(filters.follow==="pending"?isFollowPending(c):!isFollowPending(c)))
   );
   const selectedRelation=RELATIONSHIP_TYPES.find(r=>r.id===segment)||RELATIONSHIP_TYPES[0];
+  const selectRelationshipType=type=>setCf(f=>({...f,relationshipType:type,status:type==="freelancer"?"ativo":f.status,payment:type==="parceria"?"pendente":f.payment}));
   const applyClientQuickStart=type=>{
     const presets={
       cliente:{relationshipType:"cliente",status:"prospecto",leadTemp:"morno",probability:50,leadSource:"Instagram",nextAction:"Pedir briefing",followUpDate:addDaysInput(1)},
@@ -2151,6 +2183,88 @@ const TabClients = ({state,dispatch,privacyMode})=>{
     dispatch({type:"REMOVE_CLIENT",id:c.id,skipConfirm:true});
     if(String(selected)===String(c.id))setSelected(null);
   };
+  const renderClientSmartForm=()=>(
+    <>
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:11,color:C.muted,marginBottom:8,fontWeight:800,textTransform:"uppercase",letterSpacing:".08em"}}>Pacote sugerido</div>
+        <OptionCards options={clientPresetOptions} value={selectedPresetId} onChange={id=>applyClientPreset(presetById(id))}/>
+      </div>
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:11,color:C.muted,marginBottom:8,fontWeight:800,textTransform:"uppercase",letterSpacing:".08em"}}>Começar como</div>
+        <ChipSelector options={clientFlowOptions} value={cf.relationshipType} onChange={applyClientQuickStart} columns={4}/>
+      </div>
+      <div style={{marginBottom:16,padding:"14px",borderRadius:16,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)"}}>
+        <div style={{fontSize:11,color:C.muted,marginBottom:10,fontWeight:800,textTransform:"uppercase",letterSpacing:".08em"}}>Tipo de relação comercial</div>
+        <OptionCards options={relationshipOptions} value={cf.relationshipType} onChange={selectRelationshipType}/>
+        {cf.relationshipType==="recorrente"&&(
+          <div className="client-modal-grid" style={{marginTop:14}}>
+            <div style={{marginBottom:18}}><CurrencyInput label="Mensalidade" value={cf.monthlyValue} onChange={v=>setCf(f=>({...f,monthlyValue:v,value:v||f.value}))}/></div>
+            <Inp label="Escopo mensal" value={cf.service} onChange={v=>setCf(f=>({...f,service:v}))} placeholder="Ex: 8 reels + gestão de edição"/>
+            <Inp label="Contrato até" value={cf.contract} onChange={v=>setCf(f=>({...f,contract:v}))} type="date"/>
+          </div>
+        )}
+        {cf.relationshipType==="parceria"&&(
+          <div style={{marginTop:14}}>
+            <Txt label="Troca / permuta" value={cf.barterDetails} onChange={v=>setCf(f=>({...f,barterDetails:v}))} placeholder="O que cada lado entrega, limites e valor percebido" rows={2}/>
+            <Txt label="Termos da parceria" value={cf.partnerTerms} onChange={v=>setCf(f=>({...f,partnerTerms:v}))} placeholder="Uso de imagem, publicação, créditos, prazos, contrapartidas" rows={2}/>
+          </div>
+        )}
+        {cf.relationshipType==="freelancer"&&(
+          <div className="client-modal-grid" style={{marginTop:14}}>
+            <Inp label="Função" value={cf.freelancerRole} onChange={v=>setCf(f=>({...f,freelancerRole:v,service:v||f.service}))} placeholder="Editor, filmmaker, áudio..."/>
+            <div style={{marginBottom:18}}><CurrencyInput label="Cachê / diária" value={cf.freelancerRate} onChange={v=>setCf(f=>({...f,freelancerRate:v,value:v||f.value}))}/></div>
+            <Inp label="Disponibilidade" value={cf.availability} onChange={v=>setCf(f=>({...f,availability:v}))} placeholder="Dias, horários, cidade"/>
+            <Inp label="PIX / dados" value={cf.pix} onChange={v=>setCf(f=>({...f,pix:v}))} placeholder="Chave PIX ou dados de pagamento"/>
+            <Inp label="Portfólio" value={cf.portfolio} onChange={v=>setCf(f=>({...f,portfolio:v}))} placeholder="Link"/>
+          </div>
+        )}
+      </div>
+      <div className="client-modal-grid">
+        <Inp label="Nome" value={cf.name} onChange={v=>setCf(f=>({...f,name:v}))} placeholder="Nome do cliente"/>
+        <Inp label="Serviço" value={cf.service} onChange={v=>setCf(f=>({...f,service:v}))} placeholder="Ex: Vídeo institucional"/>
+        <div style={{marginBottom:18}}><CurrencyInput label="Valor" value={cf.value} onChange={v=>setCf(f=>({...f,value:v}))}/></div>
+        <Inp label="Email" value={cf.email} onChange={v=>setCf(f=>({...f,email:v}))} placeholder="email@exemplo.com"/>
+        <div style={{marginBottom:18}}><MaskedInput label="WhatsApp" value={cf.phone} onChange={v=>setCf(f=>({...f,phone:v}))} placeholder="(48) 99999-9999"/></div>
+        <Inp label="Próxima reunião" value={cf.nextMeeting} onChange={v=>setCf(f=>({...f,nextMeeting:v}))} type="date"/>
+        <Inp label="Contrato até" value={cf.contract} onChange={v=>setCf(f=>({...f,contract:v}))} type="date"/>
+        <Inp label="Origem personalizada" value={cf.leadSource} onChange={v=>setCf(f=>({...f,leadSource:v}))} placeholder="Instagram, indicação, site..."/>
+        <Inp label="Próxima ação livre" value={cf.nextAction} onChange={v=>setCf(f=>({...f,nextAction:v}))} placeholder="Enviar orçamento, cobrar briefing..."/>
+        <Inp label="Follow-up" value={cf.followUpDate} onChange={v=>setCf(f=>({...f,followUpDate:v}))} type="date"/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,margin:"2px 0 16px"}} className="modal-grid">
+        <div>
+          <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:8,letterSpacing:".08em"}}>Origem rápida</div>
+          <ChipSelector options={leadSourceOptions} value={cf.leadSource} onChange={v=>setCf(f=>({...f,leadSource:v}))} size="sm"/>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:8,letterSpacing:".08em"}}>Próxima ação rápida</div>
+          <ChipSelector options={nextActionOptions} value={cf.nextAction} onChange={v=>setCf(f=>({...f,nextAction:v,followUpDate:f.followUpDate||addDaysInput(1)}))} size="sm"/>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,margin:"2px 0 16px"}} className="modal-grid">
+        <div>
+          <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:8,letterSpacing:".08em"}}>Atalho de reunião</div>
+          <ChipSelector options={meetingShortcutOptions} value={cf.nextMeeting} onChange={v=>setCf(f=>({...f,nextMeeting:v}))} size="sm"/>
+        </div>
+        <div>
+          <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:8,letterSpacing:".08em"}}>Atalho de follow-up</div>
+          <ChipSelector options={followUpOptions} value={cf.followUpDate} onChange={v=>setCf(f=>({...f,followUpDate:v}))} size="sm"/>
+        </div>
+      </div>
+      <div className="client-modal-controls">
+        <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Status</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(STATUS_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,status:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.status===k?c:C.border,background:cf.status===k?`${c}15`:"transparent",color:cf.status===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
+        <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Pagamento</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(PAG_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,payment:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.payment===k?c:C.border,background:cf.payment===k?`${c}15`:"transparent",color:cf.payment===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
+        <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Temperatura</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(TEMP_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,leadTemp:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.leadTemp===k?c:C.border,background:cf.leadTemp===k?`${c}15`:"transparent",color:cf.leadTemp===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
+        <div style={{marginBottom:13}}>
+          <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Probabilidade: {cf.probability}%</div>
+          <input type="range" min={0} max={100} step={5} value={cf.probability} onChange={e=>setCf(f=>({...f,probability:+e.target.value}))} style={{width:"100%",accentColor:C.orange}}/>
+          <div style={{fontSize:11,color:"#10b981",fontWeight:800,marginTop:4}}>Previsão: {fmtCurrency(Number(cf.value||0)*Number(cf.probability||0)/100)}</div>
+        </div>
+      </div>
+      <Txt label="Observações" value={cf.notes} onChange={v=>setCf(f=>({...f,notes:v}))} placeholder="Briefing, preferências..." rows={3}/>
+      <Btn onClick={saveClient} style={{position:"sticky",bottom:-2,width:"100%",justifyContent:"center",marginTop:6,boxShadow:"0 -14px 26px rgba(24,24,24,.95)"}}>Salvar cliente</Btn>
+    </>
+  );
 
   if(selected&&client){
     const pv=(client.videos||[]).filter(v=>v.status!=="entregue").length;
@@ -2261,69 +2375,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
           <Btn onClick={()=>{if(!videoForm.title)return;dispatch({type:"ADD_CLIENT_VIDEO",id:client.id,video:buildVideoProject({...videoForm,checklist:videoForm.checklist.split("\n").filter(Boolean)})});setVideoForm({title:"",type:"gravação",deadline:"",link:"",presetId:"",checklist:"Briefing\nRoteiro\nCaptação\nEdição\nRevisão\nEntrega"});setShowVideo(false);}}>Salvar vídeo</Btn>
         </Modal>
         <Modal open={showAdd} onClose={()=>{setShowAdd(false);setEditClient(null);}} title="Editar Cliente" wide>
-          <div style={{marginBottom:14}}>
-            <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Pacotes rápidos</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:8}} className="modal-grid">
-            {AUDIOVISUAL_PRESETS.map(p=><button key={p.id} onClick={()=>applyClientPreset(p)} style={{textAlign:"left",padding:"10px 11px",borderRadius:12,border:`1px solid ${cf.service===p.service?C.orange:C.border}`,background:cf.service===p.service?`${C.orange}13`:"rgba(255,255,255,.03)",color:"#eee",cursor:"pointer",fontFamily:"inherit"}}>
-              <div style={{fontSize:12,fontWeight:900,color:cf.service===p.service?C.orange:"#fff"}}>{p.label}</div>
-              <div style={{fontSize:10,color:C.muted,marginTop:3}}>{fmtCurrency(p.value)}</div>
-            </button>)}
-          </div>
-        </div>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:800,textTransform:"uppercase"}}>Fluxos rápidos</div>
-          <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-            {[
-              ["cliente","Cliente novo"],
-              ["recorrente","Mensalista"],
-              ["parceria","Permuta"],
-              ["freelancer","Freelancer"],
-            ].map(([k,l])=><button key={k} onClick={()=>applyClientQuickStart(k)} style={{padding:"7px 11px",borderRadius:9,border:`1px solid ${cf.relationshipType===k?C.orange:C.border}`,background:cf.relationshipType===k?`${C.orange}15`:"rgba(255,255,255,.035)",color:cf.relationshipType===k?C.orange:C.muted,fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>)}
-          </div>
-        </div>
-        <div style={{marginBottom:14,padding:"12px",borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.03)"}}>
-            <div style={{fontSize:11,color:C.muted,marginBottom:8,fontWeight:800,textTransform:"uppercase"}}>Tipo de relação comercial</div>
-            <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:10}}>
-              {RELATIONSHIP_TYPES.filter(r=>r.id!=="all").map(r=><button key={r.id} onClick={()=>setCf(f=>({...f,relationshipType:r.id,status:r.id==="freelancer"?"ativo":f.status,payment:r.id==="parceria"?"pendente":f.payment}))} style={{padding:"7px 11px",borderRadius:9,border:"1px solid",borderColor:cf.relationshipType===r.id?r.color:C.border,background:cf.relationshipType===r.id?`${r.color}15`:"transparent",color:cf.relationshipType===r.id?r.color:C.muted,fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>{r.label}</button>)}
-            </div>
-            {cf.relationshipType==="recorrente"&&<div className="client-modal-grid"><Inp label="Mensalidade (R$)" value={cf.monthlyValue} onChange={v=>setCf(f=>({...f,monthlyValue:v,value:v||f.value}))} type="number" placeholder="0"/><Inp label="Escopo mensal" value={cf.service} onChange={v=>setCf(f=>({...f,service:v}))} placeholder="Ex: 8 reels + gestão de edição"/><Inp label="Contrato até" value={cf.contract} onChange={v=>setCf(f=>({...f,contract:v}))} type="date"/></div>}
-            {cf.relationshipType==="parceria"&&<><Txt label="Troca / permuta" value={cf.barterDetails} onChange={v=>setCf(f=>({...f,barterDetails:v}))} placeholder="O que cada lado entrega, limites e valor percebido" rows={2}/><Txt label="Termos da parceria" value={cf.partnerTerms} onChange={v=>setCf(f=>({...f,partnerTerms:v}))} placeholder="Uso de imagem, publicação, créditos, prazos, contrapartidas" rows={2}/></>}
-            {cf.relationshipType==="freelancer"&&<div className="client-modal-grid"><Inp label="Função" value={cf.freelancerRole} onChange={v=>setCf(f=>({...f,freelancerRole:v,service:v||f.service}))} placeholder="Editor, filmmaker, áudio..."/><Inp label="Cachê / diária" value={cf.freelancerRate} onChange={v=>setCf(f=>({...f,freelancerRate:v,value:v||f.value}))} placeholder="R$ 600 / diária"/><Inp label="Disponibilidade" value={cf.availability} onChange={v=>setCf(f=>({...f,availability:v}))} placeholder="Dias, horários, cidade"/><Inp label="PIX / dados" value={cf.pix} onChange={v=>setCf(f=>({...f,pix:v}))} placeholder="Chave PIX ou dados de pagamento"/><Inp label="Portfólio" value={cf.portfolio} onChange={v=>setCf(f=>({...f,portfolio:v}))} placeholder="Link"/></div>}
-          </div>
-          <div className="client-modal-grid">
-            <Inp label="Nome" value={cf.name} onChange={v=>setCf(f=>({...f,name:v}))} placeholder="Nome do cliente"/>
-            <Inp label="Serviço" value={cf.service} onChange={v=>setCf(f=>({...f,service:v}))} placeholder="Ex: Vídeo institucional"/>
-            <Inp label="Valor (R$)" value={cf.value} onChange={v=>setCf(f=>({...f,value:v}))} placeholder="0" type="number"/>
-            <Inp label="Email" value={cf.email} onChange={v=>setCf(f=>({...f,email:v}))} placeholder="email@exemplo.com"/>
-          <Inp label="WhatsApp" value={cf.phone} onChange={v=>setCf(f=>({...f,phone:v}))} placeholder="(48) 99999-9999"/>
-          <Inp label="Próxima reunião" value={cf.nextMeeting} onChange={v=>setCf(f=>({...f,nextMeeting:v}))} type="date"/>
-          <Inp label="Contrato até" value={cf.contract} onChange={v=>setCf(f=>({...f,contract:v}))} type="date"/>
-          <Inp label="Origem do lead" value={cf.leadSource} onChange={v=>setCf(f=>({...f,leadSource:v}))} placeholder="Instagram, indicação, site..."/>
-          <Inp label="Próxima ação" value={cf.nextAction} onChange={v=>setCf(f=>({...f,nextAction:v}))} placeholder="Enviar orçamento, cobrar briefing..."/>
-          <Inp label="Follow-up" value={cf.followUpDate} onChange={v=>setCf(f=>({...f,followUpDate:v}))} type="date"/>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,margin:"2px 0 14px"}} className="modal-grid">
-          <div>
-            <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:7}}>Origem rápida</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{leadSourceChips.map(item=><button key={item} onClick={()=>setCf(f=>({...f,leadSource:item}))} style={{padding:"5px 9px",borderRadius:8,border:`1px solid ${cf.leadSource===item?C.orange:C.border}`,background:cf.leadSource===item?`${C.orange}14`:"transparent",color:cf.leadSource===item?C.orange:C.muted,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{item}</button>)}</div>
-          </div>
-          <div>
-            <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:7}}>Próxima ação rápida</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{nextActionChips.map(item=><button key={item} onClick={()=>setCf(f=>({...f,nextAction:item,followUpDate:f.followUpDate||addDaysInput(1)}))} style={{padding:"5px 9px",borderRadius:8,border:`1px solid ${cf.nextAction===item?C.orange:C.border}`,background:cf.nextAction===item?`${C.orange}14`:"transparent",color:cf.nextAction===item?C.orange:C.muted,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{item}</button>)}</div>
-          </div>
-        </div>
-        <div className="client-modal-controls">
-          <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Status</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(STATUS_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,status:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.status===k?c:C.border,background:cf.status===k?`${c}15`:"transparent",color:cf.status===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
-          <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Pagamento</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(PAG_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,payment:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.payment===k?c:C.border,background:cf.payment===k?`${c}15`:"transparent",color:cf.payment===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
-          <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Temperatura</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(TEMP_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,leadTemp:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.leadTemp===k?c:C.border,background:cf.leadTemp===k?`${c}15`:"transparent",color:cf.leadTemp===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
-          <div style={{marginBottom:13}}>
-            <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Probabilidade: {cf.probability}%</div>
-            <input type="range" min={0} max={100} step={5} value={cf.probability} onChange={e=>setCf(f=>({...f,probability:+e.target.value}))} style={{width:"100%",accentColor:C.orange}}/>
-            <div style={{fontSize:11,color:"#10b981",fontWeight:800,marginTop:4}}>Previsão: {fmtCurrency(Number(cf.value||0)*Number(cf.probability||0)/100)}</div>
-          </div>
-        </div>
-          <Txt label="Observações" value={cf.notes} onChange={v=>setCf(f=>({...f,notes:v}))} placeholder="Briefing, preferências..." rows={3}/>
-          <Btn onClick={saveClient} style={{position:"sticky",bottom:-2,width:"100%",justifyContent:"center",marginTop:6,boxShadow:"0 -14px 26px rgba(24,24,24,.95)"}}>Salvar cliente</Btn>
+          {renderClientSmartForm()}
         </Modal>
       </div>
     );
@@ -2451,69 +2503,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
         );
       })}
       <Modal open={showAdd} onClose={()=>{setShowAdd(false);setEditClient(null);setCf(E);}} title="Novo Cliente" wide>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Pacotes rápidos</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:8}} className="modal-grid">
-            {AUDIOVISUAL_PRESETS.map(p=><button key={p.id} onClick={()=>applyClientPreset(p)} style={{textAlign:"left",padding:"10px 11px",borderRadius:12,border:`1px solid ${cf.service===p.service?C.orange:C.border}`,background:cf.service===p.service?`${C.orange}13`:"rgba(255,255,255,.03)",color:"#eee",cursor:"pointer",fontFamily:"inherit"}}>
-              <div style={{fontSize:12,fontWeight:900,color:cf.service===p.service?C.orange:"#fff"}}>{p.label}</div>
-              <div style={{fontSize:10,color:C.muted,marginTop:3}}>{fmtCurrency(p.value)}</div>
-            </button>)}
-          </div>
-        </div>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:800,textTransform:"uppercase"}}>Fluxos rápidos</div>
-          <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-            {[
-              ["cliente","Cliente novo"],
-              ["recorrente","Mensalista"],
-              ["parceria","Permuta"],
-              ["freelancer","Freelancer"],
-            ].map(([k,l])=><button key={k} onClick={()=>applyClientQuickStart(k)} style={{padding:"7px 11px",borderRadius:9,border:`1px solid ${cf.relationshipType===k?C.orange:C.border}`,background:cf.relationshipType===k?`${C.orange}15`:"rgba(255,255,255,.035)",color:cf.relationshipType===k?C.orange:C.muted,fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>{l}</button>)}
-          </div>
-        </div>
-        <div style={{marginBottom:14,padding:"12px",borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.03)"}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:8,fontWeight:800,textTransform:"uppercase"}}>Tipo de relação comercial</div>
-          <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:10}}>
-            {RELATIONSHIP_TYPES.filter(r=>r.id!=="all").map(r=><button key={r.id} onClick={()=>setCf(f=>({...f,relationshipType:r.id,status:r.id==="freelancer"?"ativo":f.status,payment:r.id==="parceria"?"pendente":f.payment}))} style={{padding:"7px 11px",borderRadius:9,border:"1px solid",borderColor:cf.relationshipType===r.id?r.color:C.border,background:cf.relationshipType===r.id?`${r.color}15`:"transparent",color:cf.relationshipType===r.id?r.color:C.muted,fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>{r.label}</button>)}
-          </div>
-          {cf.relationshipType==="recorrente"&&<div className="client-modal-grid"><Inp label="Mensalidade (R$)" value={cf.monthlyValue} onChange={v=>setCf(f=>({...f,monthlyValue:v,value:v||f.value}))} type="number" placeholder="0"/><Inp label="Escopo mensal" value={cf.service} onChange={v=>setCf(f=>({...f,service:v}))} placeholder="Ex: 8 reels + gestão de edição"/><Inp label="Contrato até" value={cf.contract} onChange={v=>setCf(f=>({...f,contract:v}))} type="date"/></div>}
-          {cf.relationshipType==="parceria"&&<><Txt label="Troca / permuta" value={cf.barterDetails} onChange={v=>setCf(f=>({...f,barterDetails:v}))} placeholder="O que cada lado entrega, limites e valor percebido" rows={2}/><Txt label="Termos da parceria" value={cf.partnerTerms} onChange={v=>setCf(f=>({...f,partnerTerms:v}))} placeholder="Uso de imagem, publicação, créditos, prazos, contrapartidas" rows={2}/></>}
-          {cf.relationshipType==="freelancer"&&<div className="client-modal-grid"><Inp label="Função" value={cf.freelancerRole} onChange={v=>setCf(f=>({...f,freelancerRole:v,service:v||f.service}))} placeholder="Editor, filmmaker, áudio..."/><Inp label="Cachê / diária" value={cf.freelancerRate} onChange={v=>setCf(f=>({...f,freelancerRate:v,value:v||f.value}))} placeholder="R$ 600 / diária"/><Inp label="Disponibilidade" value={cf.availability} onChange={v=>setCf(f=>({...f,availability:v}))} placeholder="Dias, horários, cidade"/><Inp label="PIX / dados" value={cf.pix} onChange={v=>setCf(f=>({...f,pix:v}))} placeholder="Chave PIX ou dados de pagamento"/><Inp label="Portfólio" value={cf.portfolio} onChange={v=>setCf(f=>({...f,portfolio:v}))} placeholder="Link"/></div>}
-        </div>
-        <div className="client-modal-grid">
-          <Inp label="Nome" value={cf.name} onChange={v=>setCf(f=>({...f,name:v}))} placeholder="Nome do cliente"/>
-          <Inp label="Serviço" value={cf.service} onChange={v=>setCf(f=>({...f,service:v}))} placeholder="Ex: Vídeo institucional"/>
-          <Inp label="Valor (R$)" value={cf.value} onChange={v=>setCf(f=>({...f,value:v}))} placeholder="0" type="number"/>
-          <Inp label="Email" value={cf.email} onChange={v=>setCf(f=>({...f,email:v}))} placeholder="email@exemplo.com"/>
-          <Inp label="WhatsApp" value={cf.phone} onChange={v=>setCf(f=>({...f,phone:v}))} placeholder="(48) 99999-9999"/>
-          <Inp label="Próxima reunião" value={cf.nextMeeting} onChange={v=>setCf(f=>({...f,nextMeeting:v}))} type="date"/>
-          <Inp label="Contrato até" value={cf.contract} onChange={v=>setCf(f=>({...f,contract:v}))} type="date"/>
-          <Inp label="Origem do lead" value={cf.leadSource} onChange={v=>setCf(f=>({...f,leadSource:v}))} placeholder="Instagram, indicação, site..."/>
-          <Inp label="Próxima ação" value={cf.nextAction} onChange={v=>setCf(f=>({...f,nextAction:v}))} placeholder="Enviar orçamento, cobrar briefing..."/>
-          <Inp label="Follow-up" value={cf.followUpDate} onChange={v=>setCf(f=>({...f,followUpDate:v}))} type="date"/>
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,margin:"2px 0 14px"}} className="modal-grid">
-          <div>
-            <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:7}}>Origem rápida</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{leadSourceChips.map(item=><button key={item} onClick={()=>setCf(f=>({...f,leadSource:item}))} style={{padding:"5px 9px",borderRadius:8,border:`1px solid ${cf.leadSource===item?C.orange:C.border}`,background:cf.leadSource===item?`${C.orange}14`:"transparent",color:cf.leadSource===item?C.orange:C.muted,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{item}</button>)}</div>
-          </div>
-          <div>
-            <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:7}}>Próxima ação rápida</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{nextActionChips.map(item=><button key={item} onClick={()=>setCf(f=>({...f,nextAction:item,followUpDate:f.followUpDate||addDaysInput(1)}))} style={{padding:"5px 9px",borderRadius:8,border:`1px solid ${cf.nextAction===item?C.orange:C.border}`,background:cf.nextAction===item?`${C.orange}14`:"transparent",color:cf.nextAction===item?C.orange:C.muted,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{item}</button>)}</div>
-          </div>
-        </div>
-        <div className="client-modal-controls">
-          <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Status</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(STATUS_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,status:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.status===k?c:C.border,background:cf.status===k?`${c}15`:"transparent",color:cf.status===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
-            <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Pagamento</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(PAG_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,payment:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.payment===k?c:C.border,background:cf.payment===k?`${c}15`:"transparent",color:cf.payment===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
-            <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Temperatura</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(TEMP_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,leadTemp:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.leadTemp===k?c:C.border,background:cf.leadTemp===k?`${c}15`:"transparent",color:cf.leadTemp===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
-            <div style={{marginBottom:13}}>
-              <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Probabilidade: {cf.probability}%</div>
-              <input type="range" min={0} max={100} step={5} value={cf.probability} onChange={e=>setCf(f=>({...f,probability:+e.target.value}))} style={{width:"100%",accentColor:C.orange}}/>
-              <div style={{fontSize:11,color:"#10b981",fontWeight:800,marginTop:4}}>Previsão: {fmtCurrency(Number(cf.value||0)*Number(cf.probability||0)/100)}</div>
-            </div>
-          </div>
-        <Txt label="Observações" value={cf.notes} onChange={v=>setCf(f=>({...f,notes:v}))} placeholder="Briefing, preferências..." rows={3}/>
-        <Btn onClick={saveClient} style={{position:"sticky",bottom:-2,width:"100%",justifyContent:"center",marginTop:6,boxShadow:"0 -14px 26px rgba(24,24,24,.95)"}}>Salvar cliente</Btn>
+        {renderClientSmartForm()}
       </Modal>
     </div>
   );
@@ -2571,6 +2561,15 @@ const TabProjects = ({state,dispatch})=>{
   };
   const update=(p,data,silent=false)=>dispatch({type:"UPDATE_CLIENT_VIDEO",clientId:p.client.id,videoId:p.video.id,data,silent});
   const applyProjectPreset=p=>setForm(f=>({...f,presetId:p.id,title:p.title,type:p.type,deadline:f.deadline||addDaysInput(14),checklist:p.checklist}));
+  const projectPresetOptions=AUDIOVISUAL_PRESETS.map(p=>({value:p.id,label:p.label,description:`${p.title} · ${p.type}`,icon:"▦"}));
+  const projectTypeOptions=["gravação","edição","motion","drone","entrevista","vertical","evento","documentário","ads"].map(type=>({value:type,label:type}));
+  const projectDeadlineOptions=[
+    {value:addDaysInput(7),label:"+7 dias"},
+    {value:addDaysInput(14),label:"+14 dias"},
+    {value:addDaysInput(30),label:"+30 dias"},
+    {value:addDaysInput(45),label:"+45 dias"},
+  ];
+  const recentClientOptions=(state.clients||[]).slice(0,8).map(c=>({value:String(c.id),label:c.name}));
   const smartStatus=(v,checks)=>{
     const done=checks.filter(c=>c.done).map(c=>String(c.text).toLowerCase()).join(" ");
     if(checks.length&&checks.every(c=>c.done))return"entregue";
@@ -2778,15 +2777,14 @@ const TabProjects = ({state,dispatch})=>{
       </Modal>
       <Modal open={showAdd} onClose={()=>setShowAdd(false)} title="Novo Projeto" wide>
         {(state.clients||[]).length===0&&<div style={{fontSize:13,color:C.muted,marginBottom:14}}>Cadastre um cliente antes de criar um projeto.</div>}
-        <div style={{marginBottom:13}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Preset audiovisual</div>
-          <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-            {AUDIOVISUAL_PRESETS.map(p=><button key={p.id} onClick={()=>applyProjectPreset(p)} style={{padding:"6px 11px",borderRadius:9,border:"1px solid",borderColor:form.presetId===p.id?C.orange:C.border,background:form.presetId===p.id?`${C.orange}15`:"rgba(255,255,255,.025)",color:form.presetId===p.id?C.orange:C.muted,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{p.label}</button>)}
-          </div>
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:11,color:C.muted,marginBottom:8,fontWeight:800,textTransform:"uppercase",letterSpacing:".08em"}}>Preset audiovisual</div>
+          <OptionCards options={projectPresetOptions} value={form.presetId} onChange={id=>applyProjectPreset(presetById(id))}/>
         </div>
         <div style={{marginBottom:13}}>
           <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Cliente</div>
-          <select value={form.clientId} onChange={e=>setForm(f=>({...f,clientId:e.target.value}))} style={{width:"100%",background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 13px",color:"#fff",fontSize:14,outline:"none"}}>
+          {recentClientOptions.length>0&&<div style={{marginBottom:10}}><ChipSelector options={recentClientOptions} value={String(form.clientId||"")} onChange={v=>setForm(f=>({...f,clientId:v}))} size="sm"/></div>}
+          <select value={String(form.clientId||"")} onChange={e=>setForm(f=>({...f,clientId:e.target.value}))} style={{width:"100%",background:"rgba(255,255,255,.06)",border:`1px solid ${C.border}`,borderRadius:10,padding:"9px 13px",color:"#fff",fontSize:14,outline:"none"}}>
             {(state.clients||[]).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
@@ -2795,7 +2793,16 @@ const TabProjects = ({state,dispatch})=>{
           <Inp label="Prazo" type="date" value={form.deadline} onChange={v=>setForm(f=>({...f,deadline:v}))}/>
           <Inp label="Link / pasta" value={form.link} onChange={v=>setForm(f=>({...f,link:v}))} placeholder="Drive, Frame.io..."/>
         </div>
-        <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Tipo</div><div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{["gravação","edição","motion","drone","entrevista","vertical","evento","documentário","ads"].map(t=><button key={t} onClick={()=>setForm(f=>({...f,type:t}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:form.type===t?C.orange:C.border,background:form.type===t?`${C.orange}15`:"transparent",color:form.type===t?C.orange:C.muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{t}</button>)}</div></div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,margin:"0 0 14px"}} className="modal-grid">
+          <div>
+            <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:8,letterSpacing:".08em"}}>Atalho de prazo</div>
+            <ChipSelector options={projectDeadlineOptions} value={form.deadline} onChange={v=>setForm(f=>({...f,deadline:v}))} size="sm"/>
+          </div>
+          <div>
+            <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:8,letterSpacing:".08em"}}>Tipo de projeto</div>
+            <ChipSelector options={projectTypeOptions} value={form.type} onChange={v=>setForm(f=>({...f,type:v}))} size="sm"/>
+          </div>
+        </div>
         {form.checklist?.length>0&&<div style={{marginBottom:14,padding:"11px 12px",borderRadius:12,background:"rgba(255,255,255,.035)",border:`1px solid ${C.border}`}}>
           <div style={{fontSize:11,color:C.muted,fontWeight:800,textTransform:"uppercase",marginBottom:7}}>Checklist aplicado</div>
           <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{form.checklist.map(i=><Tag key={i} color="#8b5cf6">{i}</Tag>)}</div>

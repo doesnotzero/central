@@ -1,6 +1,6 @@
 # NEXO Studio OS - Auditoria de Qualidade
 
-Data: 2026-06-01
+Data: 2026-06-02
 
 ## Mapeamento
 
@@ -79,10 +79,40 @@ Data: 2026-06-01
   - skeletons de dashboard, lista, projeto e documentos
 - Corrigido `reviewService` para usar colunas explícitas.
 - Mantidas as correções visuais do dashboard para valores que vazavam dos cards.
+- Studio Docs recebeu campos mais inteligentes por tipo de documento.
+- Cadastro/edição de cliente recebeu fluxo guiado com presets, tipo comercial, moedas, WhatsApp mascarado, chips de origem/ação e atalhos de data.
+- Cadastro de projeto recebeu presets audiovisuais em cards, clientes recentes por chip, atalhos de prazo e seleção rápida de tipo.
+
+## Status Do Prompt Master
+
+### Entregue ou parcialmente entregue
+
+- Auditoria inicial do código e registro dos principais riscos.
+- Lazy loading de abas pesadas: Video Review, Studio Docs, Financeiro, Analytics e Command Palette.
+- Base de hooks e componentes reutilizáveis para reduzir fricção de formulários.
+- Campos inteligentes aplicados em Studio Docs, cliente e projeto.
+- Review de vídeo com link público, comentários com timestamp, marcadores e status de aprovação.
+- Dashboard visual mais limpo, com correções de overflow em valores.
+- Exclusão de clientes e confirmações destrutivas nos fluxos principais.
+
+### Ainda falta para cumprir a visão completa
+
+- Aplicar migrations no Supabase e validar RLS em produção.
+- Criar Notification Center persistente com Supabase Realtime.
+- Evoluir Command Palette para busca real com teclado, setas, Enter e índice de clientes/projetos/documentos.
+- Separar `App.jsx` em módulos menores: dashboard, clientes, projetos, propostas, rotina e configurações.
+- Extrair cálculos do dashboard para `src/features/dashboard/dashboardMetrics.js`.
+- Criar timeline audiovisual/Gantt por projeto com fases, dependências e atraso automático.
+- Completar Video Review com hook próprio, realtime, Google Drive/OAuth e notificação ao produtor.
+- Criar permissões reais por plano/role, billing e bloqueios server-side.
+- Migrar incrementalmente serviços críticos para TypeScript.
+- Criar exportação universal CSV/PDF além dos PDFs atuais.
+- Medir Lighthouse e corrigir acessibilidade fina antes de escala comercial.
 
 ## Próxima Rodada Recomendada
 
-1. Aplicar `ChipSelector`, `OptionCards`, `CurrencyInput` e `TimeInput` no Studio Docs.
-2. Separar cálculos do dashboard em `src/features/dashboard/dashboardMetrics.js`.
-3. Criar `src/features/notifications` com Notification Center local antes de realtime.
-4. Criar `useVideoReview` para tirar lógica do player do componente.
+1. Separar cálculos do dashboard em `src/features/dashboard/dashboardMetrics.js`.
+2. Criar `src/features/notifications` com Notification Center local antes de realtime.
+3. Criar `useVideoReview` para tirar lógica do player do componente.
+4. Evoluir Command Palette com navegação por teclado e busca de clientes/projetos/documentos.
+5. Começar split do `App.jsx` por abas ainda embutidas: Clientes, Projetos, Propostas e Dashboard.
