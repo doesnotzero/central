@@ -1,4 +1,36 @@
 import React, { useState } from 'react';
+import { ChipSelector } from '../components/form-fields/ChipSelector.jsx';
+import { CurrencyInput } from '../components/form-fields/CurrencyInput.jsx';
+import { DurationPicker } from '../components/form-fields/DurationPicker.jsx';
+import { OptionCards } from '../components/form-fields/OptionCards.jsx';
+import { TimeInput } from '../components/form-fields/TimeInput.jsx';
+
+const FORMAT_OPTIONS = [
+  { label: "16:9 YouTube", value: "16:9" },
+  { label: "9:16 Reels", value: "9:16" },
+  { label: "1:1 Feed", value: "1:1" },
+  { label: "4K Master", value: "4K master" },
+  { label: "Multiformato", value: "multiformato" }
+];
+
+const TONE_OPTIONS = [
+  { label: "Premium", value: "Premium" },
+  { label: "Documental", value: "Documental" },
+  { label: "Direto", value: "Direto" },
+  { label: "Emocional", value: "Emocional" },
+  { label: "Técnico", value: "Técnico" },
+  { label: "Jovem", value: "Jovem" }
+];
+
+const PAYMENT_OPTIONS = [
+  { label: "50/50", value: "50% entrada, 50% na entrega" },
+  { label: "30/70", value: "30% entrada, 70% na entrega" },
+  { label: "100% aprovação", value: "100% na aprovação" },
+  { label: "100% entrega", value: "100% na entrega" },
+  { label: "Parcelado", value: "Parcelado conforme cronograma" }
+];
+
+const stringList = value => String(value || "").split(",").map(item => item.trim()).filter(Boolean);
 
 export default function TabStudioDocs({state,dispatch,shared}){
   const {C,Card,Tag,Btn,SectionTitle,Inp,Txt,normalizeBusiness,addDaysInput,studioDocById,docConfig,presetById,studioDocTemplates,presetBriefing,presetDeliverables,PRODUCTION_PIPELINE,AUDIOVISUAL_PRESETS,STUDIO_DOCUMENTS} = shared;
@@ -104,6 +136,31 @@ export default function TabStudioDocs({state,dispatch,shared}){
   const restoreDoc=doc=>{
     if(doc.form)setForm({...form,...doc.form});
   };
+  const renderSmartField=field=>{
+    const value=form[field.key]||"";
+    if(field.key==="callTime"||field.key==="wrapTime"||field.type==="time"){
+      return <TimeInput key={field.key} label={field.label} value={value} onChange={next=>update(field.key,next)}/>;
+    }
+    if(field.key==="budget"||field.key.endsWith("Cost")||field.type==="number"){
+      return <CurrencyInput key={field.key} label={field.label} value={value} onChange={next=>update(field.key,next)}/>;
+    }
+    if(field.key==="format"){
+      return <div key={field.key} style={{display:"grid",gap:8,marginBottom:18}}>
+        <div style={{fontSize:11,color:C.muted,fontWeight:800,letterSpacing:".08em",textTransform:"uppercase"}}>{field.label}</div>
+        <ChipSelector options={FORMAT_OPTIONS} value={value} onChange={next=>update(field.key,next)} />
+      </div>;
+    }
+    if(field.key==="duration"){
+      return <DurationPicker key={field.key} label={field.label} value={value} onChange={next=>update(field.key,next)} />;
+    }
+    if(field.key==="toneOfVoice"){
+      return <ChipSelector key={field.key} options={TONE_OPTIONS} value={stringList(value)} onChange={next=>update(field.key,next.join(", "))} multiple />;
+    }
+    if(field.key==="paymentTerms"){
+      return <ChipSelector key={field.key} options={PAYMENT_OPTIONS} value={value} onChange={next=>update(field.key,next)} />;
+    }
+    return <Inp key={field.key} label={field.label} type={field.type||"text"} value={value} onChange={next=>update(field.key,next)} placeholder={field.placeholder||""}/>;
+  };
   return (
     <div className="page-stack">
       <Card className="studio-frame-hero" style={{padding:"20px 22px"}}>
@@ -124,23 +181,21 @@ export default function TabStudioDocs({state,dispatch,shared}){
         <div>
           <Card style={{padding:"16px"}}>
             <SectionTitle>TIPO DE DOCUMENTO</SectionTitle>
-            <div className="studio-preset-grid">
-              {STUDIO_DOCUMENTS.map(d=>(
-                <button key={d.id} onClick={()=>applyDocType(d)} className={`studio-option ${form.docType===d.id?"active":""}`} style={{"--accent":d.color}}>
-                  <div style={{fontSize:11,color:form.docType===d.id?d.color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginBottom:5}}>{d.label}</div>
-                  <div style={{fontSize:11,color:"#aaa",lineHeight:1.4}}>{d.desc}</div>
-                </button>
-              ))}
-            </div>
+            <OptionCards
+              options={STUDIO_DOCUMENTS.map(d=>({label:d.label,value:d.id,description:d.desc,icon:"▦"}))}
+              value={form.docType}
+              onChange={id=>applyDocType(studioDocById(id))}
+            />
           </Card>
 
           <Card style={{padding:"16px"}}>
             <SectionTitle>PRESET DE PRODUÇÃO</SectionTitle>
-            <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-              {AUDIOVISUAL_PRESETS.map(p=>(
-                <button key={p.id} onClick={()=>applyPreset(p)} style={{padding:"7px 11px",borderRadius:2,border:"1px solid",borderColor:form.presetId===p.id?C.orange:C.border,background:form.presetId===p.id?`${C.orange}16`:"rgba(255,255,255,.03)",color:form.presetId===p.id?C.orange:C.muted,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer",textTransform:"uppercase",letterSpacing:".08em"}}>{p.label}</button>
-              ))}
-            </div>
+            <ChipSelector
+              options={AUDIOVISUAL_PRESETS.map(p=>({label:p.label,value:p.id}))}
+              value={form.presetId}
+              onChange={id=>applyPreset(presetById(id))}
+              size="sm"
+            />
           </Card>
 
           <div className="studio-form-band">
@@ -170,7 +225,7 @@ export default function TabStudioDocs({state,dispatch,shared}){
               <div style={{fontSize:12,color:"#aaa",lineHeight:1.45}}>{activeDocConfig.tone}</div>
             </div>
             <div className="form-grid-2">
-              {(activeDocConfig.fields||[]).map(field=><Inp key={field.key} label={field.label} type={field.type||"text"} value={form[field.key]||""} onChange={v=>update(field.key,v)} placeholder={field.placeholder||""}/>) }
+              {(activeDocConfig.fields||[]).map(renderSmartField)}
             </div>
             {(activeDocConfig.areas||[]).map(area=><Txt key={area.key} label={area.label} value={form[area.key]||""} onChange={v=>update(area.key,v)} placeholder={area.placeholder||""} rows={3}/>) }
             <div style={{marginTop:6}}>
@@ -181,9 +236,12 @@ export default function TabStudioDocs({state,dispatch,shared}){
               <Inp label="Referência" value={form.reference} onChange={v=>update("reference",v)} placeholder="Filme, link, campanha, mood"/>
               <Inp label="Data de captação" type="date" value={form.shootDate} onChange={v=>update("shootDate",v)}/>
               <Inp label="Prazo final" type="date" value={form.deadline} onChange={v=>update("deadline",v)}/>
-              <Inp label="Formato" value={form.format} onChange={v=>update("format",v)} placeholder="16:9, 9:16, multicam..."/>
-              <Inp label="Duração" value={form.duration} onChange={v=>update("duration",v)} placeholder="15s, 60s, 5-15min..."/>
-              <Inp label="Orçamento base (R$)" type="number" value={form.budget} onChange={v=>update("budget",v)} placeholder="0"/>
+              <div style={{display:"grid",gap:8,marginBottom:18}}>
+                <div style={{fontSize:11,color:C.muted,fontWeight:800,letterSpacing:".08em",textTransform:"uppercase"}}>Formato</div>
+                <ChipSelector options={FORMAT_OPTIONS} value={form.format} onChange={v=>update("format",v)}/>
+              </div>
+              <DurationPicker value={form.duration} onChange={v=>update("duration",v)}/>
+              <CurrencyInput label="Orçamento base" value={form.budget} onChange={v=>update("budget",v)}/>
             </div>
             <Txt label="Escopo / entregáveis" value={form.scope} onChange={v=>update("scope",v)} placeholder="Um item por linha" rows={4}/>
             <Txt label="Equipe específica" value={form.crew} onChange={v=>update("crew",v)} placeholder="Opcional. Se vazio, o Studio usa equipe recomendada pelo preset." rows={3}/>

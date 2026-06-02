@@ -2,17 +2,17 @@ import React from "react";
 import { ChipSelector } from "./ChipSelector.jsx";
 
 const PRESETS = [
-  { label: "15s", value: "00:15" },
-  { label: "30s", value: "00:30" },
-  { label: "60s", value: "01:00" },
-  { label: "2min", value: "02:00" },
-  { label: "5min", value: "05:00" },
-  { label: "10min+", value: "10:00" }
+  { label: "15s", value: "15s" },
+  { label: "30s", value: "30s" },
+  { label: "60s", value: "60s" },
+  { label: "2min", value: "2min" },
+  { label: "3min", value: "3min" },
+  { label: "5min+", value: "5min+" }
 ];
 
-export const DurationPicker = ({ label = "Duração", value, onChange }) => (
+export const DurationPicker = ({ label = "Duração", value, onChange, presets = PRESETS }) => (
   <div style={{ display: "grid", gap: 8 }}>
     <div style={{ fontSize: 11, color: "#858585", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>{label}</div>
-    <ChipSelector options={PRESETS} value={value} onChange={onChange} columns={3} />
+    <ChipSelector options={presets} value={value} onChange={onChange} columns={3} />
   </div>
 );

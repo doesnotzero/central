@@ -1,7 +1,7 @@
 import React from "react";
 
-export const OptionCards = ({ options, value, onChange, columns = 3 }) => (
-  <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns},minmax(0,1fr))`, gap: 10 }}>
+export const OptionCards = ({ options, value, onChange, columns }) => (
+  <div style={{ display: "grid", gridTemplateColumns: columns ? `repeat(${columns},minmax(0,1fr))` : "repeat(auto-fit,minmax(170px,1fr))", gap: 10 }}>
     {options.map(option => {
       const active = option.value === value;
       return (
