@@ -1,5 +1,40 @@
 import { getSupabase } from "./supabaseClient.js";
 
+const DELIVERABLE_COLUMNS = [
+  "id",
+  "project_id",
+  "title",
+  "version",
+  "video_url",
+  "public_url",
+  "drive_file_id",
+  "video_source",
+  "thumbnail_url",
+  "duration_seconds",
+  "review_token",
+  "status",
+  "revision_round",
+  "expires_at",
+  "created_by",
+  "created_at",
+  "updated_at"
+].join(",");
+
+const COMMENT_COLUMNS = [
+  "id",
+  "deliverable_id",
+  "parent_id",
+  "timestamp_seconds",
+  "timecode",
+  "author_name",
+  "author_email",
+  "author_type",
+  "content",
+  "resolved",
+  "resolved_at",
+  "created_at"
+].join(",");
+
 const buildCommentTree = comments => {
   const byId = new Map(comments.map(comment => [comment.id, { ...comment, replies: [] }]));
   const roots = [];
@@ -21,7 +56,7 @@ export const getDeliverableByToken = async token => {
 
   const { data, error } = await supabase
     .from("deliverables")
-    .select("*")
+    .select(DELIVERABLE_COLUMNS)
     .eq("review_token", token)
     .limit(1)
     .maybeSingle();
@@ -38,7 +73,7 @@ export const getCommentsByDeliverable = async deliverableId => {
 
   const { data, error } = await supabase
     .from("video_comments")
-    .select("*")
+    .select(COMMENT_COLUMNS)
     .eq("deliverable_id", deliverableId)
     .order("created_at", { ascending: true });
 
@@ -53,7 +88,7 @@ export const createVideoComment = async payload => {
   const { data, error } = await supabase
     .from("video_comments")
     .insert(payload)
-    .select("*")
+    .select(COMMENT_COLUMNS)
     .single();
 
   return { data, error };
@@ -67,7 +102,7 @@ export const updateDeliverableStatus = async (deliverableId, status) => {
     .from("deliverables")
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", deliverableId)
-    .select("*")
+    .select(DELIVERABLE_COLUMNS)
     .single();
 
   return { data, error };
@@ -80,7 +115,7 @@ export const createDeliverable = async payload => {
   const { data, error } = await supabase
     .from("deliverables")
     .insert(payload)
-    .select("*")
+    .select(DELIVERABLE_COLUMNS)
     .single();
 
   return { data, error };

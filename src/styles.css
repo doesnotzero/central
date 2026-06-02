@@ -9,6 +9,7 @@ body{background:linear-gradient(145deg,#090909 0%,#101010 44%,#0b0b0b 100%);colo
   --glass-shadow:0 24px 90px rgba(0,0,0,.34);
   --glass-blur:blur(22px) saturate(1.35);
 }
+@keyframes shimmer{0%{background-position:220% 0}100%{background-position:-220% 0}}
 button,a,input,textarea,select{-webkit-tap-highlight-color:transparent}
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid rgba(249,115,22,.75);outline-offset:2px}
 .skip-link{position:fixed;left:16px;top:12px;z-index:8000;transform:translateY(-160%);padding:10px 12px;border-radius:12px;background:#f97316;color:#111;font-size:12px;font-weight:900;text-decoration:none;box-shadow:0 16px 50px rgba(0,0,0,.45);transition:transform .16s ease}
@@ -135,8 +136,9 @@ select option{background:#1a1a1a;color:#fff}
 .section-band{border:1px solid var(--glass-border);border-radius:24px;background:var(--glass-bg-soft);padding:28px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .dense-list{display:flex;flex-direction:column;gap:18px}
 .summary-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
-.metric-tile{padding:20px;border-radius:22px;background:var(--glass-bg-soft);border:1px solid var(--glass-border);box-shadow:0 18px 60px rgba(0,0,0,.18);backdrop-filter:blur(18px)}
-.metric-value{font-size:20px;font-weight:900;font-family:'Syne',sans-serif;line-height:1;color:#fff}
+.metric-tile{min-width:0;padding:20px;border-radius:22px;background:var(--glass-bg-soft);border:1px solid var(--glass-border);box-shadow:0 18px 60px rgba(0,0,0,.18);backdrop-filter:blur(18px)}
+.metric-value{max-width:100%;font-size:clamp(18px,2vw,22px);font-weight:900;font-family:'Syne',sans-serif;line-height:1.05;color:#fff;overflow-wrap:anywhere;word-break:break-word}
+.metric-value.money{font-size:clamp(17px,1.7vw,20px);letter-spacing:0}
 .metric-label{font-size:10px;color:#666;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-top:5px}
 .modal-section{padding:20px;border:1px solid var(--glass-border);border-radius:22px;background:var(--glass-bg-soft);margin-bottom:20px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .modal-section.primary{border-color:rgba(249,115,22,.22);background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(255,255,255,.025))}
@@ -193,11 +195,12 @@ select option{background:#1a1a1a;color:#fff}
 .dashboard-quick-card:hover{transform:translateY(-2px);border-color:var(--quick-strong)}
 .sidebar-current{margin:0 0 10px;padding:9px 10px;border-radius:13px;border:1px solid rgba(249,115,22,.18);background:rgba(249,115,22,.07)}
 .elite-briefing{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-.elite-brief-card{position:relative;overflow:hidden;border-radius:18px;padding:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:transform .18s ease,border-color .18s ease}
+.elite-brief-card{position:relative;min-width:0;overflow:hidden;border-radius:18px;padding:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer;transition:transform .18s ease,border-color .18s ease}
 .elite-brief-card:hover{transform:translateY(-2px);border-color:var(--accent)}
 .elite-brief-card::after{content:"";position:absolute;right:-28px;bottom:-36px;width:92px;height:92px;border-radius:50%;background:var(--accent);opacity:.1}
 .elite-brief-label{font-size:10px;color:#777;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
-.elite-brief-value{font-size:28px;color:#fff;font-family:'Syne',sans-serif;font-weight:900;line-height:1;margin:10px 0 6px}
+.elite-brief-value{max-width:100%;font-size:clamp(24px,3vw,34px);color:#fff;font-family:'Syne',sans-serif;font-weight:900;line-height:1.02;margin:10px 0 6px;overflow-wrap:anywhere;word-break:break-word}
+.elite-brief-value.money{font-size:clamp(22px,2.5vw,30px);letter-spacing:0}
 .elite-brief-note{font-size:12px;color:#999;line-height:1.42}
 .elite-brief-action{font-size:11px;color:var(--accent);font-weight:900;margin-top:12px}
 .elite-command-panel{border-radius:20px;padding:16px;border:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.022))}

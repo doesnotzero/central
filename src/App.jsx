@@ -2206,7 +2206,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
           ))}
         </Card>
         <Card style={{marginBottom:14}}>
-          <SectionTitle action={<Btn onClick={()=>setShowVideo(true)} size="sm">+ Vídeo</Btn>}>VÍDEOS ({(client.videos||[]).length}) {pv>0&&<Tag color="#eab308">&nbsp;{pv} pend.</Tag>}</SectionTitle>
+          <SectionTitle action={<Btn onClick={()=>setShowVideo(true)} size="sm">+ Vídeo</Btn>}>VÍDEOS ({(client.videos||[]).length}) {pv>0&&<Tag color="#eab308">{pv} pendentes</Tag>}</SectionTitle>
           {(client.videos||[]).length===0&&<div style={{fontSize:13,color:C.muted,textAlign:"center",padding:"8px 0"}}>Nenhum vídeo cadastrado</div>}
           {(client.videos||[]).map(v=>(
             <div key={v.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"10px 12px",background:"rgba(255,255,255,.03)",borderRadius:10,transition:"background .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,.06)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,.03)"}>
@@ -2338,7 +2338,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
           </div>
           <div style={{fontSize:10,color:C.muted,marginTop:2}}>A receber</div>
         </Card>
-        <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#8b5cf6",fontFamily:"'Syne',sans-serif"}}>{clients.reduce((a,c)=>(c.videos||[]).filter(v=>v.status!=="entregue").length+a,0)}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Vídeos pend.</div></Card>
+        <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#8b5cf6",fontFamily:"'Syne',sans-serif"}}>{clients.reduce((a,c)=>(c.videos||[]).filter(v=>v.status!=="entregue").length+a,0)}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Vídeos pendentes</div></Card>
       </div>
       <Card style={{padding:"12px 14px",marginBottom:14}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:8}} className="modal-grid">
@@ -3639,9 +3639,9 @@ const ExecutiveBriefing = ({state,setTab,privacyMode})=>{
   const receivable=clients.filter(c=>c.payment!=="pago").reduce((a,c)=>a+Number(c.value||0),0)+entries.filter(e=>e.type==="entrada"&&e.status!=="pago").reduce((a,e)=>a+Number(e.value||0),0);
   const tasksDue=(state.tasks||[]).filter(t=>!t.completed&&["overdue","today"].includes(taskBucket(t))).length;
   const cards=[
-    {label:"Pipeline ponderado",value:fmtDashboardMoney(pipelineValue,privacyMode),note:`${activeClients} cliente${activeClients===1?" ativo":"s ativos"}`,tab:"clients",color:"#10b981"},
+    {label:"Pipeline ponderado",value:fmtDashboardMoney(pipelineValue,privacyMode),note:`${activeClients} cliente${activeClients===1?" ativo":"s ativos"}`,tab:"clients",color:"#10b981",money:true},
     {label:"Produção aberta",value:productionOpen,note:"projetos ainda não entregues",tab:"projects",color:"#8b5cf6"},
-    {label:"A receber",value:fmtDashboardMoney(receivable,privacyMode),note:"contratos e lançamentos pendentes",tab:"finance",color:"#3b82f6"},
+    {label:"A receber",value:fmtDashboardMoney(receivable,privacyMode),note:"contratos e lançamentos pendentes",tab:"finance",color:"#3b82f6",money:true},
     {label:"Agenda crítica",value:tasksDue,note:"tarefas para hoje ou atrasadas",tab:"tasks",color:C.orange},
   ];
   return (
@@ -3649,7 +3649,7 @@ const ExecutiveBriefing = ({state,setTab,privacyMode})=>{
       {cards.map(card=>(
         <button key={card.label} className="elite-brief-card" style={{"--accent":card.color,textAlign:"left",fontFamily:"inherit"}} onClick={()=>setTab(card.tab)}>
           <div className="elite-brief-label">{card.label}</div>
-          <div className="elite-brief-value">{card.value}</div>
+          <div className={`elite-brief-value ${card.money?"money":""}`}>{card.value}</div>
           <div className="elite-brief-note">{card.note}</div>
           <div className="elite-brief-action">Abrir área</div>
         </button>
@@ -3686,7 +3686,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
     pendingFollowUps.length&&{label:`${pendingFollowUps.length} follow-up${pendingFollowUps.length>1?"s":""} pendente${pendingFollowUps.length>1?"s":""}`,tab:"clients",color:"#f97316"},
     lateProjectSteps.length&&{label:`${lateProjectSteps.length} marco${lateProjectSteps.length>1?"s":""} de produção atrasado${lateProjectSteps.length>1?"s":""}`,tab:"projects",color:"#ef4444"},
     todayProjectSteps.length&&{label:`${todayProjectSteps.length} entrega${todayProjectSteps.length>1?"s":""} de produção hoje`,tab:"projects",color:"#8b5cf6"},
-    upcomingMeetings.length&&{label:`${upcomingMeetings.length} reunião${upcomingMeetings.length>1?"ões":"ão"} na semana`,tab:"clients",color:"#3b82f6"},
+    upcomingMeetings.length&&{label:`${upcomingMeetings.length} ${upcomingMeetings.length>1?"reuniões":"reunião"} na semana`,tab:"clients",color:"#3b82f6"},
     pendingVideos>0&&{label:`${pendingVideos} vídeo${pendingVideos>1?"s":""} em produção`,tab:"clients",color:"#8b5cf6"},
     (backupDays===null||backupDays>=7)&&{label:backupDays===null?"Backup ainda não registrado":`Backup há ${backupDays} dias`,tab:"export",color:"#eab308"},
   ].filter(Boolean);
@@ -3696,7 +3696,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
     lateProjectSteps.length&&{title:"Destravar produção",text:`${lateProjectSteps.length} marco${lateProjectSteps.length>1?"s":""} de projeto em atraso.`,tab:"projects",color:"#8b5cf6"},
     overduePayments.length&&{title:"Cobrar pendências",text:`${overduePayments.length} pagamento${overduePayments.length>1?"s":""} em atraso.`,tab:"finance",color:"#eab308"},
     todayTasks.length&&{title:"Executar as atividades de hoje",text:`${todayTasks.length} atividade${todayTasks.length>1?"s":""} para finalizar hoje.`,tab:"tasks",color:"#10b981"},
-    upcomingMeetings.length&&{title:"Preparar reunião",text:`${upcomingMeetings.length} reunião${upcomingMeetings.length>1?"ões":"ão"} nos próximos dias.`,tab:"clients",color:"#3b82f6"},
+    upcomingMeetings.length&&{title:"Preparar reunião",text:`${upcomingMeetings.length} ${upcomingMeetings.length>1?"reuniões":"reunião"} nos próximos dias.`,tab:"clients",color:"#3b82f6"},
   ].filter(Boolean);
   const primaryAction=dailyActions[0]||{title:"Comece por um cliente",text:"Cadastre ou atualize um cliente para o NEXO montar o resto da operação.",tab:"clients",color:C.orange};
   const dashboardPrivacy=privacyMode||!revealDashboardMoney;
@@ -3757,10 +3757,10 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
               {[
                 {label:"Clientes para responder",value:pendingFollowUps.length,color:"#f97316",tab:"clients"},
                 {label:"Projetos ativos",value:pendingVideos,color:"#8b5cf6",tab:"projects"},
-                {label:"Docs salvos",value:(state.studioDocs||[]).length,color:"#06b6d4",tab:"studio"},
-                {label:"A receber",value:fmtDashboardMoney(totalReceivable,dashboardPrivacy),color:"#eab308",tab:"finance"},
+                {label:"Documentos salvos",value:(state.studioDocs||[]).length,color:"#06b6d4",tab:"studio"},
+                {label:"A receber",value:fmtDashboardMoney(totalReceivable,dashboardPrivacy),color:"#eab308",tab:"finance",money:true},
               ].map(item=><button key={item.label} onClick={()=>setTab(item.tab)} className="metric-tile" style={{textAlign:"left",cursor:"pointer",fontFamily:"inherit"}}>
-                <div className="metric-value" style={{color:item.color}}>{item.value}</div>
+                <div className={`metric-value ${item.money?"money":""}`} style={{color:item.color}}>{item.value}</div>
                 <div className="metric-label">{item.label}</div>
               </button>)}
             </div>
