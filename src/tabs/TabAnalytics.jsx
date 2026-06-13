@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 export default function TabAnalytics({state,privacyMode,shared}){
-  const {C,Card,Bar,WeekChart,RevenueChart,getLevel,xpToNext,todayStr,fmtMoney,STATUS_COLORS,BADGES} = shared;
+  const {C,Card,Bar,WeekChart,RevenueChart,getLevel,xpToNext,todayStr,fmtMoney,STATUS_COLORS,BADGES,CLIENT_PIPELINE,normalizeClientStatus} = shared;
   const today=todayStr(),lv=getLevel(state.xp);
   const todayDone=state.habits.filter(h=>h.completedDates?.includes(today)).length;
   const avgStreak=state.habits.length?Math.round(state.habits.reduce((a,h)=>a+h.streak,0)/state.habits.length):0;
@@ -11,7 +11,7 @@ export default function TabAnalytics({state,privacyMode,shared}){
   const pendingTasks=state.tasks.filter(t=>!t.completed).length;
   const overdue=(state.clients||[]).filter(c=>c.payment==="atrasado").length;
   const pendingVideos=(state.clients||[]).reduce((a,c)=>(c.videos||[]).filter(v=>v.status!=="entregue").length+a,0);
-  const pipelineStats=["prospecto","ativo","pausado","concluido"].map(k=>({key:k,count:(state.clients||[]).filter(c=>c.status===k).length,color:STATUS_COLORS[k]||C.orange}));
+  const pipelineStats=(CLIENT_PIPELINE||[]).map(stage=>({key:stage.key,label:stage.label,count:(state.clients||[]).filter(c=>normalizeClientStatus(c)===stage.key).length,color:stage.color||STATUS_COLORS[stage.key]||C.orange}));
   return (
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <Card style={{background:"rgba(59,130,246,.06)",borderColor:"rgba(59,130,246,.2)",padding:"18px 20px"}}>
@@ -36,8 +36,8 @@ export default function TabAnalytics({state,privacyMode,shared}){
       {(state.clients||[]).length>0&&(
         <Card>
           <div style={{fontSize:11,color:C.muted,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",marginBottom:14}}>PIPELINE COMERCIAL</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}} className="mobile-kpi-grid">
-            {pipelineStats.map(p=><div key={p.key} style={{textAlign:"center",padding:"12px 8px",borderRadius:12,background:`${p.color}0c`,border:`1px solid ${p.color}25`}}><div style={{fontSize:22,fontWeight:800,color:p.color,fontFamily:"'Syne',sans-serif"}}>{p.count}</div><div style={{fontSize:10,color:C.muted,marginTop:3,textTransform:"capitalize"}}>{p.key}</div></div>)}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(6,minmax(0,1fr))",gap:8}} className="mobile-kpi-grid">
+            {pipelineStats.map(p=><div key={p.key} style={{textAlign:"center",padding:"12px 8px",borderRadius:12,background:`${p.color}0c`,border:`1px solid ${p.color}25`}}><div style={{fontSize:22,fontWeight:800,color:p.color,fontFamily:"'Syne',sans-serif"}}>{p.count}</div><div style={{fontSize:10,color:C.muted,marginTop:3,textTransform:"capitalize"}}>{p.label}</div></div>)}
           </div>
         </Card>
       )}

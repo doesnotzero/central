@@ -9,8 +9,8 @@ import {
 } from "../services/reviewService.js";
 
 const C = {
-  orange: "#f97316",
-  orangeD: "#ea580c",
+  orange: "#ff2400",
+  orangeD: "#cc1d00",
   muted: "#858585",
   border: "rgba(255,255,255,.11)"
 };
@@ -51,7 +51,7 @@ const Tag = ({ children, color = C.orange }) => (
 
 const Btn = ({ children, onClick, variant = "primary", size = "md", style = {}, disabled = false }) => {
   const vs = {
-    primary: { background: `linear-gradient(135deg,${C.orange},${C.orangeD})`, color: "#fff", boxShadow: "0 4px 16px rgba(249,115,22,.3)", border: "none" },
+    primary: { background: `linear-gradient(135deg,${C.orange},${C.orangeD})`, color: "#fff", boxShadow: "0 4px 16px rgba(255,36,0,.3)", border: "none" },
     ghost: { background: "rgba(255,255,255,.06)", color: "#ccc", border: `1px solid ${C.border}` },
     danger: { background: "rgba(239,68,68,.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,.25)" },
     success: { background: "rgba(16,185,129,.15)", color: "#10b981", border: "1px solid rgba(16,185,129,.3)" }
@@ -118,18 +118,40 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
   const [commentForm, setCommentForm] = useState({ name: "", content: "", timestamp: "" });
   const [playerTime, setPlayerTime] = useState(0);
   const [playerDuration, setPlayerDuration] = useState(0);
-  const [form, setForm] = useState({ title: "", videoUrl: "", source: "direct", projectTitle: "", clientName: "" });
+  const [form, setForm] = useState({ title: "", videoUrl: "", source: "direct", projectTitle: "", clientName: "", projectKey: "" });
   const videoRef = useRef(null);
   const items = state.reviewDeliverables || [];
+  const projectOptions = useMemo(() => (state.clients || []).flatMap(client => (client.videos || []).map(video => ({
+    key: `${client.id}:${video.id}`,
+    client,
+    video,
+    label: `${video.title} · ${client.name}`
+  }))), [state.clients]);
   const current = publicItem || (selected && items.find(i => i.id === selected));
   const comments = useMemo(() => [...(current?.comments || [])].sort((a, b) => Number(a.timestamp_seconds ?? 999999) - Number(b.timestamp_seconds ?? 999999)), [current?.comments]);
   const hlsReady = current?.video_url && String(current.video_url).toLowerCase().includes(".m3u8");
   const statusMeta = {
-    waiting_review: { label: "Aguardando cliente", color: "#eab308" },
-    revision_requested: { label: "Revisão solicitada", color: "#f97316" },
-    approved_with_changes: { label: "Aprovado com ajustes", color: "#3b82f6" },
-    rejected: { label: "Precisa revisar", color: "#ef4444" },
-    approved: { label: "Aprovado", color: "#10b981" }
+    waiting_review: { label: "Aguardando", short: "Aguardando", color: "#eab308", desc: "Cliente recebeu o link e ainda não decidiu." },
+    revision_requested: { label: "Ajustes", short: "Ajustes", color: "#ff2400", desc: "Cliente pediu alteração ou apontou correções." },
+    approved_with_changes: { label: "Ajustes leves", short: "Ajustes", color: "#3b82f6", desc: "Aprovado, mas com pequenos ajustes anotados." },
+    rejected: { label: "Refazer", short: "Ajustes", color: "#ef4444", desc: "Precisa de nova rodada antes de aprovar." },
+    approved: { label: "Aprovado", short: "Aprovado", color: "#10b981", desc: "Entrega aprovada pelo cliente." }
+  };
+  const publicReviewUrl = item => item?.review_token ? `${location.origin}/review/${item.review_token}` : "";
+  const statusCounts = {
+    waiting: items.filter(i => i.status === "waiting_review").length,
+    adjustments: items.filter(i => ["revision_requested", "approved_with_changes", "rejected"].includes(i.status)).length,
+    approved: items.filter(i => i.status === "approved").length
+  };
+  const applyProject = key => {
+    const picked = projectOptions.find(p => p.key === key);
+    setForm(f => ({
+      ...f,
+      projectKey: key,
+      projectTitle: picked?.video?.title || f.projectTitle,
+      clientName: picked?.client?.name || f.clientName,
+      title: f.title || picked?.video?.title || ""
+    }));
   };
 
   useEffect(() => {
@@ -193,9 +215,11 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
       if (!active) return;
       setPublicItem({ ...deliverable, supabaseId: deliverable.id, comments: loadedComments });
       setReviewLoading(false);
-    })().catch(() => {
+    })().catch(err => {
       if (active) {
-        setReviewError("Não foi possível carregar esse review agora.");
+        setReviewError(err?.code === "PGRST205"
+          ? "O banco de Video Review ainda não foi configurado. A migration public.deliverables precisa ser aplicada no Supabase para esse link carregar o vídeo do cliente."
+          : "Não foi possível carregar esse review agora.");
         setReviewLoading(false);
       }
     });
@@ -216,19 +240,29 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
       video_source: driveId ? "drive" : String(form.videoUrl).toLowerCase().includes(".m3u8") ? "hls" : form.source,
       project_title: form.projectTitle,
       client_name: form.clientName,
+      project_key: form.projectKey,
       review_token: token,
       status: "waiting_review"
     };
-    const { data } = await createDeliverable({
+    const { data, error } = await createDeliverable({
       title: payload.title,
+      project_title: payload.project_title || null,
+      client_name: payload.client_name || null,
       video_url: payload.video_url,
       drive_file_id: payload.drive_file_id || null,
       video_source: payload.video_source === "hls" ? "direct" : payload.video_source,
       review_token: payload.review_token,
       status: payload.status
     });
+    if (error || !data?.id) {
+      const missingTable = error?.code === "PGRST205";
+      window.alert(missingTable
+        ? "A tabela de Video Review ainda não existe no Supabase. Aplique a migration 20260601_video_review.sql antes de publicar links para clientes."
+        : "Não consegui publicar esse Video Review no Supabase agora. Verifique a conexão e tente novamente.");
+      return;
+    }
     dispatch({ type: "ADD_REVIEW_DELIVERABLE", deliverable: { ...payload, supabaseId: data?.id || "", review_token: data?.review_token || payload.review_token } });
-    setForm({ title: "", videoUrl: "", source: "direct", projectTitle: "", clientName: "" });
+    setForm({ title: "", videoUrl: "", source: "direct", projectTitle: "", clientName: "", projectKey: "" });
     setShowAdd(false);
   };
 
@@ -274,7 +308,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
     return (
       <div className="page-stack">
         {!isPublic && <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: C.orange, cursor: "pointer", fontSize: 13, fontWeight: 800, width: "max-content" }}>← Voltar</button>}
-        <Card className="page-hero">
+        <Card className="page-hero video-review-hero">
           <div className="page-hero-row">
             <div>
               <div className="page-eyebrow" style={{ color: meta.color }}>VIDEO REVIEW</div>
@@ -283,13 +317,13 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                 <Tag color={meta.color}>{meta.label}</Tag>
                 <Tag color="#3b82f6">{current.video_source === "drive" ? "Google Drive" : hlsReady ? "HLS/CDN" : "Link direto"}</Tag>
+                <Tag color="#06b6d4">{comments.length} comentário{comments.length === 1 ? "" : "s"}</Tag>
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Btn onClick={() => setStatus("approved")} variant="success">Aprovado</Btn>
-              <Btn onClick={() => setStatus("approved_with_changes")} variant="ghost">Aprovado com ajustes</Btn>
-              <Btn onClick={() => setStatus("revision_requested")} variant="ghost">Revisão solicitada</Btn>
-              <Btn onClick={() => setStatus("rejected")} variant="danger">Precisa revisar</Btn>
+            <div className="review-status-actions">
+              <button type="button" onClick={() => setStatus("waiting_review")} className={current.status === "waiting_review" ? "active" : ""} style={{ "--accent": "#eab308" }}><span>Aguardando</span><small>cliente analisando</small></button>
+              <button type="button" onClick={() => setStatus("revision_requested")} className={["revision_requested", "approved_with_changes", "rejected"].includes(current.status) ? "active" : ""} style={{ "--accent": "#ff2400" }}><span>Ajustes</span><small>nova rodada</small></button>
+              <button type="button" onClick={() => setStatus("approved")} className={current.status === "approved" ? "active" : ""} style={{ "--accent": "#10b981" }}><span>Aprovado</span><small>entrega liberada</small></button>
             </div>
           </div>
         </Card>
@@ -306,8 +340,8 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
                 <span style={{ fontSize: 11, color: hlsReady ? "#10b981" : C.muted, fontWeight: 900 }}>{hlsReady ? "HLS adaptativo" : "MP4 direto"}</span>
               </div>
               <div onClick={e => { const rect = e.currentTarget.getBoundingClientRect(); seekTo(((e.clientX - rect.left) / rect.width) * (playerDuration || 0)); }} style={{ position: "relative", height: 18, borderRadius: 999, background: "rgba(255,255,255,.08)", cursor: "pointer", overflow: "hidden" }}>
-                <div style={{ position: "absolute", inset: "0 auto 0 0", width: `${playerDuration ? Math.min(100, playerTime / playerDuration * 100) : 0}%`, background: "rgba(249,115,22,.22)" }} />
-                {comments.filter(c => c.timestamp_seconds != null && playerDuration).map(c => <button key={c.id} onClick={e => { e.stopPropagation(); seekTo(c.timestamp_seconds); }} title={`${fmtTimecode(c.timestamp_seconds)} - ${c.content}`} style={{ position: "absolute", left: `${Math.min(99, Math.max(0, Number(c.timestamp_seconds) / playerDuration * 100))}%`, top: 3, transform: "translateX(-50%)", width: 12, height: 12, borderRadius: "50%", border: "2px solid #111", background: C.orange, boxShadow: "0 0 0 3px rgba(249,115,22,.18)", cursor: "pointer", padding: 0 }} />)}
+                <div style={{ position: "absolute", inset: "0 auto 0 0", width: `${playerDuration ? Math.min(100, playerTime / playerDuration * 100) : 0}%`, background: "rgba(255,36,0,.22)" }} />
+                {comments.filter(c => c.timestamp_seconds != null && playerDuration).map(c => <button key={c.id} onClick={e => { e.stopPropagation(); seekTo(c.timestamp_seconds); }} title={`${fmtTimecode(c.timestamp_seconds)} - ${c.content}`} style={{ position: "absolute", left: `${Math.min(99, Math.max(0, Number(c.timestamp_seconds) / playerDuration * 100))}%`, top: 3, transform: "translateX(-50%)", width: 12, height: 12, borderRadius: "50%", border: "2px solid #111", background: C.orange, boxShadow: "0 0 0 3px rgba(255,36,0,.18)", cursor: "pointer", padding: 0 }} />)}
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.muted, marginTop: 6 }}>
                 <span>{fmtTimecode(playerTime)}</span><span>{fmtTimecode(playerDuration)}</span>
@@ -316,7 +350,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
           </Card>
           <aside className="side-panel">
             <Card>
-              <SectionTitle>COMENTÁRIOS</SectionTitle>
+              <SectionTitle>COMENTÁRIOS POR TIMECODE</SectionTitle>
               {comments.length === 0 && <div style={{ fontSize: 13, color: C.muted, marginBottom: 12 }}>Nenhum comentário ainda.</div>}
               {comments.map(c => <button key={c.id} onClick={() => seekTo(c.timestamp_seconds)} style={{ width: "100%", display: "block", textAlign: "left", padding: "10px 0", border: "none", borderBottom: `1px solid ${C.border}`, background: "transparent", fontFamily: "inherit", cursor: c.timestamp_seconds != null ? "pointer" : "default" }}>
                 <div style={{ fontSize: 11, color: C.orange, fontWeight: 900 }}>{c.timecode || fmtTimecode(c.timestamp_seconds)} · {c.author_name}</div>
@@ -332,8 +366,11 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
             </Card>
             {!isPublic && <Card>
               <SectionTitle>LINK DO CLIENTE</SectionTitle>
-              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, wordBreak: "break-all" }}>{`${location.origin}${location.pathname}?review=${current.review_token}`}</div>
-              <Btn onClick={() => navigator.clipboard?.writeText(`${location.origin}${location.pathname}?review=${current.review_token}`)} size="sm" variant="ghost" style={{ marginTop: 12 }}>Copiar link</Btn>
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, wordBreak: "break-all" }}>{publicReviewUrl(current)}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 12 }}>
+                <Btn onClick={() => navigator.clipboard?.writeText(publicReviewUrl(current))} size="sm" variant="ghost" style={{ justifyContent: "center" }}>Copiar link</Btn>
+                <Btn onClick={() => window.open(publicReviewUrl(current), "_blank", "noopener,noreferrer")} size="sm" style={{ justifyContent: "center" }}>Abrir</Btn>
+              </div>
             </Card>}
           </aside>
         </div>
@@ -343,33 +380,46 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
 
   return (
     <div className="page-stack">
-      <Card className="page-hero">
+      <Card className="page-hero video-review-hero">
         <div className="page-hero-row">
           <div>
-            <div className="page-eyebrow" style={{ color: "#06b6d4" }}>VIDEO REVIEW NATIVO</div>
-            <div className="page-title">Revisões de vídeo sem fricção</div>
-            <p className="page-subtitle">Central para versões, links do cliente, comentários por timestamp e aprovações. Use MP4 direto ou HLS/CDN para reprodução mais leve.</p>
+            <div className="page-eyebrow" style={{ color: "#06b6d4" }}>PRODUTO PRINCIPAL</div>
+            <div className="page-title">Video Review premium para aprovação de cliente</div>
+            <p className="page-subtitle">Envie um link limpo, receba comentários por timecode e feche a decisão em três estados: aguardando, ajustes ou aprovado.</p>
           </div>
           <Btn onClick={() => setShowAdd(true)}>+ Novo review</Btn>
         </div>
       </Card>
+      <div className="review-command-grid">
+        <button type="button" style={{ "--accent": "#eab308" }}><span>{statusCounts.waiting}</span><b>Aguardando</b><small>links enviados sem decisão</small></button>
+        <button type="button" style={{ "--accent": "#ff2400" }}><span>{statusCounts.adjustments}</span><b>Ajustes</b><small>revisões que pedem nova versão</small></button>
+        <button type="button" style={{ "--accent": "#10b981" }}><span>{statusCounts.approved}</span><b>Aprovados</b><small>entregas liberadas</small></button>
+      </div>
       {items.length === 0 && <PremiumEmpty icon="▶" title="Nenhum vídeo em revisão" text="Crie um review com link direto, HLS ou Google Drive. Depois você acompanha status, comentários e aprovação." action={<Btn onClick={() => setShowAdd(true)} size="sm">Criar review</Btn>} />}
-      <div className="elite-briefing">
+      <div className="review-list-grid">
         {items.map(item => {
           const meta = statusMeta[item.status] || statusMeta.waiting_review;
-          return <button key={item.id} onClick={() => setSelected(item.id)} className="elite-brief-card" style={{ "--accent": meta.color, textAlign: "left", fontFamily: "inherit" }}>
-            <div className="elite-brief-label">{item.video_source === "drive" ? "Google Drive" : item.video_source === "hls" ? "HLS/CDN" : "Link direto"}</div>
-            <div className="elite-brief-value" style={{ fontSize: 20, lineHeight: 1.1 }}>{item.title}</div>
-            <div className="elite-brief-note">{item.project_title || "Sem projeto"} · {(item.comments || []).length} comentário{(item.comments || []).length === 1 ? "" : "s"}</div>
-            <div className="elite-brief-action">{meta.label}</div>
+          return <button key={item.id} onClick={() => setSelected(item.id)} className="review-card" style={{ "--accent": meta.color }}>
+            <div className="review-card-top"><Tag color={meta.color}>{meta.short}</Tag><span>{item.video_source === "drive" ? "Drive" : item.video_source === "hls" ? "HLS" : "MP4/link"}</span></div>
+            <strong>{item.title}</strong>
+            <p>{item.project_title || "Projeto sem nome"} {item.client_name ? `· ${item.client_name}` : ""}</p>
+            <div className="review-card-meta"><span>{(item.comments || []).length} comentário{(item.comments || []).length === 1 ? "" : "s"}</span><span>v{item.version || 1}</span></div>
+            <div className="review-card-action">Abrir revisão</div>
           </button>;
         })}
       </div>
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Novo Video Review" wide>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-          {[["direct", "Link direto / HLS"], ["drive", "Google Drive"]].map(([id, label]) => <button key={id} onClick={() => setForm(f => ({ ...f, source: id }))} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${form.source === id ? C.orange : C.border}`, background: form.source === id ? "rgba(249,115,22,.14)" : "rgba(255,255,255,.035)", color: form.source === id ? C.orange : C.muted, fontFamily: "inherit", fontSize: 11, fontWeight: 900, cursor: "pointer" }}>{label}</button>)}
+          {[["direct", "Link direto / HLS"], ["drive", "Google Drive"]].map(([id, label]) => <button key={id} onClick={() => setForm(f => ({ ...f, source: id }))} style={{ padding: "8px 12px", borderRadius: 10, border: `1px solid ${form.source === id ? C.orange : C.border}`, background: form.source === id ? "rgba(255,36,0,.14)" : "rgba(255,255,255,.035)", color: form.source === id ? C.orange : C.muted, fontFamily: "inherit", fontSize: 11, fontWeight: 900, cursor: "pointer" }}>{label}</button>)}
         </div>
         <div className="form-grid-2">
+          {projectOptions.length > 0 && <div style={{ marginBottom: 18 }}>
+            <label style={{ display: "block", fontSize: 11, color: C.muted, marginBottom: 7, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>Puxar de projeto</label>
+            <select value={form.projectKey} onChange={e => applyProject(e.target.value)} style={{ width: "100%", background: "rgba(255,255,255,0.065)", border: `1px solid ${C.border}`, borderRadius: 14, padding: "11px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}>
+              <option value="">Selecionar projeto</option>
+              {projectOptions.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+            </select>
+          </div>}
           <Inp label="Título do vídeo" value={form.title} onChange={v => setForm(f => ({ ...f, title: v }))} placeholder="Ex: Institucional v1" />
           <Inp label="Projeto" value={form.projectTitle} onChange={v => setForm(f => ({ ...f, projectTitle: v }))} placeholder="Nome do projeto" />
           <Inp label="Cliente" value={form.clientName} onChange={v => setForm(f => ({ ...f, clientName: v }))} placeholder="Nome do cliente" />

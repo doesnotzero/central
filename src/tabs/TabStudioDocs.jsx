@@ -61,6 +61,7 @@ export default function TabStudioDocs({state,dispatch,shared}){
     brandMessage:"",toneOfVoice:"",approvalCriteria:"",mandatoryPoints:"",logline:"",hook:"",cta:"",scenes:"",voiceover:"",callTime:"",wrapTime:"",producerContact:"",scheduleRows:"",talent:"",sceneCount:"",lenses:"",cameraMovement:"",audioPlan:"",shotList:"",coverageNotes:"",crewCost:"",equipmentCost:"",postCost:"",paymentTerms:"",assumptions:"",startDate:"",firstCutDate:"",approvalRounds:"",buffer:"",milestones:"",dependencies:"",productionType:"",cameraPackage:"",audioPackage:"",lightPackage:"",dataWorkflow:"",preflight:"",wrapChecklist:"",deliveryLinks:"",formats:"",versions:"",storagePolicy:"",acceptanceCriteria:"",deliveryNotes:""
   });
   const [generating,setGenerating]=useState(false);
+  const [showComposer,setShowComposer]=useState(false);
   const selectedDoc=studioDocById(form.docType);
   const activeDocConfig=docConfig(form.docType);
   const selectedClient=clients.find(c=>String(c.id)===String(form.clientId));
@@ -135,6 +136,7 @@ export default function TabStudioDocs({state,dispatch,shared}){
   };
   const restoreDoc=doc=>{
     if(doc.form)setForm({...form,...doc.form});
+    setShowComposer(true);
   };
   const renderSmartField=field=>{
     const value=form[field.key]||"";
@@ -166,29 +168,32 @@ export default function TabStudioDocs({state,dispatch,shared}){
       <Card className="studio-frame-hero" style={{padding:"20px 22px"}}>
         <div className="page-hero-row">
           <div>
-            <div className="page-eyebrow" style={{color:C.orange}}>NEXO STUDIO</div>
-            <div className="page-title">Documentos audiovisuais prontos para PDF</div>
-            <p className="page-subtitle">Escolha o tipo de documento, use presets de produção e gere um arquivo com padrão profissional, identidade da marca e estrutura operacional.</p>
+            <div className="page-eyebrow" style={{color:C.orange}}>DNZ CENTRAL</div>
+            <div className="page-title">Documentos de produção</div>
+            <p className="page-subtitle">Preview limpo na página. Briefing, callsheet, orçamento, cronograma e relatório abrem em janela sobreposta quando precisar editar.</p>
           </div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             <Tag color={selectedDoc.color}>{selectedDoc.label}</Tag>
             <Tag color="#10b981">{(state.studioDocs||[]).length} salvos</Tag>
+            <Btn onClick={()=>setShowComposer(true)} style={{borderRadius:2}}>Configurar documento</Btn>
           </div>
         </div>
       </Card>
 
       <div className="studio-doc-grid">
-        <div>
-          <Card style={{padding:"16px"}}>
-            <SectionTitle>TIPO DE DOCUMENTO</SectionTitle>
+        <div className="studio-control-stack">
+          <Card style={{padding:"12px"}}>
+            <SectionTitle>ESCOLHA O DOCUMENTO</SectionTitle>
             <OptionCards
               options={STUDIO_DOCUMENTS.map(d=>({label:d.label,value:d.id,description:d.desc,icon:"▦"}))}
               value={form.docType}
               onChange={id=>applyDocType(studioDocById(id))}
+              columns={2}
+              compact
             />
           </Card>
 
-          <Card style={{padding:"16px"}}>
+          <Card style={{padding:"12px"}}>
             <SectionTitle>PRESET DE PRODUÇÃO</SectionTitle>
             <ChipSelector
               options={AUDIOVISUAL_PRESETS.map(p=>({label:p.label,value:p.id}))}
@@ -198,7 +203,38 @@ export default function TabStudioDocs({state,dispatch,shared}){
             />
           </Card>
 
-          <div className="studio-form-band">
+          <Card style={{padding:"12px",background:"rgba(255,255,255,.025)"}}>
+            <SectionTitle>DOCUMENTO ATUAL</SectionTitle>
+            <div style={{display:"grid",gap:10}}>
+              {[
+                ["Tipo",selectedDoc.label],
+                ["Preset",selectedPreset.label],
+                ["Cliente",selectedClient?.name||form.clientName||"a definir"],
+                ["Projeto",selectedProject?.video?.title||form.title||"sem projeto vinculado"],
+                ["Prazo",form.deadline?new Date(`${form.deadline}T00:00`).toLocaleDateString("pt-BR"):"sem prazo"],
+              ].map(([a,b])=><div key={a} style={{display:"flex",justifyContent:"space-between",gap:12,padding:"10px 0",borderBottom:`1px solid ${C.border}`}}>
+                <span style={{fontSize:11,color:C.muted,fontWeight:900,textTransform:"uppercase",letterSpacing:".08em"}}>{a}</span>
+                <span style={{fontSize:12,color:"#ddd",fontWeight:800,textAlign:"right"}}>{b}</span>
+              </div>)}
+            </div>
+            <div className="mobile-actions" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:14}}>
+              <Btn onClick={()=>setShowComposer(true)} variant="ghost" style={{justifyContent:"center",borderRadius:2}}>Editar campos</Btn>
+              <Btn onClick={exportPDF} disabled={generating} style={{justifyContent:"center",borderRadius:2}}>{generating?"Gerando...":"Exportar PDF"}</Btn>
+            </div>
+          </Card>
+
+          {showComposer&&<div className="modal-shell" role="presentation">
+            <div className="modal-backdrop" onClick={()=>setShowComposer(false)} />
+            <div className="scale-in modal-panel wide" role="dialog" aria-modal="true" aria-label="Configurar documento">
+              <div className="modal-head">
+                <div>
+                  <h3 style={{margin:0,fontSize:16,fontWeight:900,color:"#fff",fontFamily:"'Syne',sans-serif"}}>Configurar documento</h3>
+                  <div style={{fontSize:10,color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginTop:4}}>{selectedDoc.label} · {selectedPreset.label}</div>
+                </div>
+                <button type="button" onClick={()=>setShowComposer(false)} aria-label="Fechar janela" style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:20,lineHeight:1}}>x</button>
+              </div>
+              <div className="modal-scroll modal-body">
+          <div className="studio-form-band" style={{border:"none",background:"transparent",padding:0}}>
             <SectionTitle>BASE DO DOCUMENTO</SectionTitle>
             {(clients.length>0||projects.length>0)&&<div className="form-grid-2">
               <div style={{marginBottom:13}}>
@@ -249,10 +285,13 @@ export default function TabStudioDocs({state,dispatch,shared}){
             <Txt label="Riscos / cuidados" value={form.risks} onChange={v=>update("risks",v)} placeholder="Clima, autorização, ruído, compliance, prazo..." rows={3}/>
             <Txt label="Notas adicionais" value={form.notes} onChange={v=>update("notes",v)} placeholder="Observações que devem aparecer no documento" rows={3}/>
             <div className="mobile-actions" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <Btn onClick={saveDoc} variant="ghost" style={{justifyContent:"center",borderRadius:2}}>Salvar histórico</Btn>
+              <Btn onClick={()=>{saveDoc();setShowComposer(false);}} variant="ghost" style={{justifyContent:"center",borderRadius:2}}>Salvar histórico</Btn>
               <Btn onClick={exportPDF} disabled={generating} style={{justifyContent:"center",borderRadius:2}}>{generating?"Gerando...":"Exportar PDF"}</Btn>
             </div>
           </div>
+              </div>
+            </div>
+          </div>}
 
           {(state.studioDocs||[]).length>0&&<Card style={{padding:"16px"}}>
             <SectionTitle>HISTÓRICO DO STUDIO</SectionTitle>
