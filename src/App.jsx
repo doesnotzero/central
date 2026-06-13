@@ -15,71 +15,44 @@ const TabAnalytics = React.lazy(() => import('./tabs/TabAnalytics.jsx'));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette.jsx'));
 
 // ── STORAGE ────────────────────────────────────────────────────────────
-const SK = "dcc_v5";
+const SK = "dnz_central_v1";
 const IDLE_LOCK_MS = 5 * 60 * 1000;
-const APP_NAME = "NEXO";
-const APP_SUBTITLE = "STUDIO OS";
-const TRIAL_MS = 10 * 60 * 1000;
+const APP_NAME = "DNZ Central";
+const APP_SUBTITLE = "Studio OS";
 const SALES_EMAIL = "contato@dnzcentral.com.br";
 const SALES_WHATSAPP = "5548998050267";
 const DEFAULT_SUBSCRIPTION = {
-  plan:"trial",
-  status:"trialing",
-  source:"local",
-  startedAt:null,
+  plan:"admin",
+  status:"active",
+  source:"admin",
+  startedAt:new Date().toISOString(),
   expiresAt:null,
-  updatedAt:null
+  updatedAt:new Date().toISOString()
 };
-const PLAN_ORDER = { trial:0, solo:1, pro:2, studio:3, white_label:4, admin:9 };
+const PLAN_ORDER = { admin:99 };
 const PLANS = [
-  { id:"solo", name:"Solo", price:"R$79", period:"/mês", audience:"Criador independente", color:"#10b981", highlight:false,
-    promise:"CRM, propostas e projetos audiovisuais para sair do improviso.",
-    features:["Clientes e pipeline","Projetos audiovisuais","Pipeline visual por projeto","Propostas com histórico","Financeiro básico"],
-    deliverables:["Workspace individual","CRM pipeline completo","Projetos com fluxo Briefing-Roteiro-Entrega","Checklist audiovisual por projeto","Financeiro de recebidos e pendentes"],
-    limits:"Ideal para até 25 clientes ativos e operação de uma pessoa.",
-    implementation:"Entregue no app atual" },
-  { id:"pro", name:"Pro", price:"R$149", period:"/mês", audience:"Freelancer premium", color:"#f97316", highlight:true,
-    promise:"Studio OS completo para vender, documentar, produzir e receber melhor.",
-    features:["Tudo do Solo","NEXO Score","Studio de documentos PDF","Histórico de documentos","Backup criptografado","Relatórios premium"],
-    deliverables:["Score de maturidade operacional","Briefing, roteiro, callsheet e checklist em PDF","Histórico de documentos restaurável","Templates de produção e rotina","Backup criptografado"],
-    limits:"Ideal para freelancer premium com recorrência, propostas e pipeline ativo.",
-    implementation:"Entregue com camada premium local" },
-  { id:"studio", name:"Studio", price:"R$399", period:"/mês", audience:"Pequena equipe/agência", color:"#8b5cf6", highlight:false,
-    promise:"Operação criativa com pipeline, documentos, receita e equipe no mesmo mapa.",
-    features:["Tudo do Pro","Playbooks por nicho","Checklist premium de set","Relatórios para clientes","Preparado para multiusuário","Suporte comercial"],
-    deliverables:["Playbooks por nicho criativo","Checklist premium de câmera, áudio, luz, produção, dados e pós","Pipeline visual por projeto","Relatórios para reunião com cliente","Setup assistido de operação"],
-    limits:"Ideal para times pequenos que precisam padronizar entrega e cobrança.",
-    implementation:"Parcial hoje; multiusuário real exige billing/permissões no Supabase" },
-  { id:"white_label", name:"White Label", price:"Sob consulta", period:"", audience:"Mentorias, escolas e comunidades", color:"#3b82f6", highlight:false,
-    promise:"NEXO com sua marca para vender metodologia, operação e documentos profissionais.",
-    features:["Marca personalizada","Templates proprietários","Setup assistido","Treinamento","Modelo de revenda","Contrato dedicado"],
-    deliverables:["Marca e cor do parceiro","Templates proprietários","Documentos PDF com identidade própria","Pacote de implantação","Modelo comercial de revenda"],
-    limits:"Ideal para quem quer vender NEXO como método ou sistema próprio.",
-    implementation:"Base visual entregue; revenda completa exige instâncias e contratos" },
+  { id:"admin", name:"Admin", price:"Acesso total", period:"", audience:"Administrador", color:"#f97316", highlight:true,
+    promise:"Controle completo do DNZ Central.",
+    features:["CRM completo","Projetos audiovisuais","Studio de documentos","Financeiro","Video Review","Analytics"],
+    deliverables:["Gerenciamento de clientes","Pipeline de projetos","Documentos PDF","Relatórios","Review de vídeos","Análise"],
+    limits:"Acesso total ao sistema.",
+    implementation:"Ativo" },
 ];
 const PLAN_CAPABILITIES = [
-  {label:"CRM pipeline",solo:true,pro:true,studio:true,white_label:true},
-  {label:"Projetos audiovisuais",solo:true,pro:true,studio:true,white_label:true},
-  {label:"Pipeline visual por projeto",solo:true,pro:true,studio:true,white_label:true},
-  {label:"Propostas no histórico",solo:true,pro:true,studio:true,white_label:true},
-  {label:"Financeiro operacional",solo:true,pro:true,studio:true,white_label:true},
-  {label:"Studio de documentos PDF",solo:false,pro:true,studio:true,white_label:true},
-  {label:"Histórico de documentos",solo:false,pro:true,studio:true,white_label:true},
-  {label:"Backup criptografado",solo:false,pro:true,studio:true,white_label:true},
-  {label:"Templates comerciais",solo:false,pro:true,studio:true,white_label:true},
-  {label:"Relatórios premium",solo:false,pro:true,studio:true,white_label:true},
-  {label:"Playbooks por nicho",solo:false,pro:false,studio:true,white_label:true},
-  {label:"Checklist premium de set",solo:false,pro:false,studio:true,white_label:true},
-  {label:"Capacidade de equipe",solo:false,pro:false,studio:"parcial",white_label:"parcial"},
-  {label:"Marca white label",solo:false,pro:false,studio:false,white_label:true},
+  {label:"CRM",admin:true},
+  {label:"Projetos",admin:true},
+  {label:"Documentos",admin:true},
+  {label:"Financeiro",admin:true},
+  {label:"Video Review",admin:true},
+  {label:"Analytics",admin:true},
 ];
 const DEFAULT_BUSINESS = {
-  onboarded:false,
+  onboarded:true,
   type:"Audiovisual / produtora",
   ticketAverage:2500,
   mainServices:["Vídeo Institucional","Reel / Short","Cobertura de Evento"],
-  brandName:"NEXO",
-  companyName:"",
+  brandName:"DNZ Central",
+  companyName:"DNZ Films",
   logoUrl:"",
   primaryColor:"#f97316",
   whatsapp:"5548998050267",
@@ -92,7 +65,7 @@ const persist = (s) => { try { localStorage.setItem(SK, JSON.stringify(s)); } ca
 const hydrate = () => { try { const r = localStorage.getItem(SK); return r ? JSON.parse(r) : null; } catch { return null; } };
 const normalizeBusiness = b => {
   const next={...DEFAULT_BUSINESS,...(b||{})};
-  if(String(next.brandName||"").toLowerCase()==="centralis")next.brandName=APP_NAME;
+  if(String(next.brandName||"").toLowerCase()==="centralis"||String(next.brandName||"").toLowerCase()==="nexo")next.brandName=APP_NAME;
   return next;
 };
 
@@ -698,9 +671,9 @@ function reducer(s, a) {
 const getLevel = xp=>[...LEVELS].reverse().find(l=>xp>=l.min)||LEVELS[0];
 const xpToNext = xp=>{const idx=LEVELS.findIndex(l=>l.min>xp);return idx===-1?null:{next:LEVELS[idx].min,pct:Math.round((xp-(LEVELS[idx-1]?.min||0))/(LEVELS[idx].min-(LEVELS[idx-1]?.min||0))*100)};};
 const getSubscription = state => ({...DEFAULT_SUBSCRIPTION,...(state.subscription||{})});
-const effectivePlanId = (state,isAdmin=false) => isAdmin ? "admin" : getSubscription(state).plan || "trial";
-const getPlanMeta = planId => planId==="admin" ? {id:"admin",name:"Admin",color:C.orange,price:"Acesso total",features:["Todos os recursos"]} : (PLANS.find(p=>p.id===planId)||{id:"trial",name:"Trial",color:"#eab308",price:"Teste",features:["10 minutos de avaliação"]});
-const hasPlanAccess = (state,required="solo",isAdmin=false) => (PLAN_ORDER[effectivePlanId(state,isAdmin)]||0) >= (PLAN_ORDER[required]||0);
+const effectivePlanId = (state,isAdmin=false) => isAdmin ? "admin" : getSubscription(state).plan || "admin";
+const getPlanMeta = planId => planId==="admin" ? {id:"admin",name:"Admin",color:C.orange,price:"Acesso total",features:["Todos os recursos"]} : (PLANS.find(p=>p.id===planId)||{id:"admin",name:"Admin",color:C.orange,price:"Acesso total",features:["Todos os recursos"]});
+const hasPlanAccess = (state,required="admin",isAdmin=false) => (PLAN_ORDER[effectivePlanId(state,isAdmin)]||0) >= (PLAN_ORDER[required]||0);
 const salesMessageForPlan = plan => `Olá, quero comprar o plano ${plan.name} do ${APP_NAME}. Entendi que ele entrega: ${(plan.deliverables||plan.features||[]).slice(0,3).join(", ")}.`;
 const planReadiness = state => {
   const clients=state.clients||[],projects=clients.flatMap(c=>c.videos||[]),entries=state.financeEntries||[],proposals=clients.flatMap(c=>c.proposals||[]);
@@ -3953,7 +3926,7 @@ function App(){
   const [navOpen,setNavOpen]=useState(false);
   const [toast,setToast]=useState(null);
   const [salesDismissed,setSalesDismissed]=useState(()=>localStorage.getItem("centralis_sales_dismissed")==="1");
-  const [trialRemaining,setTrialRemaining]=useState(TRIAL_MS);
+  const [trialRemaining,setTrialRemaining]=useState(Infinity);
   const [onboardingDismissed,setOnboardingDismissed]=useState(false);
   const [businessOnboardingOpen,setBusinessOnboardingOpen]=useState(false);
   const soundReady=useRef(false);
@@ -4050,14 +4023,7 @@ function App(){
     if(session?.user&&!business.onboarded)setBusinessOnboardingOpen(true);
   },[session?.user?.id,business.onboarded]);
   useEffect(()=>{
-    if(hasFullAccess){setTrialRemaining(Infinity);return;}
-    if(!session?.user){setTrialRemaining(TRIAL_MS);return;}
-    const key=trialKey(session);
-    if(!localStorage.getItem(key))localStorage.setItem(key,String(Date.now()));
-    const tick=()=>setTrialRemaining(TRIAL_MS-(Date.now()-Number(localStorage.getItem(key)||Date.now())));
-    tick();
-    const t=setInterval(tick,1000);
-    return()=>clearInterval(t);
+    setTrialRemaining(Infinity);
   },[session,hasFullAccess]);
   useEffect(()=>localStorage.setItem("centralis_sales_dismissed",salesDismissed?"1":"0"),[salesDismissed]);
   useEffect(()=>{const t=setInterval(()=>setQuoteIdx(i=>(i+1)%QUOTES.length),9000);return()=>clearInterval(t);},[]);
