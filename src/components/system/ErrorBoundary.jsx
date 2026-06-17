@@ -1,6 +1,6 @@
 import React from "react";
 
-const APP_NAME = "NEXO";
+const APP_NAME = "DNZ Central";
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,7 +13,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error("NEXO UI error", error, info);
+    console.error("DNZ UI error", error, info);
   }
 
   render() {

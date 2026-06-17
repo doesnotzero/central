@@ -65,7 +65,7 @@ const persist = (s) => { try { localStorage.setItem(SK, JSON.stringify(s)); } ca
 const hydrate = () => { try { const r = localStorage.getItem(SK); return r ? JSON.parse(r) : null; } catch { return null; } };
 const normalizeBusiness = b => {
   const next={...DEFAULT_BUSINESS,...(b||{})};
-  if(String(next.brandName||"").toLowerCase()==="centralis"||String(next.brandName||"").toLowerCase()==="nexo")next.brandName=APP_NAME;
+  if(String(next.brandName||"").toLowerCase()==="centralis")next.brandName=APP_NAME;
   return next;
 };
 
@@ -3169,7 +3169,7 @@ const BusinessOnboarding = ({open,business,dispatch,onClose})=>{
         <p style={{margin:0,fontSize:13,color:"#bbb",lineHeight:1.55}}>Esses dados personalizam propostas, WhatsApp comercial, textos e a identidade do sistema.</p>
       </div>
       <div className="form-grid-2">
-        <Inp label="Nome da marca" value={form.brandName} onChange={v=>setForm(f=>({...f,brandName:v}))} placeholder="Ex: NEXO Studio"/>
+        <Inp label="Nome da marca" value={form.brandName} onChange={v=>setForm(f=>({...f,brandName:v}))} placeholder="Ex: DNZ Films"/>
         <Inp label="Tipo de negócio" value={form.type} onChange={v=>setForm(f=>({...f,type:v}))} placeholder="Produtora, social media, agência..."/>
         <Inp label="Ticket médio (R$)" value={form.ticketAverage} onChange={v=>setForm(f=>({...f,ticketAverage:v}))} type="number" placeholder="2500"/>
         <Inp label="WhatsApp comercial" value={form.whatsapp} onChange={v=>setForm(f=>({...f,whatsapp:v}))} placeholder="5548998050267"/>
@@ -3263,7 +3263,7 @@ const TabAbout = ({session,onEnter,onPlans})=>{
           <div>
             <div className="elite-kicker">{APP_SUBTITLE}</div>
             <h1 className="elite-title">{APP_NAME}<br/><span style={{color:C.orange}}>Operação Criativa</span></h1>
-            <p className="elite-copy">O NEXO é uma central simples para transformar pedido de cliente em proposta, projeto, documento e recebimento. A ideia é abrir de manhã e saber exatamente o que vender, produzir e cobrar.</p>
+            <p className="elite-copy">O DNZ Central é uma central simples para transformar pedido de cliente em proposta, projeto, documento e recebimento. A ideia é abrir de manhã e saber exatamente o que vender, produzir e cobrar.</p>
           </div>
           <div>
             <div className="elite-actions">
@@ -3303,7 +3303,7 @@ const TabAbout = ({session,onEnter,onPlans})=>{
         <div className="plain-intro-card">
           <div className="plain-intro-kicker">Em uma frase</div>
           <div className="plain-intro-title">Um lugar para organizar a operação criativa do dia.</div>
-          <p className="plain-intro-text">Em vez de deixar cliente no WhatsApp, tarefa na cabeça, projeto no Drive e cobrança perdida, o NEXO junta o fluxo em uma visão só.</p>
+          <p className="plain-intro-text">Em vez de deixar cliente no WhatsApp, tarefa na cabeça, projeto no Drive e cobrança perdida, o DNZ Central junta o fluxo em uma visão só.</p>
         </div>
         <div className="plain-intro-card">
           <div className="plain-intro-kicker">Como ajuda hoje</div>
@@ -3379,7 +3379,7 @@ const TabAbout = ({session,onEnter,onPlans})=>{
           <div className="elite-section-title">
             <div>
               <h2>Identidade visual nova</h2>
-              <p>NEXO nasce para parecer ferramenta de operação criativa, não só painel administrativo.</p>
+              <p>DNZ Central nasce para parecer ferramenta de operação criativa, não só painel administrativo.</p>
             </div>
           </div>
           <div className="elite-access-grid">
@@ -3412,7 +3412,7 @@ const TabPlans = ({state,dispatch,isAdmin,setTab})=>{
         <div className="elite-content">
           <div className="page-hero-row">
             <div>
-              <div className="elite-kicker">PLANOS NEXO</div>
+              <div className="elite-kicker">PLANOS DNZ</div>
               <div className="page-title" style={{fontSize:34}}>Escolha o nível da sua operação criativa</div>
               <p className="page-subtitle">Compare CRM, produção, documentos PDF, checklists premium, financeiro e white label antes de liberar o workspace completo.</p>
               <div style={{marginTop:14,display:"flex",gap:8,flexWrap:"wrap"}}>
@@ -3678,7 +3678,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
     todayTasks.length&&{title:"Executar as atividades de hoje",text:`${todayTasks.length} atividade${todayTasks.length>1?"s":""} para finalizar hoje.`,tab:"tasks",color:"#10b981"},
     upcomingMeetings.length&&{title:"Preparar reunião",text:`${upcomingMeetings.length} ${upcomingMeetings.length>1?"reuniões":"reunião"} nos próximos dias.`,tab:"clients",color:"#3b82f6"},
   ].filter(Boolean);
-  const primaryAction=dailyActions[0]||{title:"Comece por um cliente",text:"Cadastre ou atualize um cliente para o NEXO montar o resto da operação.",tab:"clients",color:C.orange};
+  const primaryAction=dailyActions[0]||{title:"Comece por um cliente",text:"Cadastre ou atualize um cliente para o DNZ Central montar o resto da operação.",tab:"clients",color:C.orange};
   const dashboardPrivacy=privacyMode||!revealDashboardMoney;
   const toggleDashboardMoney=()=>{
     if(dashboardPrivacy){
@@ -3767,7 +3767,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
           </Card>
           {!state.business?.profile&&<Card>
             <SectionTitle>PERFIL</SectionTitle>
-            <p style={{fontSize:12,color:C.muted,lineHeight:1.5,margin:"-4px 0 12px"}}>Escolha uma base e o NEXO adapta serviços e ticket.</p>
+            <p style={{fontSize:12,color:C.muted,lineHeight:1.5,margin:"-4px 0 12px"}}>Escolha uma base e o sistema adapta serviços e ticket.</p>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
               {PROFILE_PRESETS.map(p=><button key={p.id} onClick={()=>selectProfile(p)} style={{textAlign:"left",padding:"11px",borderRadius:13,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)",color:"#eee",cursor:"pointer",fontFamily:"inherit"}}>
                 <div style={{fontSize:12,color:"#fff",fontWeight:900,marginBottom:5}}>{p.label}</div>
@@ -3914,7 +3914,7 @@ function App(){
   const [state,setRaw]=useState(INIT),[tab,setTab]=useState("about"),[quoteIdx,setQuoteIdx]=useState(0);
   const [privacyMode,setPrivacyMode]=useState(()=>localStorage.getItem("dcc_privacy")==="1");
   const [compactMode,setCompactMode]=useState(()=>localStorage.getItem("dcc_compact")==="1");
-  const [navMode,setNavMode]=useState(()=>localStorage.getItem("nexo_nav_mode")||"beginner");
+  const [navMode,setNavMode]=useState(()=>localStorage.getItem("dnz_nav_mode")||"beginner");
   const [soundEnabled,setSoundEnabled]=useState(()=>localStorage.getItem("dcc_sound")!=="0");
   const [lockEnabled,setLockEnabled]=useState(()=>localStorage.getItem("dcc_lock")!=="0");
   const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>localStorage.getItem("centralis_sidebar_collapsed")==="1");
@@ -4031,7 +4031,7 @@ function App(){
   useEffect(()=>localStorage.setItem("dcc_last_tab",tab),[tab]);
   useEffect(()=>localStorage.setItem("dcc_privacy",privacyMode?"1":"0"),[privacyMode]);
   useEffect(()=>localStorage.setItem("dcc_compact",compactMode?"1":"0"),[compactMode]);
-  useEffect(()=>localStorage.setItem("nexo_nav_mode",navMode),[navMode]);
+  useEffect(()=>localStorage.setItem("dnz_nav_mode",navMode),[navMode]);
   useEffect(()=>localStorage.setItem("dcc_sound",soundEnabled?"1":"0"),[soundEnabled]);
   useEffect(()=>localStorage.setItem("dcc_lock",lockEnabled?"1":"0"),[lockEnabled]);
   useEffect(()=>localStorage.setItem("centralis_sidebar_collapsed",sidebarCollapsed?"1":"0"),[sidebarCollapsed]);

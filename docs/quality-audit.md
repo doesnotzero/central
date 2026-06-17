@@ -1,4 +1,4 @@
-# NEXO Studio OS - Auditoria de Qualidade
+# DNZ Central - Auditoria de Qualidade
 
 Data: 2026-06-02
 

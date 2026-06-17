@@ -1,14 +1,14 @@
-# NEXO — Studio OS
+# DNZ Central — Does Not Zero
 
-**Sistema operacional para negócios criativos.** CRM, propostas, produção audiovisual, documentos, financeiro e review de vídeo — tudo no mesmo lugar.
+**Sistema operacional para a DNZ Films.** CRM, propostas, produção audiovisual, documentos, financeiro e review de vídeo — tudo no mesmo lugar.
 
 🌐 [dnzcentral.com.br](https://dnzcentral.com.br) · contato@dnzcentral.com.br · WhatsApp 55 48 99805-0267
 
 ---
 
-## O que é o NEXO
+## O que é o DNZ Central
 
-O NEXO é um Studio OS voltado para produtoras, freelancers e agências audiovisuais que querem sair do improviso e operar com clareza. Em vez de juntar ferramentas soltas, o NEXO centraliza toda a operação:
+O DNZ Central é o cockpit interno da DNZ Films (Does Not Zero), voltado para organizar toda a operação da produtora com clareza. Em vez de juntar ferramentas soltas, o DNZ centraliza:
 
 - **CRM e pipeline** — clientes, follow-ups e status de negociação
 - **Projetos audiovisuais** — fluxo de Briefing → Roteiro → Produção → Entrega
@@ -16,7 +16,7 @@ O NEXO é um Studio OS voltado para produtoras, freelancers e agências audiovis
 - **Studio de Documentos** — briefing, roteiro, callsheet e checklist em PDF
 - **Financeiro** — lançamentos, previsões e recebíveis
 - **Video Review** — link público para clientes aprovarem com comentários por timestamp
-- **Analytics** — métricas operacionais e NEXO Score de maturidade do negócio
+- **Analytics** — métricas operacionais e DNZ Score de maturidade do negócio
 - **Command Palette** — busca global e atalhos rápidos
 
 ---
@@ -73,24 +73,11 @@ central/
 │   └── review.types.ts          # Tipos do módulo de review
 ├── docs/
 │   └── quality-audit.md        # Auditoria técnica e roadmap interno
-├── legacy/
-│   └── index-standalone.html   # Backup do HTML standalone original
 ├── index.html                   # Entry point HTML
 ├── vite.config.js               # Configuração Vite
 ├── vercel.json                  # Configuração de deploy
 └── package.json
 ```
-
----
-
-## Planos disponíveis
-
-| Plano | Preço | Público |
-|---|---|---|
-| **Solo** | R$79/mês | Criador independente |
-| **Pro** | R$149/mês | Freelancer premium |
-| **Studio** | R$399/mês | Pequena equipe / agência |
-| **White Label** | Sob consulta | Mentorias, escolas e comunidades |
 
 ---
 
@@ -150,15 +137,17 @@ As migrations em `supabase/migrations/` criam a estrutura base de workspace e re
 
 ## Status do projeto
 
-O NEXO está em produção com as seguintes funcionalidades entregues:
+O DNZ Central está em produção com as seguintes funcionalidades entregues:
 
+- ✅ Landing page com portfolio, cases e pacotes
+- ✅ Login com acesso privado
 - ✅ CRM com pipeline e gestão de clientes
 - ✅ Projetos audiovisuais com fluxo completo
 - ✅ Propostas com histórico
 - ✅ Studio de documentos com exportação PDF
 - ✅ Financeiro operacional
 - ✅ Video Review com link público e comentários por timestamp
-- ✅ Analytics e NEXO Score
+- ✅ Analytics e DNZ Score
 - ✅ Command Palette
 - ✅ Lazy loading de abas pesadas
 - ✅ Hooks e componentes reutilizáveis
@@ -166,7 +155,6 @@ O NEXO está em produção com as seguintes funcionalidades entregues:
 Em desenvolvimento:
 
 - 🔄 Notification Center com Supabase Realtime
-- 🔄 Permissões reais por plano/role e billing
 - 🔄 Timeline Gantt por projeto
 - 🔄 Separação incremental do `App.jsx`
 - 🔄 Migração incremental para TypeScript
@@ -176,4 +164,4 @@ Em desenvolvimento:
 
 ## Licença
 
-Proprietário — todos os direitos reservados. Para parcerias ou white label, entre em contato via [dnzcentral.com.br](https://dnzcentral.com.br).
+Proprietário — todos os direitos reservados. DNZ Films · [dnzcentral.com.br](https://dnzcentral.com.br)
