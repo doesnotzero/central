@@ -16,7 +16,7 @@ O DNZ Central é o cockpit interno da DNZ Films (Does Not Zero), voltado para or
 - **Studio de Documentos** — briefing, roteiro, callsheet e checklist em PDF
 - **Financeiro** — lançamentos, previsões e recebíveis
 - **Video Review** — link público para clientes aprovarem com comentários por timestamp
-- **Analytics** — métricas operacionais e DNZ Score de maturidade do negócio
+- **Relatórios** — resumo executivo da operação audiovisual, produção, comercial e Video Review
 - **Command Palette** — busca global e atalhos rápidos
 
 ---
@@ -54,7 +54,7 @@ central/
 │   │   ├── TabVideoReview.jsx   # Review público/privado com timestamp
 │   │   ├── TabStudioDocs.jsx    # Studio de documentos e exportação PDF
 │   │   ├── TabFinance.jsx       # Lançamentos financeiros e previsões
-│   │   └── TabAnalytics.jsx     # Métricas operacionais
+│   │   └── TabBrandBook.jsx     # Brand Book DNZ Films com exportação PDF
 │   ├── components/
 │   │   ├── CommandPalette.jsx   # Busca global e comandos rápidos
 │   │   ├── form-fields/         # ChipSelector, CurrencyInput, DurationPicker, MaskedInput, OptionCards, TimeInput
@@ -147,7 +147,7 @@ O DNZ Central está em produção com as seguintes funcionalidades entregues:
 - ✅ Studio de documentos com exportação PDF
 - ✅ Financeiro operacional
 - ✅ Video Review com link público e comentários por timestamp
-- ✅ Analytics e DNZ Score
+- ✅ Relatórios operacionais da DNZ Films
 - ✅ Command Palette
 - ✅ Lazy loading de abas pesadas
 - ✅ Hooks e componentes reutilizáveis

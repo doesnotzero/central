@@ -7,15 +7,24 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "check": "npm run build"
+    "check": "npm run build",
+    "setup-whitelabel": "tsx scripts/setup-whitelabel.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
     "hls.js": "^1.6.16",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@types/node": "^26.0.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
     "vite": "^6.0.7"
   }
 }

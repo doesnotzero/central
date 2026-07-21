@@ -7,10 +7,11 @@ import {
   getDeliverableByToken,
   updateDeliverableStatus
 } from "../services/reviewService.js";
+import { C as THEME_C } from "../theme.config.js";
 
 const C = {
-  orange: "#ff2400",
-  orangeD: "#cc1d00",
+  orange: THEME_C.orange,
+  orangeD: THEME_C.orangeD,
   muted: "#858585",
   border: "rgba(255,255,255,.11)"
 };
@@ -132,7 +133,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
   const hlsReady = current?.video_url && String(current.video_url).toLowerCase().includes(".m3u8");
   const statusMeta = {
     waiting_review: { label: "Aguardando", short: "Aguardando", color: "#eab308", desc: "Cliente recebeu o link e ainda não decidiu." },
-    revision_requested: { label: "Ajustes", short: "Ajustes", color: "#ff2400", desc: "Cliente pediu alteração ou apontou correções." },
+    revision_requested: { label: "Ajustes", short: "Ajustes", color: C.orange, desc: "Cliente pediu alteração ou apontou correções." },
     approved_with_changes: { label: "Ajustes leves", short: "Ajustes", color: "#3b82f6", desc: "Aprovado, mas com pequenos ajustes anotados." },
     rejected: { label: "Refazer", short: "Ajustes", color: "#ef4444", desc: "Precisa de nova rodada antes de aprovar." },
     approved: { label: "Aprovado", short: "Aprovado", color: "#10b981", desc: "Entrega aprovada pelo cliente." }
@@ -322,7 +323,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
             </div>
             <div className="review-status-actions">
               <button type="button" onClick={() => setStatus("waiting_review")} className={current.status === "waiting_review" ? "active" : ""} style={{ "--accent": "#eab308" }}><span>Aguardando</span><small>cliente analisando</small></button>
-              <button type="button" onClick={() => setStatus("revision_requested")} className={["revision_requested", "approved_with_changes", "rejected"].includes(current.status) ? "active" : ""} style={{ "--accent": "#ff2400" }}><span>Ajustes</span><small>nova rodada</small></button>
+              <button type="button" onClick={() => setStatus("revision_requested")} className={["revision_requested", "approved_with_changes", "rejected"].includes(current.status) ? "active" : ""} style={{ "--accent": C.orange }}><span>Ajustes</span><small>nova rodada</small></button>
               <button type="button" onClick={() => setStatus("approved")} className={current.status === "approved" ? "active" : ""} style={{ "--accent": "#10b981" }}><span>Aprovado</span><small>entrega liberada</small></button>
             </div>
           </div>
@@ -392,7 +393,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
       </Card>
       <div className="review-command-grid">
         <button type="button" style={{ "--accent": "#eab308" }}><span>{statusCounts.waiting}</span><b>Aguardando</b><small>links enviados sem decisão</small></button>
-        <button type="button" style={{ "--accent": "#ff2400" }}><span>{statusCounts.adjustments}</span><b>Ajustes</b><small>revisões que pedem nova versão</small></button>
+        <button type="button" style={{ "--accent": C.orange }}><span>{statusCounts.adjustments}</span><b>Ajustes</b><small>revisões que pedem nova versão</small></button>
         <button type="button" style={{ "--accent": "#10b981" }}><span>{statusCounts.approved}</span><b>Aprovados</b><small>entregas liberadas</small></button>
       </div>
       {items.length === 0 && <PremiumEmpty icon="▶" title="Nenhum vídeo em revisão" text="Crie um review com link direto, HLS ou Google Drive. Depois você acompanha status, comentários e aprovação." action={<Btn onClick={() => setShowAdd(true)} size="sm">Criar review</Btn>} />}

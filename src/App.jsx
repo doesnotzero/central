@@ -7,20 +7,31 @@ import { ChipSelector } from './components/form-fields/ChipSelector.jsx';
 import { CurrencyInput } from './components/form-fields/CurrencyInput.jsx';
 import { MaskedInput } from './components/form-fields/MaskedInput.jsx';
 import { OptionCards } from './components/form-fields/OptionCards.jsx';
+import { LandingPage, LoginPage } from './LandingPage.jsx';
+import { BRANDING, DEFAULT_BUSINESS_CONFIG } from './config/branding';
+import ModularTabAgenda from './tabs/TabAgenda.jsx';
+import ModularTabBusinessSettings, { OnboardingGuide as ModularOnboardingGuide, SecurityPanel as ModularSecurityPanel } from './tabs/TabBusinessSettings.jsx';
+import ModularTabClients from './tabs/TabClients.jsx';
+import ModularTabDashboard from './tabs/TabDashboard.jsx';
+import ModularTabExport from './tabs/TabExport.jsx';
+import ModularTabProjects from './tabs/TabProjects.jsx';
+import ModularTabProposta from './tabs/TabProposta.jsx';
+import ModularTabTasks from './tabs/TabTasks.jsx';
+import './workspace.css';
 
 const TabVideoReview = React.lazy(() => import('./tabs/TabVideoReview.jsx'));
 const TabStudioDocs = React.lazy(() => import('./tabs/TabStudioDocs.jsx'));
 const TabFinance = React.lazy(() => import('./tabs/TabFinance.jsx'));
-const TabAnalytics = React.lazy(() => import('./tabs/TabAnalytics.jsx'));
+const TabBrandBook = React.lazy(() => import('./tabs/TabBrandBook.jsx'));
 const CommandPalette = React.lazy(() => import('./components/CommandPalette.jsx'));
 
 // ── STORAGE ────────────────────────────────────────────────────────────
 const SK = "dnz_central_v1";
 const IDLE_LOCK_MS = 5 * 60 * 1000;
-const APP_NAME = "DNZ Central";
-const APP_SUBTITLE = "Studio OS";
-const SALES_EMAIL = "contato@dnzcentral.com.br";
-const SALES_WHATSAPP = "5548998050267";
+const APP_NAME = BRANDING.appName;
+const APP_SUBTITLE = BRANDING.appSubtitle;
+const SALES_EMAIL = BRANDING.salesEmail;
+const SALES_WHATSAPP = BRANDING.salesWhatsapp;
 const DEFAULT_SUBSCRIPTION = {
   plan:"admin",
   status:"active",
@@ -29,43 +40,15 @@ const DEFAULT_SUBSCRIPTION = {
   expiresAt:null,
   updatedAt:new Date().toISOString()
 };
-const PLAN_ORDER = { admin:99 };
-const PLANS = [
-  { id:"admin", name:"Admin", price:"Acesso total", period:"", audience:"Administrador", color:"#f97316", highlight:true,
-    promise:"Controle completo do DNZ Central.",
-    features:["CRM completo","Projetos audiovisuais","Studio de documentos","Financeiro","Video Review","Analytics"],
-    deliverables:["Gerenciamento de clientes","Pipeline de projetos","Documentos PDF","Relatórios","Review de vídeos","Análise"],
-    limits:"Acesso total ao sistema.",
-    implementation:"Ativo" },
-];
-const PLAN_CAPABILITIES = [
-  {label:"CRM",admin:true},
-  {label:"Projetos",admin:true},
-  {label:"Documentos",admin:true},
-  {label:"Financeiro",admin:true},
-  {label:"Video Review",admin:true},
-  {label:"Analytics",admin:true},
-];
 const DEFAULT_BUSINESS = {
-  onboarded:true,
-  type:"Audiovisual / produtora",
-  ticketAverage:2500,
-  mainServices:["Vídeo Institucional","Reel / Short","Cobertura de Evento"],
-  brandName:"DNZ Central",
-  companyName:"DNZ Films",
-  logoUrl:"",
-  primaryColor:"#f97316",
-  whatsapp:"5548998050267",
-  proposalEmail:"",
-  proposalDocument:"",
-  proposalCity:"",
-  currency:"BRL"
+  ...DEFAULT_BUSINESS_CONFIG
 };
 const persist = (s) => { try { localStorage.setItem(SK, JSON.stringify(s)); } catch {} };
 const hydrate = () => { try { const r = localStorage.getItem(SK); return r ? JSON.parse(r) : null; } catch { return null; } };
 const normalizeBusiness = b => {
   const next={...DEFAULT_BUSINESS,...(b||{})};
-  if(String(next.brandName||"").toLowerCase()==="centralis")next.brandName=APP_NAME;
+  const legacyBrands=["central"+"is","ne"+"xo","ne"+"xo studio"];
+  if(legacyBrands.includes(String(next.brandName||"").toLowerCase()))next.brandName=BRANDING.brandName;
   return next;
 };
 
@@ -102,9 +85,28 @@ const BADGES = [
 const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const C = {
   bg:"#0d0d0d", surface:"rgba(255,255,255,0.04)", border:"rgba(255,255,255,0.07)",
-  orange:"#f97316", orangeD:"#ea580c", text:"#e8e8e8", muted:"#666", faint:"#2a2a2a"
+  orange:BRANDING.primaryColor, orangeD:BRANDING.primaryColorDark||BRANDING.primaryColor, red:BRANDING.primaryColor, text:"#e8e8e8", muted:"#666", faint:"#2a2a2a"
 };
-const STATUS_COLORS = { ativo:"#10b981", pausado:"#eab308", concluido:"#6b7280", prospecto:"#3b82f6" };
+const CLIENT_PIPELINE = [
+  {key:"lead",label:"Lead",color:"#3b82f6"},
+  {key:"briefing",label:"Briefing",color:"#8b5cf6"},
+  {key:"proposta_enviada",label:"Proposta enviada",color:"#eab308"},
+  {key:"em_producao",label:"Em produção",color:"#ff2400"},
+  {key:"entregue",label:"Entregue",color:"#10b981"},
+  {key:"pago",label:"Pago",color:"#06b6d4"}
+];
+const normalizeClientStatus = c => {
+  const s = (c?.status||"lead").toLowerCase();
+  if(["prospecto","lead"].includes(s))return "lead";
+  if(["ativo","contato","briefing"].includes(s))return "briefing";
+  if(["proposta","proposal","proposta_enviada","enviada"].includes(s))return "proposta_enviada";
+  if(["pausado","producao","produção","em_producao","em produção","recorrente"].includes(s))return "em_producao";
+  if(["concluido","concluído","entregue"].includes(s))return "entregue";
+  if(["pago","paid"].includes(s))return "pago";
+  return "lead";
+};
+const clientStageLabel = c => CLIENT_PIPELINE.find(stage=>stage.key===normalizeClientStatus(c))?.label || "Lead";
+const STATUS_COLORS = Object.fromEntries(CLIENT_PIPELINE.map(s=>[s.key,s.color]));
 const PAG_COLORS    = { pago:"#10b981", pendente:"#eab308", atrasado:"#ef4444", parcial:"#f97316" };
 const VIDEO_STATUS  = ["pendente","gravando","editando","revisão","entregue"];
 const VIDEO_COLORS  = { pendente:C.muted, gravando:"#3b82f6", editando:"#8b5cf6", "revisão":"#eab308", entregue:"#10b981" };
@@ -567,6 +569,27 @@ const studioDocTemplates = ({form,business,client,project})=>{
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${studioEsc(doc.label)} - ${studioEsc(form.title||preset.title)}</title><style>*{box-sizing:border-box}body{margin:0;background:#f7f4ee;color:#141414;font-family:Arial,sans-serif}.doc-page{max-width:860px;margin:0 auto;background:#f7f4ee;min-height:100vh;padding:48px}.doc-kicker{font-size:10px;color:${doc.color};font-weight:900;letter-spacing:.18em;text-transform:uppercase}.doc-title{font-size:42px;line-height:.95;font-weight:900;margin:10px 0 12px;color:#111}.doc-muted{color:#666;line-height:1.45}.doc-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:22px;border-bottom:3px solid ${doc.color}}.doc-brand{text-align:right;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.12em;font-weight:900}.doc-section{margin-top:26px;padding-top:15px;border-top:1px solid #d9d3ca}.doc-section h2{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:${doc.color};margin:0 0 10px}.doc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:22px}.doc-field{border:1px solid #ded7cc;background:#fffdf8;padding:11px}.doc-field-label{font-size:9px;color:#888;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.doc-field-value{font-size:12px;color:#1a1a1a;font-weight:700;line-height:1.45}.doc-list{display:grid;gap:7px}.doc-item{font-size:12px;line-height:1.48;padding:9px 11px;border-left:3px solid ${doc.color};background:#fffdf8}.doc-table{width:100%;border-collapse:collapse;background:#fffdf8;font-size:12px}.doc-table th{text-align:left;color:${doc.color};font-size:9px;text-transform:uppercase;letter-spacing:.1em;border:1px solid #ded7cc;padding:8px}.doc-table td{border:1px solid #ded7cc;padding:9px;vertical-align:top;line-height:1.4}.doc-footer{margin-top:42px;padding-top:18px;border-top:1px solid #d9d3ca;display:flex;justify-content:space-between;gap:24px;color:#777;font-size:11px}@media print{body{background:#fff}.doc-page{padding:32px;max-width:none}.doc-section{break-inside:avoid}.doc-grid{grid-template-columns:1fr 1fr}}</style></head><body><main class="doc-page"><header class="doc-header"><div><div class="doc-kicker">${studioEsc(APP_NAME)} Studio · ${studioEsc(doc.label)}</div><h1 class="doc-title">${studioEsc(form.title||project?.video?.title||preset.title)}</h1><div class="doc-muted">${studioEsc(config.tone||doc.desc)}</div></div><div class="doc-brand">${studioEsc(business.brandName||APP_NAME)}<br>${studioEsc(business.proposalEmail||SALES_EMAIL)}<br>${new Date().toLocaleDateString("pt-BR")}</div></header>${fieldGrid}${content}${form.notes?section("Notas Adicionais",studioLines(form.notes)): ""}<footer class="doc-footer"><div>${studioEsc(business.brandName||APP_NAME)} · Documento operacional</div><div>Gerado em ${new Date().toLocaleString("pt-BR")}</div></footer></main></body></html>`;
 };
 
+const DEFAULT_GSD_AGENT = {
+  enabled:true,
+  name:"GSD",
+  label:"Get Shit Done",
+  mode:"execution",
+  mission:"Guardar contexto operacional e transformar decisão solta em próxima ação clara.",
+  currentFocus:"",
+  operatingRules:[
+    "Capturar contexto antes que ele se perca",
+    "Separar fato, decisão e próxima ação",
+    "Puxar o usuário de volta para execução quando houver dispersão"
+  ],
+  memory:[],
+  lastActivatedAt:new Date().toISOString(),
+  updatedAt:new Date().toISOString()
+};
+const normalizeGsdAgent = agent => ({
+  ...DEFAULT_GSD_AGENT,
+  ...(agent||{}),
+  memory:Array.isArray(agent?.memory)?agent.memory:[]
+});
 
 const INIT = {
   habits:[
@@ -584,6 +607,7 @@ const INIT = {
   business:DEFAULT_BUSINESS,
   subscription:DEFAULT_SUBSCRIPTION,
   scheduleBlocks:{}, focusDayPriorities:[], focusSessions:0,
+  gsdAgent:DEFAULT_GSD_AGENT,
   xp:0, totalHabitsCompleted:0, totalTasksCompleted:0, unlockedBadges:[],
   pomodoroSettings:{ work:25, shortBreak:5, longBreak:15 },
   mission:{
@@ -596,9 +620,18 @@ const INIT = {
 // ── REDUCER ────────────────────────────────────────────────────────────
 function reducer(s, a) {
   switch(a.type) {
-    case "HYDRATE": return {...INIT,...a.p,business:normalizeBusiness(a.p?.business),subscription:{...DEFAULT_SUBSCRIPTION,...(a.p?.subscription||{})}};
+    case "HYDRATE": return {...INIT,...a.p,business:normalizeBusiness(a.p?.business),subscription:{...DEFAULT_SUBSCRIPTION,...(a.p?.subscription||{})},gsdAgent:normalizeGsdAgent(a.p?.gsdAgent)};
     case "UPDATE_BUSINESS": return {...s,business:normalizeBusiness({...s.business,...a.data})};
     case "SET_SUBSCRIPTION": return {...s,subscription:{...DEFAULT_SUBSCRIPTION,...(s.subscription||{}),...a.data,updatedAt:new Date().toISOString()}};
+    case "UPDATE_GSD_AGENT": return {...s,gsdAgent:normalizeGsdAgent({...s.gsdAgent,...a.data,updatedAt:new Date().toISOString()})};
+    case "ADD_GSD_CONTEXT": {
+      const entry={id:Date.now(),type:"context",text:"",tags:[],createdAt:new Date().toISOString(),...a.entry};
+      return {...s,gsdAgent:normalizeGsdAgent({...s.gsdAgent,memory:[entry,...(s.gsdAgent?.memory||[])],updatedAt:new Date().toISOString()})};
+    }
+    case "REMOVE_GSD_CONTEXT":
+      return {...s,gsdAgent:normalizeGsdAgent({...s.gsdAgent,memory:(s.gsdAgent?.memory||[]).filter(m=>m.id!==a.id),updatedAt:new Date().toISOString()})};
+    case "CLEAR_GSD_CONTEXT":
+      return {...s,gsdAgent:normalizeGsdAgent({...s.gsdAgent,memory:[],updatedAt:new Date().toISOString()})};
     case "ADD_HABIT": return {...s,habits:[...s.habits,a.habit]};
     case "REMOVE_HABIT": return {...s,habits:s.habits.filter(h=>h.id!==a.id)};
     case "TOGGLE_HABIT": {
@@ -661,7 +694,7 @@ function reducer(s, a) {
     case "SET_FOCUS_PRIORITIES": return {...s,focusDayPriorities:a.priorities};
     case "COMPLETE_FOCUS_PRIORITY": return {...s,focusDayPriorities:s.focusDayPriorities.map((p,i)=>i===a.idx?{...p,done:!p.done}:p)};
     case "INC_FOCUS_SESSIONS": return {...s,focusSessions:(s.focusSessions||0)+1};
-    case "RESTORE": return {...INIT,...a.p,business:normalizeBusiness(a.p?.business),subscription:{...DEFAULT_SUBSCRIPTION,...(a.p?.subscription||{})}};
+    case "RESTORE": return {...INIT,...a.p,business:normalizeBusiness(a.p?.business),subscription:{...DEFAULT_SUBSCRIPTION,...(a.p?.subscription||{})},gsdAgent:normalizeGsdAgent(a.p?.gsdAgent)};
     case "CLEAR_DATA": return INIT;
     default: return s;
   }
@@ -671,11 +704,8 @@ function reducer(s, a) {
 const getLevel = xp=>[...LEVELS].reverse().find(l=>xp>=l.min)||LEVELS[0];
 const xpToNext = xp=>{const idx=LEVELS.findIndex(l=>l.min>xp);return idx===-1?null:{next:LEVELS[idx].min,pct:Math.round((xp-(LEVELS[idx-1]?.min||0))/(LEVELS[idx].min-(LEVELS[idx-1]?.min||0))*100)};};
 const getSubscription = state => ({...DEFAULT_SUBSCRIPTION,...(state.subscription||{})});
-const effectivePlanId = (state,isAdmin=false) => isAdmin ? "admin" : getSubscription(state).plan || "admin";
-const getPlanMeta = planId => planId==="admin" ? {id:"admin",name:"Admin",color:C.orange,price:"Acesso total",features:["Todos os recursos"]} : (PLANS.find(p=>p.id===planId)||{id:"admin",name:"Admin",color:C.orange,price:"Acesso total",features:["Todos os recursos"]});
-const hasPlanAccess = (state,required="admin",isAdmin=false) => (PLAN_ORDER[effectivePlanId(state,isAdmin)]||0) >= (PLAN_ORDER[required]||0);
-const salesMessageForPlan = plan => `Olá, quero comprar o plano ${plan.name} do ${APP_NAME}. Entendi que ele entrega: ${(plan.deliverables||plan.features||[]).slice(0,3).join(", ")}.`;
-const planReadiness = state => {
+const hasAdminAccess = (_state,_required="admin",isAdmin=false) => !!isAdmin;
+const operationReadiness = state => {
   const clients=state.clients||[],projects=clients.flatMap(c=>c.videos||[]),entries=state.financeEntries||[],proposals=clients.flatMap(c=>c.proposals||[]);
   const configured=!!state.business?.onboarded;
   const revenue=clients.reduce((a,c)=>a+Number(c.value||0),0)+entries.filter(e=>e.type==="entrada").reduce((a,e)=>a+Number(e.value||0),0);
@@ -688,14 +718,6 @@ const planReadiness = state => {
     {label:"Backup/relatório preparado",ok:!!localStorage.getItem("dcc_last_backup")||Object.keys(state.reviews||{}).length>0,tab:"export"},
   ];
   return {items:done,score:Math.round(done.filter(i=>i.ok).length/done.length*100),revenue,clients:clients.length,projects:projects.length,proposals:proposals.length};
-};
-const recommendedPlanForState = state => {
-  const r=planReadiness(state);
-  const activeProjects=(state.clients||[]).flatMap(c=>c.videos||[]).filter(v=>v.status!=="entregue").length;
-  if((state.business?.brandName||"").toLowerCase()!==APP_NAME.toLowerCase()&&state.business?.logoUrl&&r.clients>=10)return "white_label";
-  if(r.clients>=12||activeProjects>=6||r.revenue>=25000)return "studio";
-  if(r.clients>=3||r.projects>=1||r.proposals>=1||r.revenue>=5000)return "pro";
-  return "solo";
 };
 const todayStr = ()=>new Date().toDateString();
 const inputDate = ()=>new Date().toISOString().slice(0,10);
@@ -714,8 +736,7 @@ const getUserName = session=>{
   const clean=firstName(raw.replace(/[._-]+/g," "));
   return clean?clean.charAt(0).toUpperCase()+clean.slice(1):"";
 };
-const trialKey = session=>`centralis_trial_${session?.user?.id||"guest"}`;
-const onboardingKey = session=>`centralis_onboarding_${session?.user?.id||"guest"}`;
+const onboardingKey = session=>`dnz_onboarding_${session?.user?.id||"guest"}`;
 const formatTimer = ms=>{
   const total=Math.max(0,Math.ceil(ms/1000)),m=String(Math.floor(total/60)).padStart(2,"0"),s=String(total%60).padStart(2,"0");
   return `${m}:${s}`;
@@ -739,7 +760,7 @@ const encryptBackupPayload = async (payload,password)=>{
   const key=await deriveBackupKey(password,salt);
   const data=await wc.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(payload)));
   return {
-    _centralisEncryptedBackup:true,
+    _dnzEncryptedBackup:true,
     version:1,
     app:APP_NAME,
     alg:"AES-GCM-256",
@@ -752,7 +773,7 @@ const encryptBackupPayload = async (payload,password)=>{
   };
 };
 const decryptBackupPayload = async (backup,password)=>{
-  if(!backup?._centralisEncryptedBackup)throw new Error("not-encrypted");
+  if(!backup?._dnzEncryptedBackup)throw new Error("not-encrypted");
   const salt=base64ToBytes(backup.salt),iv=base64ToBytes(backup.iv),data=base64ToBytes(backup.data);
   const key=await deriveBackupKey(password,salt);
   const plain=await getWebCrypto().subtle.decrypt({name:"AES-GCM",iv},key,data);
@@ -940,132 +961,21 @@ const PremiumEmpty = ({title,text,action,icon="+"})=>(
     {action}
   </Card>
 );
-const PlanBadge = ({state,isAdmin=false})=>{
-  const plan=getPlanMeta(effectivePlanId(state,isAdmin));
-  const sub=getSubscription(state);
-  return <span className="plan-badge" style={{color:plan.color,borderColor:`${plan.color}44`,background:`${plan.color}12`}}>
-    {plan.name} · {isAdmin?"acesso total":sub.status==="active"?"ativo":sub.status==="expired"?"expirado":"trial"}
-  </span>;
-};
-const PlanGate = ({state,isAdmin=false,required="pro",title="Recurso premium",text="Esse recurso faz parte da camada paga do Studio OS.",setTab})=>{
-  if(hasPlanAccess(state,required,isAdmin))return null;
-  const req=getPlanMeta(required);
-  return (
-    <div className="plan-gate">
-      <div>
-        <div style={{fontSize:10,color:req.color,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase",marginBottom:5}}>Upgrade {req.name}</div>
-        <div style={{fontSize:14,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif"}}>{title}</div>
-        <div style={{fontSize:12,color:"#aaa",lineHeight:1.45,marginTop:4}}>{text}</div>
-      </div>
-      <Btn onClick={()=>setTab?.("plans")} size="sm">Ver planos</Btn>
-    </div>
-  );
-};
-const CapabilityMark = ({value,color})=>{
-  if(value===true)return <span style={{color:"#10b981",fontWeight:900}}>Incluído</span>;
-  if(value==="parcial")return <span style={{color:"#eab308",fontWeight:900}}>Parcial</span>;
-  return <span style={{color:C.muted}}>Não incluso</span>;
-};
-const PlanDeliverables = ({plan,recommended,active,onBuy,onActivate,isAdmin})=>(
-  <div className={`plan-card ${plan.highlight?"featured":""}`} style={{"--accent":plan.color}}>
-    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}>
-      <span className="plan-pill" style={{color:plan.color,borderColor:`${plan.color}44`,background:`${plan.color}12`}}>{plan.audience}</span>
-      {recommended&&<Tag color={plan.color}>melhor encaixe</Tag>}
-      {!recommended&&plan.highlight&&<Tag color={plan.color}>recomendado</Tag>}
-    </div>
-    <div>
-      <div style={{fontSize:22,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif"}}>{plan.name}</div>
-      <p style={{fontSize:12,color:"#aaa",lineHeight:1.5,margin:"7px 0 0"}}>{plan.promise}</p>
-    </div>
-    <div><span className="plan-price">{plan.price}</span><span style={{fontSize:12,color:C.muted,fontWeight:800}}>{plan.period}</span></div>
-    <div style={{padding:"11px 12px",borderRadius:13,border:`1px solid ${plan.color}28`,background:`${plan.color}0d`}}>
-      <div style={{fontSize:10,color:plan.color,fontWeight:900,letterSpacing:".11em",textTransform:"uppercase",marginBottom:7}}>Entregáveis reais</div>
-      <div style={{display:"grid",gap:7}}>
-        {(plan.deliverables||plan.features).map(f=><div key={f} className="plan-feature"><span style={{color:plan.color}}>✓</span><span>{f}</span></div>)}
-      </div>
-    </div>
-    <div style={{display:"grid",gap:8,flex:1}}>
-      {(plan.features||[]).slice(0,5).map(f=><div key={f} className="plan-feature"><span style={{color:plan.color}}>•</span><span>{f}</span></div>)}
-    </div>
-    <div style={{fontSize:11,color:C.muted,lineHeight:1.45,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-      <strong style={{color:"#ddd"}}>Uso ideal:</strong> {plan.limits}<br/>
-      <strong style={{color:"#ddd"}}>Status:</strong> {plan.implementation}
-    </div>
-    <div style={{display:"grid",gap:8}}>
-      <a href={onBuy} target="_blank" rel="noopener noreferrer" className="elite-primary" style={{background:`linear-gradient(135deg,${plan.color},${C.orangeD})`,color:"#fff",minHeight:40}}>Comprar acesso</a>
-      {isAdmin&&<button onClick={onActivate} className="elite-secondary" style={{minHeight:38}}>Ativar simulação</button>}
-      {active&&<div style={{fontSize:10,color:plan.color,fontWeight:900,textAlign:"center"}}>Plano ativo neste ambiente</div>}
-    </div>
-  </div>
-);
-const PlanAudit = ({state,setTab})=>{
-  const readiness=planReadiness(state);
-  const recommended=getPlanMeta(recommendedPlanForState(state));
-  return (
-    <Card style={{padding:"18px",background:"rgba(255,255,255,.035)",borderColor:"rgba(255,255,255,.09)"}}>
-      <div className="page-hero-row">
-        <div>
-          <div style={{fontSize:11,color:recommended.color,fontWeight:900,letterSpacing:".13em",textTransform:"uppercase",marginBottom:6}}>Diagnóstico de plano</div>
-          <div style={{fontSize:20,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif"}}>Recomendação atual: {recommended.name}</div>
-          <p style={{fontSize:12,color:C.muted,lineHeight:1.5,margin:"6px 0 0",maxWidth:620}}>A sugestão muda conforme clientes, projetos, propostas, receita e configuração do negócio. Isso deixa a venda mais honesta e orientada por uso real.</p>
-        </div>
-        <div style={{minWidth:170}}>
-          <div style={{fontSize:34,color:recommended.color,fontWeight:900,fontFamily:"'Syne',sans-serif",lineHeight:1}}>{readiness.score}%</div>
-          <div style={{fontSize:11,color:C.muted,fontWeight:900,textTransform:"uppercase",letterSpacing:".08em",marginTop:4}}>pronto para vender</div>
-          <Bar v={readiness.score} color={recommended.color} h={6}/>
-        </div>
-      </div>
-      <div className="summary-strip" style={{marginTop:14}}>
-        {[
-          {label:"Clientes",value:readiness.clients,color:"#10b981"},
-          {label:"Projetos",value:readiness.projects,color:"#8b5cf6"},
-          {label:"Propostas",value:readiness.proposals,color:"#3b82f6"},
-          {label:"Receita mapeada",value:fmtCurrency(readiness.revenue),color:C.orange},
-        ].map(x=><div className="metric-tile" key={x.label}><div className="metric-value" style={{color:x.color,fontSize:18}}>{x.value}</div><div className="metric-label">{x.label}</div></div>)}
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:8,marginTop:12}} className="mobile-kpi-grid">
-        {readiness.items.map(item=><button key={item.label} onClick={()=>setTab(item.tab)} style={{padding:"10px",borderRadius:12,border:`1px solid ${item.ok?"rgba(16,185,129,.25)":C.border}`,background:item.ok?"rgba(16,185,129,.08)":"rgba(255,255,255,.028)",color:"#ddd",fontFamily:"inherit",textAlign:"left",cursor:"pointer"}}>
-          <div style={{fontSize:12,fontWeight:900,color:item.ok?"#10b981":"#eee"}}>{item.ok?"✓":"○"} {item.label}</div>
-          <div style={{fontSize:10,color:C.muted,marginTop:3}}>{item.ok?"Entregável demonstrável":"Clique para completar"}</div>
-        </button>)}
-      </div>
-    </Card>
-  );
-};
-const PlanMatrix = ()=>{
-  const cols=PLANS.map(p=>p.id);
-  return (
-    <Card>
-      <SectionTitle>MATRIZ DE ENTREGÁVEIS</SectionTitle>
-      <div style={{overflowX:"auto"}}>
-        <div style={{minWidth:680,display:"grid",gridTemplateColumns:"1.4fr repeat(4,1fr)",border:`1px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
-          <div style={{padding:12,fontSize:11,color:C.muted,fontWeight:900,letterSpacing:".1em",textTransform:"uppercase",background:"rgba(255,255,255,.035)"}}>Recurso</div>
-          {PLANS.map(p=><div key={p.id} style={{padding:12,fontSize:11,color:p.color,fontWeight:900,letterSpacing:".1em",textTransform:"uppercase",background:"rgba(255,255,255,.035)",textAlign:"center"}}>{p.name}</div>)}
-          {PLAN_CAPABILITIES.map(row=><React.Fragment key={row.label}>
-            <div style={{padding:"11px 12px",fontSize:12,color:"#ddd",borderTop:`1px solid ${C.border}`}}>{row.label}</div>
-            {cols.map(id=><div key={id} style={{padding:"11px 12px",fontSize:11,borderTop:`1px solid ${C.border}`,textAlign:"center"}}><CapabilityMark value={row[id]} color={getPlanMeta(id).color}/></div>)}
-          </React.Fragment>)}
-        </div>
-      </div>
-    </Card>
-  );
-};
-const AccessWall = ({onLogin,onPlans})=>(
+const AccessWall = ({onLogin})=>(
   <div className="access-wall">
     <div className="access-wall-card scale-in">
-      <div className="elite-kicker">ACESSO AO WORKSPACE</div>
-      <h1 style={{fontSize:"clamp(30px,5vw,52px)",lineHeight:1,color:"#fff",fontFamily:"'Syne',sans-serif",margin:"10px 0 12px"}}>Primeiro entenda o produto. Depois entre para testar.</h1>
-      <p style={{fontSize:15,color:"#cfcfcf",lineHeight:1.65,maxWidth:640,margin:"0 0 20px"}}>O {APP_NAME} guarda dados de clientes, propostas, financeiro e produção. Por isso, a operação só abre depois do login GitHub. Você testa por 10 minutos e decide o plano ideal.</p>
+      <div className="elite-kicker">ACESSO PRIVADO</div>
+      <h1 style={{fontSize:"clamp(30px,5vw,52px)",lineHeight:1,color:"#fff",fontFamily:"'Syne',sans-serif",margin:"10px 0 12px"}}>Workspace interno do {APP_NAME}.</h1>
+      <p style={{fontSize:15,color:"#cfcfcf",lineHeight:1.65,maxWidth:640,margin:"0 0 20px"}}>O {APP_NAME} guarda clientes, propostas, produção, documentos, financeiro e Video Review. A entrada é restrita ao admin autorizado.</p>
       <div className="access-steps">
         {[
-          ["1","Sobre","Veja promessa, fluxo e valor."],
-          ["2","Planos","Escolha Solo, Pro ou Studio."],
-          ["3","Login","Entre com GitHub para testar."],
+          ["1","Login","Entre com GitHub."],
+          ["2","Admin","O email precisa estar autorizado."],
+          ["3","Operação",`Abra o workspace ${APP_NAME}.`],
         ].map(([n,t,d])=><div key={n} style={{padding:"13px",borderRadius:16,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.04)"}}><div style={{fontSize:10,color:C.orange,fontWeight:900}}>0{n}</div><div style={{fontSize:13,color:"#fff",fontWeight:900,marginTop:4}}>{t}</div><div style={{fontSize:11,color:C.muted,lineHeight:1.4,marginTop:3}}>{d}</div></div>)}
       </div>
       <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
         <button onClick={onLogin} className="elite-primary">Entrar com GitHub</button>
-        <button onClick={onPlans} className="elite-secondary">Ver planos primeiro</button>
       </div>
     </div>
   </div>
@@ -1076,11 +986,9 @@ const AccessWall = ({onLogin,onPlans})=>(
 // ── NOTIFICATIONS BANNER ───────────────────────────────────────────────
 const NotificationsBanner = ({state,setTab})=>{
   const today=todayStr(), now=new Date();
-  const storageKey=`centralis_notifications_${today}`;
+  const storageKey=`dnz_notifications_${today}`;
   const [dismissed,setDismissed]=useState(()=>{try{return JSON.parse(localStorage.getItem(storageKey)||"[]");}catch{return[];}});
   const msgs=[];
-  const habitsMissing=state.habits.filter(h=>!h.completedDates?.includes(today));
-  if(habitsMissing.length>0) msgs.push({id:"habits_missing",icon:"🔥",color:"#f97316",text:`${habitsMissing.length} hábito${habitsMissing.length>1?"s":""} pendente${habitsMissing.length>1?"s":""} hoje`,action:()=>setTab("habits")});
   const meetings=(state.clients||[]).filter(c=>{if(!c.nextMeeting)return false;const diff=Math.ceil((new Date(c.nextMeeting)-now)/(1000*60*60*24));return diff>=0&&diff<=1;});
   meetings.forEach(c=>{const diff=Math.ceil((new Date(c.nextMeeting)-now)/(1000*60*60*24));msgs.push({id:`meet_${c.id}`,icon:"📅",color:"#3b82f6",text:`Reunião com ${c.name} ${diff===0?"hoje":"amanhã"}`,action:()=>setTab("clients")});});
   const overdue=(state.clients||[]).filter(c=>c.payment==="atrasado");
@@ -1121,11 +1029,10 @@ const ContextAlert = ({tab,state,setTab,notify})=>{
   const clients=state.clients||[],entries=state.financeEntries||[],projects=clients.flatMap(c=>(c.videos||[]).map(v=>({client:c,video:v})));
   const overdueTasks=(state.tasks||[]).filter(t=>!t.completed&&taskBucket(t)==="overdue").length;
   const todayTasks=(state.tasks||[]).filter(t=>!t.completed&&taskBucket(t)==="today").length;
-  const followUps=clients.filter(c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&c.status!=="concluido").length;
+  const followUps=clients.filter(c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&! ["entregue","pago"].includes(normalizeClientStatus(c))).length;
   const overduePayments=clients.filter(c=>c.payment==="atrasado").length+entries.filter(e=>e.status==="atrasado").length;
   const projectDue=projects.filter(p=>p.video.status!=="entregue"&&dayDiff(p.video.deadline)!==null&&dayDiff(p.video.deadline)<=3).length;
   const map={
-    about: !(state.business||{}).onboarded?{txt:"Configure seu negócio para personalizar propostas, WhatsApp, marca e experiência.",go:"business",cta:"Configurar"}:null,
     dashboard: overdueTasks?{txt:`${overdueTasks} tarefa${overdueTasks>1?"s":""} atrasada${overdueTasks>1?"s":""} precisa de atenção.`,go:"tasks",cta:"Ver tarefas"}:null,
     tasks: todayTasks?{txt:`${todayTasks} tarefa${todayTasks>1?"s":""} vence${todayTasks>1?"m":""} hoje.`,go:null,cta:"Ok"}:null,
     clients: followUps?{txt:`${followUps} follow-up${followUps>1?"s":""} pendente${followUps>1?"s":""} no CRM.`,go:null,cta:"Revisar"}:null,
@@ -1134,7 +1041,7 @@ const ContextAlert = ({tab,state,setTab,notify})=>{
     export: {txt:"Antes do deploy ou de mudanças grandes, gere um backup JSON atualizado.",go:null,cta:"Entendi"},
   };
   const item=map[tab];
-  const alertKey=`centralis_context_alert_${todayStr()}_${tab}_${item?String(item.txt).slice(0,28):"none"}`;
+  const alertKey=`dnz_context_alert_${todayStr()}_${tab}_${item?String(item.txt).slice(0,28):"none"}`;
   const [dismissed,setDismissed]=useState(()=>localStorage.getItem(alertKey)==="1");
   useEffect(()=>setDismissed(localStorage.getItem(alertKey)==="1"),[alertKey]);
   useEffect(()=>{
@@ -1152,7 +1059,7 @@ const SystemHealth = ({state,setTab})=>{
   const clients=state.clients||[],entries=state.financeEntries||[];
   const lastBackup=localStorage.getItem("dcc_last_backup");
   const overdueTasks=(state.tasks||[]).filter(t=>!t.completed&&taskBucket(t)==="overdue").length;
-  const followUps=clients.filter(c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&c.status!=="concluido").length;
+  const followUps=clients.filter(c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&! ["entregue","pago"].includes(normalizeClientStatus(c))).length;
   const lateMoney=clients.filter(c=>c.payment==="atrasado").length+entries.filter(e=>e.status==="atrasado").length;
   const backupDays=lastBackup?Math.floor((Date.now()-new Date(lastBackup).getTime())/(1000*60*60*24)):999;
   const checks=[
@@ -1179,217 +1086,6 @@ const SystemHealth = ({state,setTab})=>{
           </button>
         ))}
       </Card>
-    </div>
-  );
-};
-
-// ── MODO FOCO ──────────────────────────────────────────────────────────
-const TabFocus = ({state,dispatch})=>{
-  const [focusMode,setFocusMode]=useState(false);
-  const [editMode,setEditMode]=useState(false);
-  const [inputs,setInputs]=useState(["",""," "]);
-  const [pomSecs,setPomSecs]=useState(25*60);
-  const [pomRunning,setPomRunning]=useState(false);
-  const [pomDone,setPomDone]=useState(0);
-  const ref=useRef(null);
-  const priorities=state.focusDayPriorities||[];
-  const doneCount=priorities.filter(p=>p.done).length;
-  const allDone=priorities.length>0&&doneCount===priorities.length;
-  useEffect(()=>{
-    if(pomRunning){ref.current=setInterval(()=>setPomSecs(s=>{if(s<=1){clearInterval(ref.current);setPomRunning(false);setPomDone(n=>n+1);dispatch({type:"INC_FOCUS_SESSIONS"});return 25*60;}return s-1;}),1000);}
-    else clearInterval(ref.current);
-    return()=>clearInterval(ref.current);
-  },[pomRunning]);
-  const savePriorities=()=>{
-    const ps=inputs.filter(s=>s.trim()).map(text=>({text,done:false}));
-    dispatch({type:"SET_FOCUS_PRIORITIES",priorities:ps});
-    setEditMode(false);
-  };
-  const mm=String(Math.floor(pomSecs/60)).padStart(2,"0"), ss=String(pomSecs%60).padStart(2,"0");
-  const pct=Math.round((1-pomSecs/(25*60))*100), r=70, circ=2*Math.PI*r;
-  if(focusMode) return (
-    <div style={{position:"fixed",inset:0,zIndex:3000,background:"#080808",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",animation:"fadeIn .4s ease"}}>
-      <div style={{position:"absolute",top:20,right:20}}>
-        <Btn onClick={()=>setFocusMode(false)} variant="ghost" size="sm">✕ Sair do foco</Btn>
-      </div>
-      <div style={{fontSize:11,color:"#444",fontWeight:700,letterSpacing:".2em",textTransform:"uppercase",marginBottom:40}}>MODO FOCO — {new Date().toLocaleDateString("pt-BR",{weekday:"long"})}</div>
-      <div style={{position:"relative",width:180,height:180,marginBottom:40}}>
-        <svg width="180" height="180" viewBox="0 0 180 180">
-          <circle cx="90" cy="90" r={r} fill="none" stroke="rgba(255,255,255,.04)" strokeWidth="8"/>
-          <circle cx="90" cy="90" r={r} fill="none" stroke="#8b5cf6" strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)} transform="rotate(-90 90 90)"
-            style={{transition:"stroke-dashoffset .5s",filter:"drop-shadow(0 0 12px #8b5cf680)"}}/>
-        </svg>
-        <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-          <div style={{fontSize:42,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif",lineHeight:1}}>{mm}:{ss}</div>
-          <div style={{fontSize:12,color:"#555",marginTop:6}}>sessões: {pomDone}</div>
-        </div>
-      </div>
-      <div style={{display:"flex",gap:12,marginBottom:50}}>
-        <Btn onClick={()=>setPomRunning(r=>!r)} variant="focus" style={{minWidth:120,justifyContent:"center"}}>{pomRunning?"⏸ Pausar":"▶ Iniciar"}</Btn>
-        <Btn onClick={()=>{setPomSecs(25*60);setPomRunning(false);}} variant="ghost" size="sm">Reset</Btn>
-      </div>
-      <div style={{width:"100%",maxWidth:420,padding:"0 20px"}}>
-        <div style={{fontSize:12,color:"#333",fontWeight:700,textTransform:"uppercase",letterSpacing:".1em",marginBottom:16,textAlign:"center"}}>FOCO DE HOJE</div>
-        {priorities.map((p,i)=>(
-          <div key={i} onClick={()=>dispatch({type:"COMPLETE_FOCUS_PRIORITY",idx:i})} style={{display:"flex",alignItems:"center",gap:14,marginBottom:12,cursor:"pointer",opacity:p.done?.4:1,transition:"opacity .2s"}}>
-            <div style={{width:28,height:28,borderRadius:9,border:`2px solid ${p.done?"#8b5cf6":"#333"}`,background:p.done?"rgba(139,92,246,.2)":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
-              {p.done&&<span style={{color:"#8b5cf6",fontSize:14}}>✓</span>}
-            </div>
-            <span style={{fontSize:16,color:p.done?"#555":"#ccc",textDecoration:p.done?"line-through":"none",fontWeight:p.done?400:600}}>{p.text}</span>
-          </div>
-        ))}
-        {allDone&&<div style={{textAlign:"center",marginTop:20,fontSize:16,color:"#8b5cf6",fontWeight:700,animation:"bounceIn .6s ease"}}>🎉 Todas as prioridades concluídas!</div>}
-      </div>
-    </div>
-  );
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <Card style={{background:"linear-gradient(135deg,rgba(139,92,246,.12),rgba(0,0,0,0))",borderColor:"rgba(139,92,246,.25)",padding:"24px 22px",textAlign:"center"}}>
-        <div style={{fontSize:40,marginBottom:12}}>🧠</div>
-        <div style={{fontSize:20,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif",marginBottom:6}}>Modo Foco do Dia</div>
-        <p style={{fontSize:14,color:C.muted,lineHeight:1.6,marginBottom:20}}>Defina suas 3 prioridades máximas e entre em modo imersivo.</p>
-        <Btn onClick={()=>setFocusMode(true)} variant="focus" style={{margin:"0 auto"}} disabled={priorities.length===0}>⚡ Entrar no Modo Foco</Btn>
-        {priorities.length===0&&<div style={{fontSize:11,color:C.muted,marginTop:8}}>Defina suas prioridades abaixo primeiro</div>}
-      </Card>
-      <Card>
-        <SectionTitle action={<Btn onClick={()=>{setInputs(priorities.map(p=>p.text).concat(["","",""]).slice(0,3));setEditMode(true);}} size="sm">✏️ Editar</Btn>}>PRIORIDADES DE HOJE {doneCount>0&&<Tag color="#8b5cf6">{doneCount}/{priorities.length} feitas</Tag>}</SectionTitle>
-        {priorities.length===0&&<div style={{color:C.muted,fontSize:14,textAlign:"center",padding:"12px 0"}}>Nenhuma prioridade definida para hoje.</div>}
-        {priorities.map((p,i)=>(
-          <div key={i} onClick={()=>dispatch({type:"COMPLETE_FOCUS_PRIORITY",idx:i})} style={{display:"flex",alignItems:"center",gap:12,marginBottom:10,cursor:"pointer",opacity:p.done?.5:1,transition:"opacity .2s"}}>
-            <div style={{width:24,height:24,borderRadius:8,border:`2px solid ${p.done?"#8b5cf6":"rgba(139,92,246,.4)"}`,background:p.done?"rgba(139,92,246,.2)":"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",transition:"all .2s"}}>
-              {p.done&&<span style={{color:"#8b5cf6",fontSize:12}}>✓</span>}
-            </div>
-            <span style={{flex:1,fontSize:14,color:p.done?C.muted:"#e2e2e2",textDecoration:p.done?"line-through":"none",fontWeight:600}}>{i+1}. {p.text}</span>
-          </div>
-        ))}
-        {priorities.length>0&&<div style={{marginTop:12}}><Bar v={Math.round(doneCount/priorities.length*100)} color="#8b5cf6" h={6}/></div>}
-      </Card>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        <Card style={{padding:"16px",textAlign:"center"}}>
-          <div style={{fontSize:28,fontWeight:800,color:"#8b5cf6",fontFamily:"'Syne',sans-serif"}}>{state.focusSessions||0}</div>
-          <div style={{fontSize:11,color:C.muted,marginTop:3}}>Sessões de foco total</div>
-        </Card>
-        <Card style={{padding:"16px",textAlign:"center"}}>
-          <div style={{fontSize:28,fontWeight:800,color:C.orange,fontFamily:"'Syne',sans-serif"}}>{Math.round((state.focusSessions||0)*25/60)}h</div>
-          <div style={{fontSize:11,color:C.muted,marginTop:3}}>Horas em foco</div>
-        </Card>
-      </div>
-      <Modal open={editMode} onClose={()=>setEditMode(false)} title="Definir 3 Prioridades do Dia">
-        <div style={{fontSize:13,color:C.muted,marginBottom:16,lineHeight:1.5}}>Quais são as 3 coisas que, se feitas hoje, farão o dia valer?</div>
-        {[0,1,2].map(i=>(
-          <Inp key={i} label={`Prioridade ${i+1}`} value={inputs[i]||""} onChange={v=>setInputs(inp=>{const n=[...inp];n[i]=v;return n;})} placeholder={["A mais importante do dia","Segunda prioridade","Terceira prioridade"][i]}/>
-        ))}
-        <Btn onClick={savePriorities} style={{marginTop:4}}>💾 Salvar prioridades</Btn>
-      </Modal>
-    </div>
-  );
-};
-
-// ── AGENDA SEMANAL ─────────────────────────────────────────────────────
-const DAYS_AGENDA = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
-const TabAgenda = ({state,dispatch,setTab})=>{
-  const todayDow=new Date().getDay()===0?6:new Date().getDay()-1;
-  const [selDay,setSelDay]=useState(todayDow);
-  const [showAdd,setShowAdd]=useState(false);
-  const [form,setForm]=useState({title:"",start:"08:00",end:"09:00",color:"#f97316",category:"trabalho"});
-  const blocks=(state.scheduleBlocks[selDay]||[]).slice().sort((a,b)=>timeToMins(a.start)-timeToMins(b.start));
-  const categories=["trabalho","criação","reunião","pausa","pessoal","estudo"];
-  const catColors={trabalho:"#f97316",criação:"#8b5cf6",reunião:"#3b82f6",pausa:"#6b7280",pessoal:"#10b981",estudo:"#eab308"};
-  const clients=state.clients||[],projects=clients.flatMap(c=>(c.videos||[]).map(v=>({client:c,video:v})));
-  const agendaItems=[
-    ...state.tasks.filter(t=>!t.completed&&t.dueDate).map(t=>({tab:"tasks",kind:"Tarefa",title:t.title,date:t.dueDate,color:taskBucket(t)==="overdue"?"#ef4444":C.orange})),
-    ...clients.filter(c=>c.nextMeeting).map(c=>({tab:"clients",kind:"Reunião",title:c.name,date:c.nextMeeting,color:"#3b82f6",private:true})),
-    ...clients.filter(c=>c.followUpDate).map(c=>({tab:"clients",kind:"Follow-up",title:c.name,date:c.followUpDate,color:"#10b981",private:true})),
-    ...projects.filter(p=>p.video.deadline&&p.video.status!=="entregue").map(p=>({tab:"projects",kind:"Projeto",title:p.video.title,date:p.video.deadline,color:VIDEO_COLORS[p.video.status]||"#8b5cf6",private:true})),
-    ...projects.flatMap(p=>(p.video.productionSchedule||[]).filter(s=>s.date&&!s.done&&p.video.status!=="entregue").map(s=>({tab:"projects",kind:"Produção",title:`${p.video.title} · ${s.label}`,date:s.date,color:"#8b5cf6",private:true}))),
-    ...(state.financeEntries||[]).filter(e=>e.date&&e.status!=="pago").map(e=>({tab:"finance",kind:e.type==="despesa"?"Despesa":"Financeiro",title:e.title,date:e.date,color:e.type==="despesa"?"#ef4444":"#eab308"})),
-  ].map(i=>({...i,diff:dayDiff(i.date)})).filter(i=>i.diff!==null&&i.diff<=7).sort((a,b)=>a.diff-b.diff).slice(0,10);
-  const addBlock=()=>{
-    if(!form.title)return;
-    dispatch({type:"ADD_SCHEDULE_BLOCK",day:selDay,block:{...form,color:catColors[form.category]||form.color}});
-    setForm({title:"",start:"08:00",end:"09:00",color:"#f97316",category:"trabalho"});setShowAdd(false);
-  };
-  const totalMins=Object.values(state.scheduleBlocks).flat().reduce((a,b)=>{const dur=timeToMins(b.end||"09:00")-timeToMins(b.start||"08:00");return a+(dur>0?dur:0);},0);
-  return (
-    <div>
-      <Card style={{padding:"16px 18px",marginBottom:14,background:"rgba(59,130,246,.06)",borderColor:"rgba(59,130,246,.2)"}}>
-        <SectionTitle>AGENDA INTELIGENTE</SectionTitle>
-        {agendaItems.length===0&&<div style={{fontSize:13,color:C.muted}}>Agenda limpa nos próximos 7 dias. Use blocos semanais para reservar produção, reunião e revisão.</div>}
-        {agendaItems.map((i,idx)=><button key={idx} onClick={()=>setTab(i.tab)} style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"9px 0",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,fontFamily:"inherit",cursor:"pointer",textAlign:"left"}}>
-          <Tag color={i.color}>{i.kind}</Tag>
-          <span className={i.private?"private-data":""} style={{flex:1,minWidth:0,fontSize:13,color:"#ddd",fontWeight:800,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{i.title}</span>
-          <span style={{fontSize:11,color:i.diff<0?"#ef4444":i.diff===0?"#10b981":C.muted,fontWeight:900}}>{i.diff<0?`${Math.abs(i.diff)}d atraso`:i.diff===0?"hoje":`${i.diff}d`}</span>
-        </button>)}
-      </Card>
-      <div style={{display:"flex",gap:10,marginBottom:16,justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontSize:12,color:C.muted}}>🕐 {Math.round(totalMins/60)}h planejadas na semana</div>
-        <Btn onClick={()=>setShowAdd(true)} size="sm">+ Bloco</Btn>
-      </div>
-      <div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto"}}>
-        {DAYS_AGENDA.map((d,i)=>{
-          const hasBlocks=(state.scheduleBlocks[i]||[]).length>0;
-          return <button key={i} onClick={()=>setSelDay(i)} style={{padding:"8px 12px",borderRadius:10,border:"1px solid",borderColor:selDay===i?C.orange:C.border,background:selDay===i?`${C.orange}15`:"transparent",color:selDay===i?C.orange:C.muted,fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,position:"relative",transition:"all .15s"}}>
-            {d.substring(0,3)}{i===todayDow&&<span style={{display:"block",width:4,height:4,borderRadius:"50%",background:C.orange,margin:"2px auto 0"}}/>}{hasBlocks&&i!==todayDow&&<span style={{display:"block",width:4,height:4,borderRadius:"50%",background:"#444",margin:"2px auto 0"}}/>}
-          </button>;
-        })}
-      </div>
-      {blocks.length===0&&<PremiumEmpty icon="□" title={`Nenhum bloco para ${DAYS_AGENDA[selDay]}`} text="Planeje produção, revisão, reunião ou pausa para transformar a semana em execução." action={<Btn onClick={()=>setShowAdd(true)} size="sm">Criar bloco</Btn>}/>}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {blocks.map(b=>{
-          const dur=timeToMins(b.end||"09:00")-timeToMins(b.start||"08:00");
-          return (
-            <div key={b.id} className="card-hover" style={{display:"flex",gap:12,padding:"12px 16px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,borderLeft:`4px solid ${b.color||C.orange}`,transition:"all .2s"}}>
-              <div style={{minWidth:80}}>
-                <div style={{fontSize:13,fontWeight:800,color:b.color||C.orange,fontFamily:"'Syne',sans-serif"}}>{b.start}</div>
-                <div style={{fontSize:11,color:C.muted}}>{b.end} · {dur>0?`${Math.round(dur/60*10)/10}h`:"—"}</div>
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:14,fontWeight:600,color:"#e2e2e2"}}>{b.title}</div>
-                <Tag color={b.color||C.orange}>{b.category||"trabalho"}</Tag>
-              </div>
-              <button onClick={()=>dispatch({type:"REMOVE_SCHEDULE_BLOCK",day:selDay,id:b.id})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>✕</button>
-            </div>
-          );
-        })}
-      </div>
-      <Modal open={showAdd} onClose={()=>setShowAdd(false)} title={`Novo bloco — ${DAYS_AGENDA[selDay]}`}>
-        <Inp label="Título" value={form.title} onChange={v=>setForm(f=>({...f,title:v}))} placeholder="Ex: Edição do reel"/>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
-          <Inp label="Início" value={form.start} onChange={v=>setForm(f=>({...f,start:v}))} type="time"/>
-          <Inp label="Fim" value={form.end} onChange={v=>setForm(f=>({...f,end:v}))} type="time"/>
-        </div>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Categoria</div>
-          <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
-            {categories.map(cat=><button key={cat} onClick={()=>setForm(f=>({...f,category:cat,color:catColors[cat]}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:form.category===cat?catColors[cat]:C.border,background:form.category===cat?`${catColors[cat]}15`:"transparent",color:form.category===cat?catColors[cat]:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{cat}</button>)}
-          </div>
-        </div>
-        <Btn onClick={addBlock}>💾 Adicionar</Btn>
-      </Modal>
-    </div>
-  );
-};
-
-// ── HABIT CALENDAR ─────────────────────────────────────────────────────
-const HabitCalendar = ({habit})=>{
-  const today=new Date(),year=today.getFullYear(),month=today.getMonth();
-  const dim=new Date(year,month+1,0).getDate(),fd=new Date(year,month,1).getDay(),adj=fd===0?6:fd-1;
-  const cells=[];
-  for(let i=0;i<adj;i++) cells.push(null);
-  for(let d=1;d<=dim;d++) cells.push(d);
-  return (
-    <div>
-      <div style={{fontSize:11,color:C.muted,marginBottom:8,fontWeight:600}}>{MONTHS[month]} {year}</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3}}>
-        {["S","T","Q","Q","S","S","D"].map((d,i)=><div key={i} style={{fontSize:9,color:C.muted,textAlign:"center",fontWeight:700,paddingBottom:3}}>{d}</div>)}
-        {cells.map((d,i)=>{
-          if(!d) return <div key={i}/>;
-          const ds=new Date(year,month,d).toDateString();
-          const done=habit.completedDates?.includes(ds),isToday=ds===today.toDateString();
-          return <div key={i} style={{aspectRatio:"1",borderRadius:5,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:700,background:done?habit.color:"rgba(255,255,255,0.03)",color:done?"#fff":isToday?C.orange:C.muted,border:isToday?`1.5px solid ${C.orange}`:"1px solid transparent",boxShadow:done?`0 0 6px ${habit.color}60`:"none",transition:"all .2s"}}>{d}</div>;
-        })}
-      </div>
     </div>
   );
 };
@@ -1460,51 +1156,6 @@ const RevenueChart = ({clients,privacyMode})=>{
         <div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:10,height:10,borderRadius:3,background:"#10b981"}}/><span style={{fontSize:10,color:C.muted}}>Recebido</span></div>
       </div>
     </div>
-  );
-};
-
-// ── POMODORO ───────────────────────────────────────────────────────────
-const Pomodoro = ({settings})=>{
-  const [mode,setMode]=useState("work"),[secs,setSecs]=useState(settings.work*60);
-  const [running,setRunning]=useState(false),[sessions,setSessions]=useState(0);
-  const ref=useRef(null);
-  const dur={work:settings.work*60,shortBreak:settings.shortBreak*60,longBreak:settings.longBreak*60};
-  const labels={work:"Foco",shortBreak:"Pausa Curta",longBreak:"Pausa Longa"};
-  useEffect(()=>{
-    if(running){ref.current=setInterval(()=>setSecs(s=>{if(s<=1){clearInterval(ref.current);setRunning(false);if(mode==="work")setSessions(n=>n+1);return 0;}return s-1;}),1000);}
-    else clearInterval(ref.current);
-    return()=>clearInterval(ref.current);
-  },[running,mode]);
-  const sw=m=>{setMode(m);setSecs(dur[m]);setRunning(false);};
-  const mm=String(Math.floor(secs/60)).padStart(2,"0"),ss2=String(secs%60).padStart(2,"0");
-  const pct=Math.round((1-secs/dur[mode])*100),r=54,circ=2*Math.PI*r;
-  return (
-    <Card style={{textAlign:"center",padding:"28px 20px"}}>
-      <div style={{fontSize:11,color:C.orange,fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",marginBottom:16}}>POMODORO TIMER</div>
-      <div style={{display:"flex",gap:7,justifyContent:"center",marginBottom:22}}>
-        {Object.entries(labels).map(([k,v])=><button key={k} onClick={()=>sw(k)} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:mode===k?C.orange:C.border,background:mode===k?`${C.orange}15`:"transparent",color:mode===k?C.orange:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{v}</button>)}
-      </div>
-      <div style={{position:"relative",width:140,height:140,margin:"0 auto 22px"}}>
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(255,255,255,.05)" strokeWidth="8"/>
-          <circle cx="70" cy="70" r={r} fill="none" stroke={C.orange} strokeWidth="8" strokeLinecap="round"
-            strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)} transform="rotate(-90 70 70)"
-            style={{transition:"stroke-dashoffset .5s",filter:`drop-shadow(0 0 8px ${C.orange}80)`}}/>
-        </svg>
-        <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-          <div style={{fontSize:32,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif",lineHeight:1}}>{mm}:{ss2}</div>
-          <div style={{fontSize:11,color:C.muted,marginTop:4}}>{labels[mode]}</div>
-        </div>
-      </div>
-      <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:18}}>
-        <Btn onClick={()=>setRunning(r=>!r)} style={{minWidth:100}}>{running?"⏸ Pausar":"▶ Iniciar"}</Btn>
-        <Btn onClick={()=>{setSecs(dur[mode]);setRunning(false);}} variant="ghost" size="sm">Reset</Btn>
-      </div>
-      <div style={{display:"flex",justifyContent:"center",gap:7}}>
-        {Array.from({length:4}).map((_,i)=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:i<sessions%4?C.orange:"rgba(255,255,255,.08)",boxShadow:i<sessions%4?`0 0 6px ${C.orange}`:"none"}}/>)}
-      </div>
-      <div style={{fontSize:11,color:C.muted,marginTop:8}}>{sessions} sessões concluídas</div>
-    </Card>
   );
 };
 
@@ -1829,179 +1480,6 @@ const TabProposta = ({state,dispatch})=>{
   );
 };
 
-// ── TAB: HÁBITOS ───────────────────────────────────────────────────────
-const TabHabits = ({state,dispatch})=>{
-  const [showAdd,setShowAdd]=useState(false),[showCal,setShowCal]=useState(null);
-  const [form,setForm]=useState({title:"",icon:"⭐",color:C.orange});
-  const today=todayStr();
-  const suggestIcon=title=>{
-    const t=(title||"").toLowerCase();
-    if(t.includes("surf")||t.includes("mar")||t.includes("praia"))return"🌊";
-    if(t.includes("trein")||t.includes("academ")||t.includes("muscul"))return"💪";
-    if(t.includes("ler")||t.includes("livro"))return"📚";
-    if(t.includes("medit"))return"🧘";
-    if(t.includes("sono")||t.includes("dorm"))return"💤";
-    if(t.includes("água")||t.includes("agua"))return"💧";
-    if(t.includes("corr"))return"🏃";
-    if(t.includes("criar")||t.includes("video")||t.includes("conte"))return"🎬";
-    return null;
-  };
-  const lv=getLevel(state.xp),nx=xpToNext(state.xp);
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <Card style={{background:`${lv.color}0a`,borderColor:`${lv.color}25`,padding:"16px 20px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <div><span style={{fontSize:11,color:C.muted,fontWeight:700,textTransform:"uppercase"}}>Nível: </span><span style={{fontSize:15,fontWeight:800,color:lv.color,fontFamily:"'Syne',sans-serif"}}>{lv.name}</span></div>
-          <span style={{fontSize:22,fontWeight:800,color:C.orange,fontFamily:"'Syne',sans-serif"}}>{state.xp} XP</span>
-        </div>
-        {nx&&<><Bar v={nx.pct} color={lv.color} h={7}/><div style={{fontSize:10,color:C.muted,marginTop:5,textAlign:"right"}}>{nx.pct}% → {nx.next} XP</div></>}
-      </Card>
-      <Card style={{padding:"16px 18px"}}>
-        <SectionTitle>CONQUISTAS</SectionTitle>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-          {BADGES.map(b=>{const u=(state.unlockedBadges||[]).includes(b.id); return <div key={b.id} title={b.label} style={{textAlign:"center",padding:"12px 6px",borderRadius:12,background:u?`${C.orange}10`:"rgba(255,255,255,.02)",border:`1px solid ${u?`${C.orange}25`:C.border}`,opacity:u?1:.3}}><div style={{fontSize:24,marginBottom:4,filter:u?"none":"grayscale(1)"}}>{b.icon}</div><div style={{fontSize:9,color:u?C.orange:C.muted,fontWeight:700}}>{b.label}</div></div>;})}
-        </div>
-      </Card>
-      <div>
-        <SectionTitle action={<Btn onClick={()=>setShowAdd(true)} size="sm">+ Novo</Btn>}>HÁBITOS DE HOJE</SectionTitle>
-        {state.habits.map(h=>{
-          const done=h.completedDates?.includes(today);
-          return (
-            <Card key={h.id} style={{marginBottom:10,background:done?`${h.color}08`:C.surface,borderColor:done?`${h.color}25`:C.border}}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <button onClick={()=>dispatch({type:"TOGGLE_HABIT",id:h.id,date:today})} style={{width:44,height:44,borderRadius:14,border:`2px solid ${done?h.color:C.border}`,background:done?`${h.color}20`:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,transition:"all .2s"}}>{done?"✅":h.icon}</button>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:15,fontWeight:700,color:done?h.color:"#e2e2e2",fontFamily:"'Syne',sans-serif"}}>{h.title}</div>
-                  <div style={{display:"flex",gap:8,marginTop:3}}>
-                    <span style={{fontSize:11,color:C.muted}}>🔥 {h.streak} dias</span>
-                    <span style={{fontSize:11,color:C.muted}}>best: {h.best}</span>
-                    {done&&<span style={{fontSize:11,color:"#eab308"}}>+{XP_TABLE.habit} XP ✓</span>}
-                  </div>
-                </div>
-                <button onClick={()=>setShowCal(h)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>📅</button>
-                <button onClick={()=>dispatch({type:"REMOVE_HABIT",id:h.id})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18}}>✕</button>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
-      <Modal open={showAdd} onClose={()=>setShowAdd(false)} title="Novo Hábito">
-        <Inp label="Nome" value={form.title} onChange={v=>setForm(f=>({...f,title:v,icon:suggestIcon(v)||f.icon}))} placeholder="Ex: Surf, leitura, treino..."/>
-        <div style={{marginBottom:13}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Ícone</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(6,minmax(0,1fr))",gap:7}}>{HABIT_ICON_PRESETS.map(([ic,label])=><button key={ic} type="button" title={label} onMouseDown={e=>e.preventDefault()} onClick={()=>setForm(f=>({...f,icon:ic}))} style={{height:42,borderRadius:10,border:`1.5px solid ${form.icon===ic?C.orange:C.border}`,background:form.icon===ic?`${C.orange}16`:"rgba(255,255,255,.03)",fontSize:18,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{ic}</button>)}</div>
-          <div style={{fontSize:11,color:C.muted,marginTop:8}}>Sugestão automática ativa. Digitar “surf” seleciona onda.</div>
-        </div>
-        <div style={{marginBottom:16}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Cor</div>
-          <div style={{display:"flex",gap:8}}>{[C.orange,"#3b82f6","#10b981","#8b5cf6","#ec4899","#eab308"].map(c=><button key={c} onClick={()=>setForm(f=>({...f,color:c}))} style={{width:30,height:30,borderRadius:8,background:c,border:form.color===c?"2.5px solid #fff":"2px solid transparent",cursor:"pointer"}}/>)}</div>
-        </div>
-        <Btn onClick={()=>{if(!form.title)return;dispatch({type:"ADD_HABIT",habit:{id:Date.now(),...form,streak:0,best:0,completedDates:[]}});setForm({title:"",icon:"⭐",color:C.orange});setShowAdd(false);}} style={{width:"100%",justifyContent:"center"}}>Salvar hábito</Btn>
-      </Modal>
-      <Modal open={!!showCal} onClose={()=>setShowCal(null)} title={`Calendário — ${showCal?.title}`}>
-        {showCal&&<><HabitCalendar habit={showCal}/><div style={{marginTop:18,display:"flex",gap:20,justifyContent:"center"}}>{[{v:showCal.streak,l:"🔥 Streak",c:showCal.color},{v:showCal.best,l:"🏆 Melhor",c:"#eab308"},{v:showCal.completedDates?.length||0,l:"✅ Total",c:"#10b981"}].map((s,i)=>(<div key={i} style={{textAlign:"center"}}><div style={{fontSize:28,fontWeight:800,color:s.c,fontFamily:"'Syne',sans-serif"}}>{s.v}</div><div style={{fontSize:11,color:C.muted}}>{s.l}</div></div>))}</div></>}
-      </Modal>
-    </div>
-  );
-};
-
-// ── TAB: METAS ─────────────────────────────────────────────────────────
-const TabGoals = ({state,dispatch})=>{
-  const [showAdd,setShowAdd]=useState(false),[editId,setEditId]=useState(null);
-  const [logGoalId,setLogGoalId]=useState(null);
-  const [form,setForm]=useState({title:"",level:"annual",progress:0});
-  const [logForm,setLogForm]=useState({text:"",checks:[],checkInput:""});
-  const [filter,setFilter]=useState("all");
-  const levels=[{k:"annual",l:"Anual",c:C.orange},{k:"quarterly",l:"Trimestral",c:"#fb923c"},{k:"monthly",l:"Mensal",c:"#ea580c"}];
-  const filtered=filter==="all"?state.goals:state.goals.filter(g=>g.level===filter);
-  const logGoal=state.goals.find(g=>g.id===logGoalId);
-  const saveGoal=()=>{if(!form.title)return;if(editId){dispatch({type:"UPDATE_GOAL",id:editId,data:form});setEditId(null);}else dispatch({type:"ADD_GOAL",goal:form});setForm({title:"",level:"annual",progress:0});setShowAdd(false);};
-  const saveLog=()=>{if(!logForm.text&&logForm.checks.length===0)return;dispatch({type:"ADD_GOAL_LOG",id:logGoalId,log:{text:logForm.text,checks:logForm.checks}});setLogForm({text:"",checks:[],checkInput:""});setLogGoalId(null);};
-  return (
-    <div>
-      <div style={{display:"flex",gap:7,marginBottom:16,flexWrap:"wrap"}}>
-        <button onClick={()=>setFilter("all")} style={{padding:"6px 13px",borderRadius:9,border:"1px solid",borderColor:filter==="all"?C.orange:C.border,background:filter==="all"?`${C.orange}12`:"transparent",color:filter==="all"?C.orange:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>Todas</button>
-        {levels.map(l=><button key={l.k} onClick={()=>setFilter(l.k)} style={{padding:"6px 13px",borderRadius:9,border:"1px solid",borderColor:filter===l.k?l.c:C.border,background:filter===l.k?`${l.c}12`:"transparent",color:filter===l.k?l.c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{l.l}</button>)}
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:14}}>
-        {filtered.map(g=>{
-          const lv=levels.find(l=>l.k===g.level),logs=g.logs||[];
-          return (
-            <Card key={g.id} style={{padding:"16px 18px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-                <div style={{flex:1,paddingRight:10}}>
-                  <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
-                    <Tag color={lv?.c||C.orange}>{lv?.l}</Tag>
-                    {logs.length>0&&<Tag color="#10b981">{logs.length} registro{logs.length>1?"s":""}</Tag>}
-                  </div>
-                  <div style={{fontSize:14,fontWeight:600,color:"#e2e2e2",lineHeight:1.4}}>{g.title}</div>
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                  <span style={{fontSize:22,fontWeight:800,color:lv?.c||C.orange,fontFamily:"'Syne',sans-serif"}}>{g.progress}%</span>
-                  <button onClick={()=>{setForm({title:g.title,level:g.level,progress:g.progress});setEditId(g.id);setShowAdd(true);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14}}>✏️</button>
-                  <button onClick={()=>dispatch({type:"REMOVE_GOAL",id:g.id})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>✕</button>
-                </div>
-              </div>
-              <Bar v={g.progress} color={lv?.c||C.orange} h={7}/>
-              <input type="range" min={0} max={100} value={g.progress} onChange={e=>dispatch({type:"UPDATE_GOAL",id:g.id,data:{progress:+e.target.value}})} style={{width:"100%",marginTop:8,accentColor:lv?.c||C.orange}}/>
-              {logs.length>0&&(
-                <div style={{marginTop:12,borderTop:`1px solid ${C.border}`,paddingTop:10}}>
-                  <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:8,textTransform:"uppercase"}}>Histórico</div>
-                  <div style={{display:"flex",flexDirection:"column",gap:7,maxHeight:180,overflowY:"auto"}}>
-                    {[...logs].reverse().map(log=>(
-                      <div key={log.id} style={{background:"rgba(255,255,255,0.03)",borderRadius:10,padding:"10px 12px",borderLeft:`3px solid ${lv?.c||C.orange}`}}>
-                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                          <span style={{fontSize:11,color:C.orange,fontWeight:700}}>{log.date}</span>
-                          <button onClick={()=>dispatch({type:"REMOVE_GOAL_LOG",goalId:g.id,logId:log.id})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:12}}>✕</button>
-                        </div>
-                        {log.text&&<p style={{margin:0,fontSize:13,color:"#ccc",lineHeight:1.5}}>{log.text}</p>}
-                        {log.checks?.length>0&&<div style={{marginTop:6,display:"flex",flexDirection:"column",gap:3}}>{log.checks.map((c,i)=><div key={i} style={{fontSize:12,color:"#aaa",display:"flex",alignItems:"center",gap:6}}><span style={{color:"#10b981"}}>✓</span>{c}</div>)}</div>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div style={{marginTop:10}}><Btn onClick={()=>setLogGoalId(g.id)} size="sm" variant="ghost">📝 Registrar progresso</Btn></div>
-            </Card>
-          );
-        })}
-      </div>
-      <Btn onClick={()=>{setForm({title:"",level:"annual",progress:0});setEditId(null);setShowAdd(true);}} size="sm">+ Nova Meta</Btn>
-      <Modal open={showAdd} onClose={()=>setShowAdd(false)} title={editId?"Editar Meta":"Nova Meta"}>
-        <Inp label="Título" value={form.title} onChange={v=>setForm(f=>({...f,title:v}))} placeholder="Descreva sua meta..."/>
-        <div style={{marginBottom:13}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Nível</div>
-          <div style={{display:"flex",gap:7}}>{levels.map(l=><button key={l.k} onClick={()=>setForm(f=>({...f,level:l.k}))} style={{padding:"6px 13px",borderRadius:9,border:"1px solid",borderColor:form.level===l.k?l.c:C.border,background:form.level===l.k?`${l.c}15`:"transparent",color:form.level===l.k?l.c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{l.l}</button>)}</div>
-        </div>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:5,fontWeight:700,textTransform:"uppercase"}}>Progresso: {form.progress}%</div>
-          <input type="range" min={0} max={100} value={form.progress} onChange={e=>setForm(f=>({...f,progress:+e.target.value}))} style={{width:"100%",accentColor:C.orange}}/>
-        </div>
-        <Btn onClick={saveGoal}>💾 Salvar</Btn>
-      </Modal>
-      <Modal open={!!logGoalId} onClose={()=>setLogGoalId(null)} title={`Progresso — ${logGoal?.title?.substring(0,28)||""}`}>
-        <div style={{fontSize:12,color:C.orange,marginBottom:12,fontWeight:700}}>📅 {new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"})}</div>
-        <Txt label="O que você fez hoje nessa meta?" value={logForm.text} onChange={v=>setLogForm(f=>({...f,text:v}))} placeholder="Descreva ações, aprendizados..." rows={4}/>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Checklist</div>
-          <div style={{display:"flex",gap:7,marginBottom:7}}>
-            <input value={logForm.checkInput} onChange={e=>setLogForm(f=>({...f,checkInput:e.target.value}))} onKeyDown={e=>{if(e.key==="Enter"&&logForm.checkInput.trim()){setLogForm(f=>({...f,checks:[...f.checks,f.checkInput.trim()],checkInput:""}));}}} placeholder="Digite e pressione Enter..." style={{flex:1,background:"rgba(255,255,255,.05)",border:`1px solid ${C.border}`,borderRadius:9,padding:"8px 12px",color:"#fff",fontSize:13,outline:"none",fontFamily:"inherit"}}/>
-            <Btn onClick={()=>{if(logForm.checkInput.trim())setLogForm(f=>({...f,checks:[...f.checks,f.checkInput.trim()],checkInput:""}));}} size="sm">+</Btn>
-          </div>
-          {logForm.checks.map((c,i)=>(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-              <span style={{color:"#10b981",fontSize:13}}>✓</span>
-              <span style={{flex:1,fontSize:13,color:"#ccc"}}>{c}</span>
-              <button onClick={()=>setLogForm(f=>({...f,checks:f.checks.filter((_,j)=>j!==i)}))} style={{background:"none",border:"none",color:C.muted,cursor:"pointer"}}>✕</button>
-            </div>
-          ))}
-        </div>
-        <Btn onClick={saveLog}>💾 Salvar registro</Btn>
-      </Modal>
-    </div>
-  );
-};
-
 // ── TAB: TAREFAS ───────────────────────────────────────────────────────
 const TabTasks = ({state,dispatch})=>{
   const [showAdd,setShowAdd]=useState(false);
@@ -2086,23 +1564,19 @@ const TabClients = ({state,dispatch,privacyMode})=>{
   const [videoForm,setVideoForm]=useState({title:"",type:"gravação",deadline:"",link:"",presetId:"",checklist:"Briefing\nRoteiro\nCaptação\nEdição\nRevisão\nEntrega"});
   const [editClient,setEditClient]=useState(null);
   const [view,setView]=useState("pipeline");
+  const [draggingClient,setDraggingClient]=useState(null);
   const [filters,setFilters]=useState({temp:"all",payment:"all",origin:"all",follow:"all"});
   const [segment,setSegment]=useState("all");
-  const E={name:"",service:"",value:"",status:"ativo",payment:"pendente",contract:"",nextMeeting:"",email:"",phone:"",notes:"",nextAction:"",followUpDate:"",leadTemp:"morno",leadSource:"",probability:50,relationshipType:"cliente",monthlyValue:"",barterDetails:"",partnerTerms:"",freelancerRole:"",freelancerRate:"",availability:"",pix:"",portfolio:""};
+  const E={name:"",service:"",value:"",status:"lead",payment:"pendente",contract:"",nextMeeting:"",email:"",phone:"",notes:"",nextAction:"",followUpDate:"",leadTemp:"morno",leadSource:"",probability:50,relationshipType:"cliente",monthlyValue:"",barterDetails:"",partnerTerms:"",freelancerRole:"",freelancerRate:"",availability:"",pix:"",portfolio:""};
   const [cf,setCf]=useState(E);
   const clients=state.clients||[],client=clients.find(c=>c.id===selected);
   const totalReceivable=clients.filter(c=>c.payment!=="pago").reduce((a,c)=>a+Number(c.value||0),0);
-  const isFollowPending=c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&c.status!=="concluido";
+  const isFollowPending=c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&! ["entregue","pago"].includes(normalizeClientStatus(c));
   const forecast=c=>Math.round(Number(c.value||0)*Number(c.probability??50)/100);
   const saveClient=()=>{if(!cf.name)return;if(editClient){dispatch({type:"UPDATE_CLIENT",id:editClient,data:cf});setEditClient(null);}else dispatch({type:"ADD_CLIENT",client:cf});setCf(E);setShowAdd(false);};
   const applyClientPreset=p=>setCf(f=>({...f,service:p.service,value:p.value,nextAction:f.nextAction||"Enviar briefing e alinhar prazo",followUpDate:f.followUpDate||addDaysInput(2),leadTemp:f.leadTemp||"morno",probability:f.probability||50,notes:f.notes||`Pacote sugerido: ${p.title}.`}));
   const applyVideoPreset=p=>setVideoForm(f=>({...f,presetId:p.id,title:p.title,type:p.type,deadline:f.deadline||addDaysInput(14),checklist:audiovisualChecklistText(p)}));
-  const pipeline=[
-    {key:"prospecto",label:"Prospecto",color:"#3b82f6"},
-    {key:"ativo",label:"Ativo",color:"#10b981"},
-    {key:"pausado",label:"Pausado",color:"#eab308"},
-    {key:"concluido",label:"Concluído",color:"#6b7280"},
-  ];
+  const pipeline=CLIENT_PIPELINE;
   const pipelineKeys=pipeline.map(p=>p.key);
   const origins=[...new Set(clients.map(c=>c.leadSource).filter(Boolean))];
   const leadSourceChips=["Indicação","Instagram","WhatsApp","Site","Evento","Prospecção","Networking","Parceria local"];
@@ -2138,13 +1612,13 @@ const TabClients = ({state,dispatch,privacyMode})=>{
     (filters.follow==="all"||(filters.follow==="pending"?isFollowPending(c):!isFollowPending(c)))
   );
   const selectedRelation=RELATIONSHIP_TYPES.find(r=>r.id===segment)||RELATIONSHIP_TYPES[0];
-  const selectRelationshipType=type=>setCf(f=>({...f,relationshipType:type,status:type==="freelancer"?"ativo":f.status,payment:type==="parceria"?"pendente":f.payment}));
+  const selectRelationshipType=type=>setCf(f=>({...f,relationshipType:type,status:type==="freelancer"?"briefing":f.status,payment:type==="parceria"?"pendente":f.payment}));
   const applyClientQuickStart=type=>{
     const presets={
-      cliente:{relationshipType:"cliente",status:"prospecto",leadTemp:"morno",probability:50,leadSource:"Instagram",nextAction:"Pedir briefing",followUpDate:addDaysInput(1)},
-      recorrente:{relationshipType:"recorrente",status:"ativo",payment:"pendente",leadTemp:"quente",probability:70,leadSource:"Indicação",service:"Pacote mensal de conteúdo",nextAction:"Enviar contrato mensal",followUpDate:addDaysInput(2)},
-      parceria:{relationshipType:"parceria",status:"ativo",payment:"pendente",leadTemp:"morno",probability:60,leadSource:"Networking",service:"Permuta audiovisual",nextAction:"Alinhar contrapartidas",followUpDate:addDaysInput(2),barterDetails:"Conteúdo audiovisual em troca de divulgação, produto ou serviço."},
-      freelancer:{relationshipType:"freelancer",status:"ativo",payment:"pendente",leadTemp:"quente",probability:80,leadSource:"Networking",service:"Freelancer audiovisual",freelancerRole:"Editor / filmmaker",nextAction:"Confirmar disponibilidade",followUpDate:addDaysInput(1)}
+      cliente:{relationshipType:"cliente",status:"lead",leadTemp:"morno",probability:50,leadSource:"Instagram",nextAction:"Pedir briefing",followUpDate:addDaysInput(1)},
+      recorrente:{relationshipType:"recorrente",status:"em_producao",payment:"pendente",leadTemp:"quente",probability:70,leadSource:"Indicação",service:"Pacote mensal de conteúdo",nextAction:"Enviar contrato mensal",followUpDate:addDaysInput(2)},
+      parceria:{relationshipType:"parceria",status:"briefing",payment:"pendente",leadTemp:"morno",probability:60,leadSource:"Networking",service:"Permuta audiovisual",nextAction:"Alinhar contrapartidas",followUpDate:addDaysInput(2),barterDetails:"Conteúdo audiovisual em troca de divulgação, produto ou serviço."},
+      freelancer:{relationshipType:"freelancer",status:"briefing",payment:"pendente",leadTemp:"quente",probability:80,leadSource:"Networking",service:"Freelancer audiovisual",freelancerRole:"Editor / filmmaker",nextAction:"Confirmar disponibilidade",followUpDate:addDaysInput(1)}
     };
     setCf(f=>({...f,...(presets[type]||presets.cliente)}));
   };
@@ -2155,6 +1629,17 @@ const TabClients = ({state,dispatch,privacyMode})=>{
     if(!window.confirm(`Excluir ${c.name}?${detail}`))return;
     dispatch({type:"REMOVE_CLIENT",id:c.id,skipConfirm:true});
     if(String(selected)===String(c.id))setSelected(null);
+  };
+  const moveClientToStage=(clientId,status)=>{
+    const id=Number(clientId);
+    if(!id||!status)return;
+    dispatch({type:"UPDATE_CLIENT",id,data:{status},silent:true});
+    setDraggingClient(null);
+  };
+  const editClientFromList=c=>{
+    setCf({...E,name:c.name,service:c.service||"",value:c.value||"",status:normalizeClientStatus(c),payment:c.payment||"pendente",contract:c.contract||"",nextMeeting:c.nextMeeting||"",email:c.email||"",phone:c.phone||"",notes:c.notes||"",nextAction:c.nextAction||"",followUpDate:c.followUpDate||"",leadTemp:c.leadTemp||"morno",leadSource:c.leadSource||"",probability:c.probability??50,relationshipType:relationType(c),monthlyValue:c.monthlyValue||"",barterDetails:c.barterDetails||"",partnerTerms:c.partnerTerms||"",freelancerRole:c.freelancerRole||"",freelancerRate:c.freelancerRate||"",availability:c.availability||"",pix:c.pix||"",portfolio:c.portfolio||""});
+    setEditClient(c.id);
+    setShowAdd(true);
   };
   const renderClientSmartForm=()=>(
     <>
@@ -2225,7 +1710,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
         </div>
       </div>
       <div className="client-modal-controls">
-        <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Status</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(STATUS_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,status:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.status===k?c:C.border,background:cf.status===k?`${c}15`:"transparent",color:cf.status===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
+        <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Etapa do pipeline</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{CLIENT_PIPELINE.map(stage=><button key={stage.key} onClick={()=>setCf(f=>({...f,status:stage.key}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:normalizeClientStatus(cf)===stage.key?stage.color:C.border,background:normalizeClientStatus(cf)===stage.key?`${stage.color}15`:"transparent",color:normalizeClientStatus(cf)===stage.key?stage.color:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{stage.label}</button>)}</div></div>
         <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Pagamento</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(PAG_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,payment:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.payment===k?c:C.border,background:cf.payment===k?`${c}15`:"transparent",color:cf.payment===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
         <div style={{marginBottom:13}}><div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:700,textTransform:"uppercase"}}>Temperatura</div><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{Object.entries(TEMP_COLORS).map(([k,c])=><button key={k} onClick={()=>setCf(f=>({...f,leadTemp:k}))} style={{padding:"5px 11px",borderRadius:8,border:"1px solid",borderColor:cf.leadTemp===k?c:C.border,background:cf.leadTemp===k?`${c}15`:"transparent",color:cf.leadTemp===k?c:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{k}</button>)}</div></div>
         <div style={{marginBottom:13}}>
@@ -2253,9 +1738,9 @@ const TabClients = ({state,dispatch,privacyMode})=>{
     return (
       <div>
         <button onClick={()=>setSelected(null)} style={{background:"none",border:"none",color:C.orange,cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:16,transition:"opacity .15s"}} onMouseEnter={e=>e.target.style.opacity=".7"} onMouseLeave={e=>e.target.style.opacity="1"}>← Voltar</button>
-        <Card style={{background:`${STATUS_COLORS[client.status]||C.orange}08`,borderColor:`${STATUS_COLORS[client.status]||C.orange}25`,marginBottom:14}}>
+        <Card style={{background:`${STATUS_COLORS[normalizeClientStatus(client)]||C.orange}08`,borderColor:`${STATUS_COLORS[normalizeClientStatus(client)]||C.orange}25`,marginBottom:14}}>
           <div className="client-detail-head">
-            <div><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}><Tag color={STATUS_COLORS[client.status]||C.orange}>{client.status}</Tag><Tag color={PAG_COLORS[client.payment]||C.orange}>{client.payment}</Tag><Tag color={TEMP_COLORS[client.leadTemp]||"#eab308"}>{client.leadTemp||"morno"}</Tag><Tag color={(RELATIONSHIP_TYPES.find(r=>r.id===relationType(client))||RELATIONSHIP_TYPES[1]).color}>{(RELATIONSHIP_TYPES.find(r=>r.id===relationType(client))||RELATIONSHIP_TYPES[1]).label}</Tag>{isFollowPending(client)&&<Tag color="#ef4444">follow-up</Tag>}</div><div className="private-data" style={{fontSize:20,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif"}}>{client.name}</div>{client.service&&<div style={{fontSize:13,color:C.muted,marginTop:3}}>{client.service}</div>}</div>
+            <div><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}><Tag color={STATUS_COLORS[normalizeClientStatus(client)]||C.orange}>{clientStageLabel(client)}</Tag><Tag color={PAG_COLORS[client.payment]||C.orange}>{client.payment}</Tag><Tag color={TEMP_COLORS[client.leadTemp]||"#eab308"}>{client.leadTemp||"morno"}</Tag><Tag color={(RELATIONSHIP_TYPES.find(r=>r.id===relationType(client))||RELATIONSHIP_TYPES[1]).color}>{(RELATIONSHIP_TYPES.find(r=>r.id===relationType(client))||RELATIONSHIP_TYPES[1]).label}</Tag>{isFollowPending(client)&&<Tag color="#ef4444">follow-up</Tag>}</div><div className="private-data" style={{fontSize:20,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif"}}>{client.name}</div>{client.service&&<div style={{fontSize:13,color:C.muted,marginTop:3}}>{client.service}</div>}</div>
             <div className="client-detail-value" style={{textAlign:"right"}}><div style={{fontSize:22,fontWeight:800,color:"#10b981",fontFamily:"'Syne',sans-serif"}}>{fmtMoney(client.value,privacyMode)}</div><div style={{fontSize:11,color:C.muted}}>contrato</div></div>
           </div>
           <Divider/>
@@ -2273,7 +1758,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
           {client.notes&&<><Divider/><div style={{fontSize:13,color:"#bbb",lineHeight:1.5}}>{client.notes}</div></>}
           <Divider/>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <Btn onClick={()=>{setCf({...E,name:client.name,service:client.service||"",value:client.value||"",status:client.status,payment:client.payment,contract:client.contract||"",nextMeeting:client.nextMeeting||"",email:client.email||"",phone:client.phone||"",notes:client.notes||"",nextAction:client.nextAction||"",followUpDate:client.followUpDate||"",leadTemp:client.leadTemp||"morno",leadSource:client.leadSource||"",probability:client.probability??50,relationshipType:relationType(client),monthlyValue:client.monthlyValue||"",barterDetails:client.barterDetails||"",partnerTerms:client.partnerTerms||"",freelancerRole:client.freelancerRole||"",freelancerRate:client.freelancerRate||"",availability:client.availability||"",pix:client.pix||"",portfolio:client.portfolio||""});setEditClient(client.id);setShowAdd(true);}} size="sm" variant="ghost">Editar</Btn>
+            <Btn onClick={()=>editClientFromList(client)} size="sm" variant="ghost">Editar</Btn>
             <Btn onClick={()=>dispatch({type:"UPDATE_CLIENT",id:client.id,data:{payment:client.payment==="pago"?"pendente":"pago"}})} size="sm" variant={client.payment==="pago"?"ghost":"success"}>💰 {client.payment==="pago"?"Marcar pendente":"Marcar pago"}</Btn>
             <Btn onClick={()=>removeClient(client)} size="sm" variant="danger">Excluir cliente</Btn>
           </div>
@@ -2356,7 +1841,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
   return (
     <div>
       <div className="mobile-kpi-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
-        <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#10b981",fontFamily:"'Syne',sans-serif"}}>{clients.filter(c=>c.status==="ativo").length}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Ativos</div></Card>
+        <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#10b981",fontFamily:"'Syne',sans-serif"}}>{clients.filter(c=>["briefing","proposta_enviada","em_producao"].includes(normalizeClientStatus(c))).length}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Em operação</div></Card>
         <Card style={{padding:"14px 16px",textAlign:"center"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
             <div style={{fontSize:privacyMode?18:13,fontWeight:800,color:"#eab308",fontFamily:"'Syne',sans-serif"}}>{fmtMoney(totalReceivable,privacyMode)}</div>
@@ -2398,11 +1883,11 @@ const TabClients = ({state,dispatch,privacyMode})=>{
       {view==="pipeline"&&filteredClients.length>0&&(
         <div className="pipeline-board" style={{marginBottom:16}}>
           {pipeline.map(col=>{
-            const items=filteredClients.filter(c=>c.status===col.key||(col.key==="prospecto"&&!pipelineKeys.includes(c.status)));
+            const items=filteredClients.filter(c=>normalizeClientStatus(c)===col.key);
             const sum=items.reduce((a,c)=>a+Number(c.value||0),0);
             const weighted=items.reduce((a,c)=>a+forecast(c),0);
             return (
-              <div key={col.key} style={{background:"rgba(255,255,255,.025)",border:`1px solid ${C.border}`,borderRadius:14,padding:10,minHeight:160}}>
+              <div key={col.key} onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect="move";}} onDrop={e=>{e.preventDefault();moveClientToStage(e.dataTransfer.getData("text/plain")||draggingClient,col.key);}} style={{background:"rgba(255,255,255,.025)",border:`1px solid ${draggingClient?`${col.color}55`:C.border}`,borderRadius:14,padding:10,minHeight:160,transition:"border-color .16s ease, background .16s ease"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div><div style={{fontSize:11,color:col.color,fontWeight:800,textTransform:"uppercase",letterSpacing:".08em"}}>{col.label}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>{items.length} cliente{items.length!==1?"s":""}</div></div>
                   <div style={{textAlign:"right"}}><div style={{fontSize:11,fontWeight:800,color:col.color}}>{fmtMoney(sum,privacyMode)}</div><div style={{fontSize:9,color:C.muted}}>prev. {fmtMoney(weighted,privacyMode)}</div></div>
@@ -2413,7 +1898,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
                   const dtm=c.nextMeeting?Math.ceil((new Date(c.nextMeeting)-new Date())/(1000*60*60*24)):null;
                   const next=pipeline[pipeline.findIndex(p=>p.key===col.key)+1];
                   return (
-                    <div key={c.id} className="card-hover" onClick={()=>setSelected(c.id)} style={{background:"rgba(255,255,255,.04)",border:`1px solid ${col.color}22`,borderRadius:12,padding:"12px 12px",marginBottom:8,cursor:"pointer"}}>
+                    <div key={c.id} className="card-hover client-drag-card" draggable onDragStart={e=>{e.dataTransfer.setData("text/plain",String(c.id));e.dataTransfer.effectAllowed="move";setDraggingClient(c.id);}} onDragEnd={()=>setDraggingClient(null)} onClick={()=>setSelected(c.id)} style={{background:"rgba(255,255,255,.04)",border:`1px solid ${col.color}22`,borderRadius:12,padding:"12px 12px",marginBottom:8,cursor:"grab",opacity:String(draggingClient)===String(c.id)?.55:1}}>
                       <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"flex-start",marginBottom:6}}>
                         <div className="private-data" style={{fontSize:13,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif",lineHeight:1.25}}>{c.name}</div>
                         <div style={{fontSize:11,fontWeight:800,color:"#10b981",whiteSpace:"nowrap"}}>{fmtMoney(forecast(c),privacyMode)}</div>
@@ -2430,8 +1915,10 @@ const TabClients = ({state,dispatch,privacyMode})=>{
                         {isFollowPending(c)&&<Tag color="#ef4444">follow-up</Tag>}
                       </div>
                       {c.nextAction&&<div style={{fontSize:11,color:"#bbb",lineHeight:1.35,marginBottom:8}}>Próxima ação: {c.nextAction}</div>}
+                      <div style={{fontSize:9,color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",margin:"6px 0 8px"}}>Arraste para mudar etapa · clique para abrir</div>
                       <div style={{display:"flex",gap:6}} onClick={e=>e.stopPropagation()}>
-                        {col.key!=="prospecto"&&<button onClick={()=>dispatch({type:"UPDATE_CLIENT",id:c.id,data:{status:"prospecto"}})} title="Mover para prospecto" style={{flex:1,padding:"5px 6px",borderRadius:7,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontSize:10,fontWeight:800,cursor:"pointer"}}>Contato</button>}
+                        <button onClick={()=>{const idx=pipeline.findIndex(p=>p.key===col.key);if(idx>0)dispatch({type:"UPDATE_CLIENT",id:c.id,data:{status:pipeline[idx-1].key}});}} title="Recuar" style={{flex:1,padding:"5px 6px",borderRadius:7,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontSize:10,fontWeight:800,cursor:"pointer"}}> Recuar</button>
+                        {col.key!==pipeline[pipeline.length-1].key&&<button onClick={()=>{const idx=pipeline.findIndex(p=>p.key===col.key);if(idx<pipeline.length-1)dispatch({type:"UPDATE_CLIENT",id:c.id,data:{status:pipeline[idx+1].key}});}} title="Avançar" style={{flex:1,padding:"5px 6px",borderRadius:7,border:`1px solid ${C.border}`,background:"transparent",color:C.muted,fontSize:10,fontWeight:800,cursor:"pointer"}}>Avançar</button>}
                         {next&&<button onClick={()=>dispatch({type:"UPDATE_CLIENT",id:c.id,data:{status:next.key}})} title={`Mover para ${next.label}`} style={{flex:1,padding:"5px 6px",borderRadius:7,border:`1px solid ${next.color}55`,background:`${next.color}12`,color:next.color,fontSize:10,fontWeight:800,cursor:"pointer"}}>{next.label}</button>}
                         <button onClick={()=>removeClient(c)} title="Excluir cliente" style={{width:30,padding:"5px 6px",borderRadius:7,border:"1px solid rgba(239,68,68,.35)",background:"rgba(239,68,68,.08)",color:"#ef4444",fontSize:10,fontWeight:900,cursor:"pointer"}}>×</button>
                       </div>
@@ -2451,7 +1938,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
             <div className="client-list-row" style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
               <div style={{flex:1}}>
                 <div style={{display:"flex",gap:7,alignItems:"center",marginBottom:7,flexWrap:"wrap"}}>
-                  <Tag color={STATUS_COLORS[c.status]||C.orange}>{c.status}</Tag>
+                  <Tag color={STATUS_COLORS[normalizeClientStatus(c)]||C.orange}>{clientStageLabel(c)}</Tag>
                   <Tag color={PAG_COLORS[c.payment]||C.orange}>{c.payment}</Tag>
                   <Tag color={TEMP_COLORS[c.leadTemp]||"#eab308"}>{c.leadTemp||"morno"}</Tag>
                   <Tag color={(RELATIONSHIP_TYPES.find(r=>r.id===relationType(c))||RELATIONSHIP_TYPES[1]).color}>{(RELATIONSHIP_TYPES.find(r=>r.id===relationType(c))||RELATIONSHIP_TYPES[1]).label}</Tag>
@@ -2469,7 +1956,10 @@ const TabClients = ({state,dispatch,privacyMode})=>{
                 <div style={{fontSize:16,fontWeight:800,color:"#10b981",fontFamily:"'Syne',sans-serif"}}>{fmtMoney(c.value,privacyMode)}</div>
                 <div style={{fontSize:10,color:C.muted,marginTop:2}}>prev. {fmtMoney(forecast(c),privacyMode)}</div>
                 {c.nextMeeting&&<div style={{fontSize:11,color:C.muted,marginTop:2}}>📅 {new Date(c.nextMeeting+"T00:00").toLocaleDateString("pt-BR")}</div>}
-                <button onClick={e=>{e.stopPropagation();removeClient(c);}} title="Excluir cliente" style={{marginTop:8,height:28,borderRadius:8,border:"1px solid rgba(239,68,68,.35)",background:"rgba(239,68,68,.08)",color:"#ef4444",fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit",padding:"0 9px"}}>Excluir</button>
+                <div style={{display:"flex",gap:6,justifyContent:"flex-end",marginTop:8}} onClick={e=>e.stopPropagation()}>
+                  <button onClick={()=>editClientFromList(c)} title="Editar cliente" style={{height:28,borderRadius:8,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.045)",color:"#ddd",fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit",padding:"0 9px"}}>Editar</button>
+                  <button onClick={()=>removeClient(c)} title="Excluir cliente" style={{height:28,borderRadius:8,border:"1px solid rgba(239,68,68,.35)",background:"rgba(239,68,68,.08)",color:"#ef4444",fontSize:11,fontWeight:900,cursor:"pointer",fontFamily:"inherit",padding:"0 9px"}}>Excluir</button>
+                </div>
               </div>
             </div>
           </Card>
@@ -2788,112 +2278,6 @@ const TabProjects = ({state,dispatch})=>{
 
 
 
-// ── TAB: NOTAS ─────────────────────────────────────────────────────────
-const TabNotes = ({state,dispatch})=>{
-  const [show,setShow]=useState(false),[form,setForm]=useState({title:"",body:"",tag:"geral"}),[editId,setEditId]=useState(null);
-  const tags=["geral","ideia","projeto","reflexão","meta"];
-  const tC={geral:"#6b7280",ideia:"#eab308",projeto:"#3b82f6",reflexão:"#8b5cf6",meta:C.orange};
-  const save=()=>{if(!form.body)return;if(editId){dispatch({type:"EDIT_NOTE",id:editId,data:form});setEditId(null);}else dispatch({type:"ADD_NOTE",note:form});setForm({title:"",body:"",tag:"geral"});setShow(false);};
-  return (
-    <div>
-      <SectionTitle action={<Btn onClick={()=>{setForm({title:"",body:"",tag:"geral"});setEditId(null);setShow(true);}} size="sm">+ Nova</Btn>}>NOTAS ({state.notes.length})</SectionTitle>
-      {state.notes.length===0&&<PremiumEmpty icon="✎" title="Nenhuma nota ainda" text="Registre ideias, decisões de cliente, referências ou aprendizados sem sair do sistema." action={<Btn onClick={()=>{setForm({title:"",body:"",tag:"geral"});setEditId(null);setShow(true);}} size="sm">Nova nota</Btn>}/>}
-      <div className="mobile-two-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-        {state.notes.map(n=>(
-          <Card key={n.id} style={{padding:"14px 16px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-              <Tag color={tC[n.tag]||C.orange}>{n.tag}</Tag>
-              <div style={{display:"flex",gap:6}}>
-                <button onClick={()=>{setForm({title:n.title,body:n.body,tag:n.tag});setEditId(n.id);setShow(true);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:13}}>✏️</button>
-                <button onClick={()=>dispatch({type:"REMOVE_NOTE",id:n.id})} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14}}>✕</button>
-              </div>
-            </div>
-            {n.title&&<div style={{fontSize:13,fontWeight:700,color:"#e2e2e2",marginBottom:4}}>{n.title}</div>}
-            <div style={{fontSize:12,color:C.muted,lineHeight:1.5,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical"}}>{n.body}</div>
-            <div style={{fontSize:10,color:C.faint,marginTop:8}}>{n.createdAt}</div>
-          </Card>
-        ))}
-      </div>
-      <Modal open={show} onClose={()=>setShow(false)} title={editId?"Editar Nota":"Nova Nota"}>
-        <Inp label="Título" value={form.title} onChange={v=>setForm(f=>({...f,title:v}))} placeholder="Título opcional..."/>
-        <Txt label="Conteúdo" value={form.body} onChange={v=>setForm(f=>({...f,body:v}))} placeholder="Escreva aqui..." rows={5}/>
-        <div style={{marginBottom:14}}><div style={{fontSize:11,color:C.muted,marginBottom:7,fontWeight:700,textTransform:"uppercase"}}>Tag</div><div style={{display:"flex",gap:7,flexWrap:"wrap"}}>{tags.map(t=><button key={t} onClick={()=>setForm(f=>({...f,tag:t}))} style={{padding:"5px 12px",borderRadius:8,border:"1px solid",borderColor:form.tag===t?tC[t]:C.border,background:form.tag===t?`${tC[t]}15`:"transparent",color:form.tag===t?tC[t]:C.muted,fontSize:11,fontWeight:700,cursor:"pointer"}}>{t}</button>)}</div></div>
-        <Btn onClick={save}>💾 Salvar</Btn>
-      </Modal>
-    </div>
-  );
-};
-
-// ── TAB: MISSÃO ────────────────────────────────────────────────────────
-const TabMission = ({state,dispatch})=>{
-  const [editing,setEditing]=useState(null),[val,setVal]=useState("");
-  const fields=[{key:"mission",label:"Missão",icon:"🎯"},{key:"vision",label:"Visão",icon:"🔭"},{key:"purpose",label:"Propósito",icon:"💎"}];
-  const PILARES=[{key:"LIBERDADE",sub:"para criar",icon:"◈",c:C.orange},{key:"VERDADE",sub:"nas ideias",icon:"◉",c:"#3b82f6"},{key:"DISCIPLINA",sub:"para construir",icon:"◆",c:"#8b5cf6"},{key:"IMPACTO",sub:"para transformar",icon:"◐",c:"#10b981"},{key:"LEGADO",sub:"para permanecer",icon:"★",c:"#eab308"}];
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:13}}>
-      {fields.map(f=>(
-        <Card key={f.key} style={{padding:"18px 20px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <span style={{fontSize:11,color:C.orange,fontWeight:700,letterSpacing:".12em",textTransform:"uppercase"}}>{f.icon} {f.label}</span>
-            <button onClick={()=>{setEditing(f.key);setVal(state.mission[f.key]);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14,transition:"color .15s"}} onMouseEnter={e=>e.target.style.color="#fff"} onMouseLeave={e=>e.target.style.color=C.muted}>✏️</button>
-          </div>
-          <p style={{margin:0,fontSize:15,color:"#ccc",lineHeight:1.7}}>{state.mission[f.key]}</p>
-        </Card>
-      ))}
-      <div><SectionTitle>OS 5 PILARES</SectionTitle>
-        <div className="mobile-two-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {PILARES.map((p,i)=><Card key={i} style={{padding:"16px",background:`${p.c}08`,borderColor:`${p.c}20`,textAlign:"center"}}><div style={{fontSize:22,color:p.c,marginBottom:6}}>{p.icon}</div><div style={{fontSize:13,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif"}}>{p.key}</div><div style={{fontSize:11,color:C.muted,marginTop:2}}>{p.sub}</div></Card>)}
-        </div>
-      </div>
-      <Modal open={!!editing} onClose={()=>setEditing(null)} title={`Editar ${fields.find(f=>f.key===editing)?.label||""}`}>
-        <Txt value={val} onChange={setVal} rows={4} placeholder="Escreva aqui..."/>
-        <Btn onClick={()=>{dispatch({type:"UPDATE_MISSION",field:editing,value:val});setEditing(null);}}>💾 Salvar</Btn>
-      </Modal>
-    </div>
-  );
-};
-
-const TabReview = ({state,dispatch})=>{
-  const wk=weekKey(),cur=state.reviews[wk]||{};
-  const [showHistory,setShowHistory]=useState(false);
-  const qs=[{key:"done",label:"O que foi feito?",icon:"✅"},{key:"learned",label:"O que aprendi?",icon:"💡"},{key:"improve",label:"O que melhorar?",icon:"🔧"},{key:"prioritize",label:"O que priorizar?",icon:"🎯"}];
-  const allWeeks=Object.entries(state.reviews||{}).filter(([k])=>k!==wk).sort((a,b)=>new Date(b[0])-new Date(a[0]));
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <Card style={{background:`${C.orange}08`,borderColor:`${C.orange}20`,padding:"14px 18px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{fontSize:11,color:C.orange,fontWeight:700,letterSpacing:".1em"}}>REVISÃO SEMANAL — {new Date().toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"})}</div>
-          {allWeeks.length>0&&<Btn onClick={()=>setShowHistory(true)} size="sm" variant="ghost">📋 Histórico ({allWeeks.length})</Btn>}
-        </div>
-      </Card>
-      {qs.map(q=>(
-        <Card key={q.key} style={{padding:"16px 18px"}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#e2e2e2",marginBottom:10}}>{q.icon} {q.label}</div>
-          <Txt value={cur[q.key]||""} onChange={v=>dispatch({type:"UPDATE_REVIEW",weekKey:wk,field:q.key,value:v})} placeholder="Escreva aqui..." rows={3}/>
-        </Card>
-      ))}
-      <Modal open={showHistory} onClose={()=>setShowHistory(false)} title="Histórico de Revisões" wide>
-        {allWeeks.length===0&&<div style={{color:C.muted,textAlign:"center",padding:"16px 0"}}>Nenhuma revisão anterior ainda.</div>}
-        {allWeeks.map(([k,r])=>(
-          <div key={k} style={{marginBottom:20,paddingBottom:20,borderBottom:`1px solid ${C.border}`}}>
-            <div style={{fontSize:12,color:C.orange,fontWeight:800,marginBottom:12}}>📅 {k}</div>
-            {qs.filter(q=>r[q.key]).map(q=>(
-              <div key={q.key} style={{marginBottom:10}}>
-                <div style={{fontSize:11,color:C.muted,fontWeight:700,textTransform:"uppercase",marginBottom:4}}>{q.icon} {q.label}</div>
-                <div style={{fontSize:13,color:"#ccc",lineHeight:1.6,background:"rgba(255,255,255,.03)",padding:"10px 12px",borderRadius:10,borderLeft:`3px solid ${C.orange}`}}>{r[q.key]}</div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </Modal>
-    </div>
-  );
-};
-
-
-
-
-
 // ── TAB: EXPORTAR PDF ──────────────────────────────────────────────────
 const TabExport = ({state,dispatch})=>{
   const [month,setMonth]=useState(new Date().getMonth()),[year,setYear]=useState(new Date().getFullYear());
@@ -2901,9 +2285,10 @@ const TabExport = ({state,dispatch})=>{
   const [lastBackup,setLastBackup]=useState(()=>localStorage.getItem("dcc_last_backup"));
   const fileRef=useRef(null);
   const REPORTS=[
-    {id:"productivity",icon:"🔥",title:"Produtividade",desc:"Hábitos, metas e tarefas do período",color:C.orange},
-    {id:"commercial",icon:"🤝",title:"Comercial",desc:"Clientes, pagamentos e interações",color:"#10b981"},
-    {id:"review",icon:"📋",title:"Revisões",desc:"Registros semanais e aprendizados",color:"#8b5cf6"},
+    {id:"executive",icon:"▦",title:"Resumo executivo",desc:`Indicadores da operação ${business.brandName||APP_NAME}`,color:C.orange},
+    {id:"production",icon:"▶",title:"Produção",desc:"Projetos, entregas, prazos e documentos gerados",color:"#8b5cf6"},
+    {id:"commercial",icon:"◆",title:"Comercial",desc:"Clientes, propostas, receita prevista e recebimentos",color:"#10b981"},
+    {id:"videoReview",icon:"◉",title:"Video Review",desc:"Links enviados, aprovações e ajustes solicitados",color:"#06b6d4"},
   ];
   const [selectedReports,setSelectedReports]=useState(REPORTS.map(r=>r.id));
   const toggleReport=id=>setSelectedReports(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
@@ -2915,7 +2300,7 @@ const TabExport = ({state,dispatch})=>{
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url;
-    a.download=`dante-control-center-backup-${year}-${String(month+1).padStart(2,"0")}.json`;
+    a.download=`${(business.brandName||APP_NAME).toLowerCase().replace(/[^a-z0-9]+/g,"-")}-backup-${year}-${String(month+1).padStart(2,"0")}.json`;
     a.click();
     URL.revokeObjectURL(url);
     const now=new Date().toISOString();
@@ -2935,7 +2320,7 @@ const TabExport = ({state,dispatch})=>{
       const url=URL.createObjectURL(blob);
       const a=document.createElement("a");
       a.href=url;
-      a.download=`centralis-backup-criptografado-${year}-${String(month+1).padStart(2,"0")}.json`;
+      a.download=`${(business.brandName||APP_NAME).toLowerCase().replace(/[^a-z0-9]+/g,"-")}-backup-criptografado-${year}-${String(month+1).padStart(2,"0")}.json`;
       a.click();
       URL.revokeObjectURL(url);
       const now=new Date().toISOString();
@@ -2960,7 +2345,7 @@ const TabExport = ({state,dispatch})=>{
       try{
         const data=JSON.parse(reader.result);
         if(!data||typeof data!=="object")throw new Error("invalid");
-        if(data._centralisEncryptedBackup){
+        if(data._dnzEncryptedBackup){
           const password=window.prompt("Digite a senha deste backup criptografado:");
           if(!password)throw new Error("Senha obrigatória para backup criptografado.");
           const decrypted=await decryptBackupPayload(data,password);
@@ -2977,35 +2362,36 @@ const TabExport = ({state,dispatch})=>{
   };
   const generatePDF=()=>{
     setGenerating(true);
-    const today=new Date(),dim=new Date(year,month+1,0).getDate();
-    const habitsSection=state.habits.map(h=>{const ct=h.completedDates?.filter(d=>{const dd=new Date(d);return dd.getMonth()===month&&dd.getFullYear()===year;}).length||0;const pct=Math.round(ct/dim*100);return `<div style="margin-bottom:12px;padding:12px 16px;border:1px solid #333;border-radius:10px;background:#1a1a1a"><div style="display:flex;justify-content:space-between;align-items:center"><div><span style="font-size:16px">${esc(h.icon)}</span> <strong style="color:#fff">${esc(h.title)}</strong></div><div style="color:#f97316;font-weight:800;font-size:18px">${ct}/${dim} dias</div></div><div style="margin-top:8px;background:#333;border-radius:99px;height:6px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#f97316;border-radius:99px"></div></div><div style="font-size:11px;color:#888;margin-top:4px">Streak: ${h.streak} | Melhor: ${h.best}</div></div>`;}).join("");
-    const goalsSection=state.goals.map(g=>{const lgs=(g.logs||[]).filter(l=>{const d=new Date(l.dateRaw);return d.getMonth()===month&&d.getFullYear()===year;});const lgsHTML=lgs.length?lgs.map(l=>`<div style="margin:6px 0;padding:8px 12px;background:#222;border-radius:8px;border-left:3px solid #f97316"><div style="color:#f97316;font-size:11px;font-weight:700;margin-bottom:4px">${esc(l.date)}</div>${l.text?`<p style="margin:0;color:#ccc;font-size:13px">${esc(l.text)}</p>`:""}${l.checks?.length?l.checks.map(c=>`<div style="color:#aaa;font-size:12px">✓ ${esc(c)}</div>`).join(""):""}</div>`).join(""):`<div style="color:#555;font-size:13px">Sem registros.</div>`;return `<div style="margin-bottom:14px;padding:14px 16px;border:1px solid #333;border-radius:10px;background:#1a1a1a"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong style="color:#fff;font-size:14px">${esc(g.title)}</strong><span style="color:#f97316;font-weight:800">${g.progress}%</span></div><div style="background:#333;border-radius:99px;height:5px;overflow:hidden;margin-bottom:10px"><div style="height:100%;width:${g.progress}%;background:#f97316;border-radius:99px"></div></div>${lgsHTML}</div>`;}).join("");
-    const doneT=state.tasks.filter(t=>{if(!t.completedAt)return false;const p=t.completedAt.split("/");return p.length===3&&parseInt(p[1])-1===month&&parseInt(p[2])===year;});
-    const pendT=state.tasks.filter(t=>!t.completed);
-    const tasksSection=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div><div style="color:#10b981;font-weight:700;font-size:13px;margin-bottom:8px">CONCLUÍDAS (${doneT.length})</div>${doneT.map(t=>`<div style="color:#ccc;font-size:13px;padding:5px 0;border-bottom:1px solid #222">✓ ${esc(t.title)}</div>`).join("")||`<div style="color:#555">Nenhuma</div>`}</div><div><div style="color:#eab308;font-weight:700;font-size:13px;margin-bottom:8px">PENDENTES (${pendT.length})</div>${pendT.map(t=>`<div style="color:#ccc;font-size:13px;padding:5px 0;border-bottom:1px solid #222">${esc(t.title)}</div>`).join("")||`<div style="color:#555">Nenhuma</div>`}</div></div>`;
-    const clientsSection=(state.clients||[]).map(c=>{const ints=(c.interactions||[]).filter(i=>{const p=i.date?.split("/");return p?.length===3&&parseInt(p[1])-1===month&&parseInt(p[2])===year;});return `<div style="margin-bottom:12px;padding:12px 16px;border:1px solid #333;border-radius:10px;background:#1a1a1a"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><strong style="color:#fff;font-size:15px">${esc(c.name)}</strong><span style="color:#10b981;font-weight:800">${fmtCurrency(c.value)}</span></div><div style="font-size:11px;color:#888;margin-bottom:8px">${esc(c.service||"")} · ${esc(c.status)} · ${esc(c.payment)}</div>${ints.length?`<div style="font-size:11px;color:#f97316;font-weight:700;margin-bottom:4px">INTERAÇÕES (${ints.length})</div>${ints.map(i=>`<div style="font-size:12px;color:#aaa;padding:4px 0;border-left:2px solid #f97316;padding-left:8px;margin:3px 0">[${esc(i.type)}] ${esc(i.note)}</div>`).join("")}`:""}</div>`;}).join("");
-    const habComp=state.habits.reduce((a,h)=>a+(h.completedDates?.filter(d=>{const dd=new Date(d);return dd.getMonth()===month&&dd.getFullYear()===year;}).length||0),0);
-    const consistency=state.habits.length?Math.round(habComp/(state.habits.length*dim)*100):0;
-    const lv=getLevel(state.xp);
-    const weekRevs=Object.entries(state.reviews||{}).filter(([k])=>{const d=new Date(k);return d.getMonth()===month&&d.getFullYear()===year;});
-    const reportName=selectedReports.length===REPORTS.length?"Relatório Mensal Completo":`Relatório ${REPORTS.filter(r=>hasReport(r.id)).map(r=>r.title).join(" + ")}`;
-    const productivityHTML=hasReport("productivity")?`<h2>🔥 Hábitos</h2>${habitsSection}<h2>🎯 Metas & Progresso</h2>${goalsSection}<h2>✅ Tarefas</h2>${tasksSection}`:"";
-    const commercialHTML=hasReport("commercial")&&state.clients?.length?`<h2>🤝 Clientes</h2>${clientsSection}`:"";
-    const reviewHTML=hasReport("review")&&weekRevs.length?`<h2>📋 Revisões Semanais</h2>${weekRevs.map(([k,r])=>`<div style="margin-bottom:12px;padding:14px;background:#1a1a1a;border:1px solid #333;border-radius:10px"><div style="color:#f97316;font-weight:700;font-size:12px;margin-bottom:8px">${esc(k)}</div>${r.done?`<div style="margin-bottom:6px"><strong style="color:#ccc">Feito:</strong><p style="color:#aaa;font-size:13px;margin-top:3px">${esc(r.done)}</p></div>`:""}${r.learned?`<div style="margin-bottom:6px"><strong style="color:#ccc">Aprendizados:</strong><p style="color:#aaa;font-size:13px;margin-top:3px">${esc(r.learned)}</p></div>`:""}${r.improve?`<div style="margin-bottom:6px"><strong style="color:#ccc">Melhorias:</strong><p style="color:#aaa;font-size:13px;margin-top:3px">${esc(r.improve)}</p></div>`:""}${r.prioritize?`<div><strong style="color:#ccc">Prioridades:</strong><p style="color:#aaa;font-size:13px;margin-top:3px">${esc(r.prioritize)}</p></div>`:""}</div>`).join("")}`:"";
-    const emptyHTML=!productivityHTML&&!commercialHTML&&!reviewHTML?`<div style="padding:22px;background:#1a1a1a;border:1px solid #333;border-radius:12px;color:#888;text-align:center">Nenhum dado encontrado para os relatórios selecionados nesse período.</div>`:"";
-    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(reportName)} — ${MONTHS[month]} ${year}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#0d0d0d;color:#e8e8e8;font-family:'Segoe UI',Arial,sans-serif;padding:40px;max-width:900px;margin:0 auto}h1{font-size:32px;font-weight:900;color:#fff;margin-bottom:4px}h2{font-size:15px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:.1em;margin:28px 0 14px;padding-bottom:8px;border-bottom:1px solid #333}.hero{background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(0,0,0,0));border:1px solid rgba(249,115,22,.25);border-radius:16px;padding:24px 28px;margin-bottom:28px}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px}.kpi{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:16px;text-align:center}.kpi-val{font-size:24px;font-weight:900;color:#f97316}.kpi-label{font-size:11px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:.06em}@media print{body{padding:20px}}</style></head><body>
-    <div class="hero"><div style="font-size:13px;color:#f97316;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">${APP_NAME.toUpperCase()} — ${APP_SUBTITLE}</div><h1>${esc(reportName)}</h1><div style="color:#666;font-size:14px;margin-bottom:16px">${MONTHS[month]} de ${year} · ${today.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div><div style="display:flex;gap:12px;flex-wrap:wrap"><span style="background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;color:#f97316">Nível: ${lv.name}</span><span style="background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);padding:4px 12px;border-radius:99px;font-size:12px;font-weight:700;color:#f97316">${state.xp} XP</span></div></div>
-    <div class="kpi-grid"><div class="kpi"><div class="kpi-val">${consistency}%</div><div class="kpi-label">Consistência hábitos</div></div><div class="kpi"><div class="kpi-val">${doneT.length}</div><div class="kpi-label">Tarefas concluídas</div></div><div class="kpi"><div class="kpi-val">${state.goals.length}</div><div class="kpi-label">Metas ativas</div></div><div class="kpi"><div class="kpi-val" style="color:#10b981">${(state.clients||[]).filter(c=>c.status==="ativo").length}</div><div class="kpi-label">Clientes ativos</div></div></div>
-    ${productivityHTML}${commercialHTML}${reviewHTML}${emptyHTML}
-    <div style="margin-top:40px;padding:16px;background:#1a1a1a;border-radius:10px;text-align:center;color:#444;font-size:12px">${APP_NAME} · ${today.toLocaleDateString("pt-BR")}</div></body></html>`;
+    const today=new Date();
+    const clients=state.clients||[];
+    const projects=clients.flatMap(c=>(c.videos||[]).map(v=>({client:c,video:v})));
+    const entries=state.financeEntries||[];
+    const reviews=state.reviewDeliverables||[];
+    const activeClients=clients.filter(c=>!["entregue","pago"].includes(normalizeClientStatus(c))).length;
+    const openProjects=projects.filter(p=>p.video.status!=="entregue").length;
+    const pendingReviews=reviews.filter(r=>!["aprovado","approved"].includes(String(r.status||"").toLowerCase())).length;
+    const paidTotal=clients.filter(c=>c.payment==="pago").reduce((a,c)=>a+Number(c.value||0),0)+entries.filter(e=>e.type==="entrada"&&e.status==="pago").reduce((a,e)=>a+Number(e.value||0),0);
+    const receivable=clients.filter(c=>c.payment!=="pago").reduce((a,c)=>a+Number(c.value||0),0)+entries.filter(e=>e.type==="entrada"&&e.status!=="pago").reduce((a,e)=>a+Number(e.value||0),0);
+    const reportName=selectedReports.length===REPORTS.length?`Relatório Executivo ${business.brandName||APP_NAME}`:`Relatório ${REPORTS.filter(r=>hasReport(r.id)).map(r=>r.title).join(" + ")}`;
+    const kpi=(label,value,color=C.orange)=>`<div class="kpi"><div class="kpi-val" style="color:${color}">${esc(value)}</div><div class="kpi-label">${esc(label)}</div></div>`;
+    const row=(title,meta,value,color=C.orange)=>`<div class="row"><div><strong>${esc(title)}</strong><span>${esc(meta||"")}</span></div><b style="color:${color}">${esc(value||"")}</b></div>`;
+    const executiveHTML=hasReport("executive")?`<h2>Resumo executivo</h2><div class="kpi-grid">${kpi("Clientes ativos",activeClients,"#10b981")}${kpi("Projetos abertos",openProjects,"#8b5cf6")}${kpi("Reviews pendentes",pendingReviews,"#06b6d4")}${kpi("A receber",fmtCurrency(receivable),"#eab308")}</div>`:"";
+    const productionHTML=hasReport("production")?`<h2>Produção audiovisual</h2>${projects.length?projects.map(p=>row(p.video.title||"Projeto sem título",[p.client.name,p.video.type,p.video.deadline&&`prazo ${p.video.deadline}`].filter(Boolean).join(" · "),p.video.status||"em produção","#8b5cf6")).join(""):`<div class="empty">Nenhum projeto cadastrado neste período.</div>`}`:"";
+    const commercialHTML=hasReport("commercial")?`<h2>Comercial e caixa</h2>${clients.length?clients.map(c=>row(c.name,[c.service,clientStageLabel(c),c.payment].filter(Boolean).join(" · "),fmtCurrency(c.value||0),c.payment==="pago"?"#10b981":"#eab308")).join(""):`<div class="empty">Nenhum cliente cadastrado.</div>`}<div class="kpi-grid compact">${kpi("Recebido",fmtCurrency(paidTotal),"#10b981")}${kpi("A receber",fmtCurrency(receivable),"#eab308")}${kpi("Propostas",clients.reduce((a,c)=>a+(c.proposals||[]).length,0),C.orange)}${kpi("Clientes",clients.length,"#06b6d4")}</div>`:"";
+    const videoReviewHTML=hasReport("videoReview")?`<h2>Video Review</h2>${reviews.length?reviews.map(r=>row(r.title||"Review sem título",[r.clientName,r.status,r.comments?.length?`${r.comments.length} comentários`:null].filter(Boolean).join(" · "),r.status||"aguardando","#06b6d4")).join(""):`<div class="empty">Nenhum link de review cadastrado ainda.</div>`}`:"";
+    const emptyHTML=!executiveHTML&&!productionHTML&&!commercialHTML&&!videoReviewHTML?`<div class="empty">Nenhum relatório selecionado.</div>`:"";
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${esc(reportName)} — ${MONTHS[month]} ${year}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#0d0d0d;color:#e8e8e8;font-family:'Segoe UI',Arial,sans-serif;padding:40px;max-width:920px;margin:0 auto}h1{font-size:34px;font-weight:900;color:#fff;margin-bottom:4px}h2{font-size:14px;font-weight:900;color:${C.orange};text-transform:uppercase;letter-spacing:.14em;margin:30px 0 14px;padding-bottom:8px;border-bottom:1px solid #333}.hero{background:linear-gradient(135deg,${C.orange}24,rgba(0,0,0,0));border:1px solid ${C.orange}45;border-radius:16px;padding:24px 28px;margin-bottom:28px}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.kpi-grid.compact{margin-top:18px}.kpi{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:16px;text-align:center}.kpi-val{font-size:22px;font-weight:900}.kpi-label{font-size:10px;color:#777;margin-top:4px;text-transform:uppercase;letter-spacing:.08em}.row{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;background:#161616;border:1px solid #2a2a2a;border-radius:12px;padding:13px 15px;margin-bottom:9px}.row strong{display:block;color:#fff;font-size:14px}.row span{display:block;color:#888;font-size:11px;margin-top:4px;line-height:1.4}.row b{font-size:13px;white-space:nowrap}.empty{padding:18px;background:#171717;border:1px solid #2a2a2a;border-radius:12px;color:#888;text-align:center}@media print{body{padding:20px}.kpi-grid{grid-template-columns:repeat(2,1fr)}}}</style></head><body>
+    <div class="hero"><div style="font-size:12px;color:${C.orange};font-weight:900;letter-spacing:.16em;text-transform:uppercase;margin-bottom:7px">${esc((business.brandName||APP_NAME).toUpperCase())} — ${esc(APP_NAME.toUpperCase())}</div><h1>${esc(reportName)}</h1><div style="color:#777;font-size:13px">${MONTHS[month]} de ${year} · ${today.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div></div>
+    ${executiveHTML}${productionHTML}${commercialHTML}${videoReviewHTML}${emptyHTML}
+    <div style="margin-top:40px;padding:16px;background:#151515;border-radius:10px;text-align:center;color:#555;font-size:12px">${esc(business.brandName||APP_NAME)} · ${today.toLocaleDateString("pt-BR")}</div></body></html>`;
     const w=window.open("","_blank");w.document.write(html);w.document.close();setTimeout(()=>{w.print();setGenerating(false);},800);
   };
-  const dim=new Date(year,month+1,0).getDate();
-  const completedHabits=state.habits.reduce((a,h)=>a+(h.completedDates?.filter(d=>{const dd=new Date(d);return dd.getMonth()===month&&dd.getFullYear()===year;}).length||0),0);
-  const consistency=state.habits.length?Math.round(completedHabits/(state.habits.length*dim)*100):0;
-  const completedTasks=state.tasks.filter(t=>{if(!t.completedAt)return false;const p=t.completedAt.split("/");return p.length===3&&parseInt(p[1])-1===month&&parseInt(p[2])===year;}).length;
-  const activeClients=(state.clients||[]).filter(c=>c.status==="ativo").length;
-  const paidTotal=(state.clients||[]).filter(c=>c.payment==="pago").reduce((a,c)=>a+Number(c.value||0),0);
+  const clients=state.clients||[];
+  const projects=clients.flatMap(c=>c.videos||[]);
+  const reviews=state.reviewDeliverables||[];
+  const activeProjects=projects.filter(v=>v.status!=="entregue").length;
+  const activeClients=clients.filter(c=>!["entregue","pago"].includes(normalizeClientStatus(c))).length;
+  const paidTotal=clients.filter(c=>c.payment==="pago").reduce((a,c)=>a+Number(c.value||0),0)+(state.financeEntries||[]).filter(e=>e.type==="entrada"&&e.status==="pago").reduce((a,e)=>a+Number(e.value||0),0);
   const backupDays=lastBackup?Math.floor((new Date()-new Date(lastBackup))/(1000*60*60*24)):null;
   const backupWarn=backupDays===null||backupDays>=7;
   return (
@@ -3022,8 +2408,8 @@ const TabExport = ({state,dispatch})=>{
         </div>
         <div className="mobile-kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:18}}>
           {[
-            {v:`${consistency}%`,l:"Consistência",c:C.orange},
-            {v:completedTasks,l:"Atividades feitas",c:"#10b981"},
+            {v:activeProjects,l:"Projetos ativos",c:C.orange},
+            {v:reviews.length,l:"Video Reviews",c:"#06b6d4"},
             {v:activeClients,l:"Clientes ativos",c:"#3b82f6"},
             {v:fmtCurrency(paidTotal),l:"Recebido",c:"#eab308"},
           ].map((s,i)=><div key={i} style={{background:"rgba(255,255,255,.035)",border:`1px solid ${C.border}`,borderRadius:12,padding:"12px",textAlign:"center"}}><div style={{fontSize:i===3?12:22,fontWeight:800,color:s.c,fontFamily:"'Syne',sans-serif"}}>{s.v}</div><div style={{fontSize:10,color:C.muted,marginTop:4}}>{s.l}</div></div>)}
@@ -3065,7 +2451,7 @@ const SecurityPanel = ({session,cloudStatus,privacyMode,lockEnabled,setLockEnabl
         </span>
       </button>
       {open&&<>
-        <div className="security-chip"><span>Plano</span><span style={{color:isAdmin?"#10b981":"#eab308"}}>{isAdmin?"Admin":"Trial"}</span></div>
+        <div className="security-chip"><span>Acesso</span><span style={{color:isAdmin?"#10b981":"#eab308"}}>{isAdmin?"Admin":"Restrito"}</span></div>
         <div className="security-chip"><span>Dados</span><span style={{color:cloudColor}}>{cloudLabel}</span></div>
         <div className="security-chip"><span>Privacidade</span><span style={{color:privacyMode?C.orange:C.muted}}>{privacyMode?"Oculta":"Normal"}</span></div>
         <button onClick={()=>setLockEnabled(v=>!v)} className="security-chip" style={{width:"100%",cursor:"pointer",fontFamily:"inherit"}}>
@@ -3075,44 +2461,6 @@ const SecurityPanel = ({session,cloudStatus,privacyMode,lockEnabled,setLockEnabl
           <span>Bloquear agora</span><span>⌁</span>
         </button>
       </>}
-    </div>
-  );
-};
-
-const SalesTrialNotice = ({session,userName,remaining,onClose,onAbout})=>{
-  const logged=!!session?.user;
-  const expired=logged&&remaining<=0;
-  const buyMessage=`Olá, quero comprar acesso ao ${APP_NAME}. Meu login é ${session?.user?.email||"ainda não entrei"}.`;
-  const salesHref=`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(buyMessage)}`;
-  const supportHref=`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(`Olá, tenho uma dúvida sobre o ${APP_NAME}.`)}`;
-  return (
-    <div className={`sales-float ${expired?"locked":""}`} role="dialog" aria-live="polite">
-      <div className="sales-float-head">
-        <div>
-          <div style={{fontSize:10,color:C.orange,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase",marginBottom:5}}>{expired?"Teste encerrado":logged?"Teste ativo":"Acesso comercial"}</div>
-          <div style={{fontSize:17,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif",lineHeight:1.15}}>{logged?`${userName||"Usuário"}, seu acesso de teste`:`Entre para testar o ${APP_NAME}`}</div>
-        </div>
-        {!expired&&<button onClick={onClose} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>}
-      </div>
-      <div className="sales-float-body">
-        {logged?(
-          <>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,marginBottom:10}}>
-              <span style={{fontSize:12,color:C.muted,fontWeight:800}}>Tempo restante</span>
-              <span style={{fontSize:22,color:expired?"#ef4444":C.orange,fontWeight:900,fontFamily:"'Syne',sans-serif"}}>{formatTimer(remaining)}</span>
-            </div>
-            <p style={{fontSize:13,color:"#bbb",lineHeight:1.5,margin:"0 0 13px"}}>{expired?"Para continuar usando com sincronização e segurança, fale com a equipe e libere seu acesso completo.":"Você tem 10 minutos para testar. Para comprar acesso completo, fale com a equipe pelo contato abaixo."}</p>
-          </>
-        ):(
-          <p style={{fontSize:13,color:"#bbb",lineHeight:1.5,margin:"0 0 13px"}}>O login com GitHub identifica o usuário. Depois do login, liberamos 10 minutos de teste e mostramos o caminho para comprar o acesso completo.</p>
-        )}
-        <div style={{display:"grid",gridTemplateColumns:logged?"1fr 1fr":"1fr",gap:8}}>
-          <a href={salesHref} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minHeight:38,borderRadius:11,background:`linear-gradient(135deg,${C.orange},${C.orangeD})`,color:"#fff",textDecoration:"none",fontSize:12,fontWeight:900}}>Comprar no WhatsApp</a>
-          {logged&&<a href={supportHref} target="_blank" rel="noopener noreferrer" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",minHeight:38,borderRadius:11,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.045)",color:"#ddd",textDecoration:"none",fontSize:12,fontWeight:900}}>Falar com suporte</a>}
-        </div>
-        <button onClick={onAbout} style={{width:"100%",marginTop:8,minHeight:34,borderRadius:10,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)",color:"#ddd",fontFamily:"inherit",fontSize:12,fontWeight:900,cursor:"pointer"}}>Ver apresentação</button>
-        <div style={{fontSize:10,color:C.muted,marginTop:10,lineHeight:1.35}}>Contato de compra: WhatsApp +55 48 99805-0267. GitHub faz login; liberação paga deve ser validada no Supabase quando for para produção.</div>
-      </div>
     </div>
   );
 };
@@ -3169,10 +2517,10 @@ const BusinessOnboarding = ({open,business,dispatch,onClose})=>{
         <p style={{margin:0,fontSize:13,color:"#bbb",lineHeight:1.55}}>Esses dados personalizam propostas, WhatsApp comercial, textos e a identidade do sistema.</p>
       </div>
       <div className="form-grid-2">
-        <Inp label="Nome da marca" value={form.brandName} onChange={v=>setForm(f=>({...f,brandName:v}))} placeholder="Ex: DNZ Films"/>
+        <Inp label="Nome da marca" value={form.brandName} onChange={v=>setForm(f=>({...f,brandName:v}))} placeholder={`Ex: ${BRANDING.brandName}`}/>
         <Inp label="Tipo de negócio" value={form.type} onChange={v=>setForm(f=>({...f,type:v}))} placeholder="Produtora, social media, agência..."/>
         <Inp label="Ticket médio (R$)" value={form.ticketAverage} onChange={v=>setForm(f=>({...f,ticketAverage:v}))} type="number" placeholder="2500"/>
-        <Inp label="WhatsApp comercial" value={form.whatsapp} onChange={v=>setForm(f=>({...f,whatsapp:v}))} placeholder="5548998050267"/>
+        <Inp label="WhatsApp comercial" value={form.whatsapp} onChange={v=>setForm(f=>({...f,whatsapp:v}))} placeholder={BRANDING.whatsapp||"5500000000000"}/>
         <Inp label="Nome da empresa" value={form.companyName} onChange={v=>setForm(f=>({...f,companyName:v}))} placeholder="Razão social ou nome fantasia"/>
         <Inp label="Email comercial" value={form.proposalEmail} onChange={v=>setForm(f=>({...f,proposalEmail:v}))} placeholder="contato@empresa.com"/>
         <Inp label="Documento" value={form.proposalDocument} onChange={v=>setForm(f=>({...f,proposalDocument:v}))} placeholder="CNPJ / CPF"/>
@@ -3240,328 +2588,6 @@ const TabBusinessSettings = ({state,dispatch})=>{
     </div>
   );
 };
-
-const TabAbout = ({session,onEnter,onPlans})=>{
-  const [showDetails,setShowDetails]=useState(false);
-  const features=[
-    {k:"01",title:"CRM Vivo",text:"Contatos, clientes, follow-up, temperatura, probabilidade e receita prevista sem perder o contexto comercial.",color:"#10b981"},
-    {k:"02",title:"Pipeline de Produção",text:"Cada projeto avança por Briefing, Roteiro, Decupagem, Callsheet, Checklist e Entrega.",color:"#8b5cf6"},
-    {k:"03",title:"Studio de Documentos",text:"Briefings, roteiros, callsheets, checklists e relatórios de entrega com preview, histórico e PDF.",color:"#f97316"},
-    {k:"04",title:"Financeiro Criativo",text:"Recebido, a receber, atrasado, ticket médio, melhores serviços e clientes mais valiosos.",color:"#3b82f6"},
-  ];
-  const flow=[
-    ["Contato","Origem, temperatura, próxima ação e previsão."],
-    ["Proposta","Nasce do cliente e fica salva no histórico."],
-    ["Produção","Projeto ganha etapas, prazos e checklist premium."],
-    ["Documento","PDF profissional pronto para cliente e equipe."],
-  ];
-  const buyHref=`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(`Olá, quero comprar acesso ao ${APP_NAME}.`)}`;
-  return (
-    <div className="page-stack">
-      <section className="elite-about-hero elite-surface">
-        <div className="elite-content" style={{display:"flex",flexDirection:"column",justifyContent:"space-between",gap:24}}>
-          <div>
-            <div className="elite-kicker">{APP_SUBTITLE}</div>
-            <h1 className="elite-title">{APP_NAME}<br/><span style={{color:C.orange}}>Operação Criativa</span></h1>
-            <p className="elite-copy">O DNZ Central é uma central simples para transformar pedido de cliente em proposta, projeto, documento e recebimento. A ideia é abrir de manhã e saber exatamente o que vender, produzir e cobrar.</p>
-          </div>
-          <div>
-            <div className="elite-actions">
-              <button onClick={onPlans} className="elite-primary">Ver planos</button>
-              <button onClick={onEnter} className="elite-secondary">{session?"Abrir meu workspace":"Entrar com GitHub"}</button>
-              <a href={buyHref} target="_blank" rel="noopener noreferrer" className="elite-secondary">Falar com vendas</a>
-            </div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:18}}>
-              {["Clientes","Projetos","Documentos","Dinheiro"].map(item=><span key={item} style={{fontSize:11,color:"#aaa",fontWeight:900,border:"1px solid rgba(255,255,255,.1)",background:"rgba(255,255,255,.045)",borderRadius:99,padding:"6px 10px"}}>{item}</span>)}
-            </div>
-          </div>
-        </div>
-        <div className="elite-content elite-product-panel">
-          <div>
-            <div className="elite-kicker" style={{color:"#aaa",marginBottom:12}}>MODELO DE OPERAÇÃO</div>
-            <div className="elite-flow">
-              {flow.map(([title,text],i)=>(
-                <div className="elite-flow-row" key={title}>
-                  <span className="elite-flow-index">{String(i+1).padStart(2,"0")}</span>
-                  <span>
-                    <span className="elite-flow-title">{title}</span>{" "}
-                    <span className="elite-flow-meta">{text}</span>
-                  </span>
-                  <span style={{width:7,height:7,borderRadius:99,background:i<2?C.orange:"rgba(255,255,255,.25)"}}/>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="elite-mini-metrics">
-            <div className="elite-mini-metric"><div className="elite-mini-value">CRM</div><div className="elite-mini-label">vendas vivas</div></div>
-            <div className="elite-mini-metric"><div className="elite-mini-value">PDF</div><div className="elite-mini-label">documentos prontos</div></div>
-            <div className="elite-mini-metric"><div className="elite-mini-value">PROD</div><div className="elite-mini-label">produção guiada</div></div>
-          </div>
-        </div>
-      </section>
-      <div className="plain-intro-grid">
-        <div className="plain-intro-card">
-          <div className="plain-intro-kicker">Em uma frase</div>
-          <div className="plain-intro-title">Um lugar para organizar a operação criativa do dia.</div>
-          <p className="plain-intro-text">Em vez de deixar cliente no WhatsApp, tarefa na cabeça, projeto no Drive e cobrança perdida, o DNZ Central junta o fluxo em uma visão só.</p>
-        </div>
-        <div className="plain-intro-card">
-          <div className="plain-intro-kicker">Como ajuda hoje</div>
-          <div className="plain-intro-title">Você sabe a próxima ação.</div>
-          <div className="plain-intro-list">
-            <span><b>1.</b> Quem precisa de follow-up.</span>
-            <span><b>2.</b> Qual projeto está em produção.</span>
-            <span><b>3.</b> O que falta entregar ou receber.</span>
-          </div>
-        </div>
-        <div className="plain-intro-card">
-          <div className="plain-intro-kicker">Por onde começa</div>
-          <div className="plain-intro-title">Cadastre um cliente e um projeto.</div>
-          <p className="plain-intro-text">Depois disso o sistema começa a fazer sentido: proposta, checklist, documentos PDF, prazos e financeiro nascem desse primeiro cadastro.</p>
-        </div>
-      </div>
-      <Card>
-        <SectionTitle>COMO USAR NO DIA</SectionTitle>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:12}} className="modal-grid">
-          {[
-            ["Manhã","Abra Hoje e veja a próxima ação recomendada."],
-            ["Novo contato","Cadastre o cliente e marque follow-up."],
-            ["Fechou venda","Crie o projeto e organize prazo, briefing e entregáveis."],
-            ["Antes do set","Gere callsheet, checklist ou decupagem em Documentos."],
-            ["Depois da entrega","Marque cobrança, pagamento e aceite final."],
-          ].map(([title,text],i)=><div key={title} style={{padding:"14px",borderRadius:16,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)"}}>
-            <div style={{fontSize:10,color:C.orange,fontWeight:900,marginBottom:7}}>0{i+1}</div>
-            <div style={{fontSize:13,color:"#fff",fontWeight:900,marginBottom:5}}>{title}</div>
-            <div style={{fontSize:11,color:C.muted,lineHeight:1.45}}>{text}</div>
-          </div>)}
-        </div>
-      </Card>
-      <Card style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap",padding:"16px 18px"}}>
-        <div>
-          <div style={{fontSize:14,color:"#fff",fontWeight:900,marginBottom:3}}>Quer ver mais detalhes?</div>
-          <div style={{fontSize:12,color:C.muted}}>A página inicial fica limpa; os recursos completos aparecem só quando a pessoa pedir.</div>
-        </div>
-        <Btn onClick={()=>setShowDetails(v=>!v)} variant="ghost">{showDetails?"Ocultar detalhes":"Ver recursos completos"}</Btn>
-      </Card>
-      {showDetails&&<>
-      <div className="elite-section-title">
-        <div>
-          <h2>Como a operação flui</h2>
-          <p>O contato vira proposta, a proposta vira projeto, o projeto vira documento e o financeiro acompanha o resultado.</p>
-        </div>
-      </div>
-      <Card style={{padding:"18px",background:"rgba(249,115,22,.06)",borderColor:"rgba(249,115,22,.2)"}}>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:10}}>
-          {[
-            ["01","Vender","CRM organiza lead, proposta, follow-up e previsão de receita."],
-            ["02","Produzir","Projetos recebem pipeline visual, agenda, briefing e checklist."],
-            ["03","Documentar","Studio gera PDFs profissionais para equipe e cliente."],
-            ["04","Receber","Financeiro acompanha contrato, pendência, atraso e caixa."],
-          ].map(([n,t,d])=><div key={n} style={{padding:"12px",borderRadius:14,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)"}}><div style={{fontSize:10,color:C.orange,fontWeight:900}}>{n}</div><div style={{fontSize:13,color:"#fff",fontWeight:900,marginTop:5}}>{t}</div><div style={{fontSize:11,color:C.muted,lineHeight:1.45,marginTop:4}}>{d}</div></div>)}
-        </div>
-      </Card>
-      <div className="elite-feature-grid">
-        {features.map(f=>(
-          <div key={f.title} className="elite-feature-card" style={{"--accent":f.color}}>
-            <div style={{position:"relative",zIndex:1}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-                <span style={{fontSize:10,color:f.color,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase"}}>{f.k}</span>
-                <span style={{width:8,height:8,borderRadius:99,background:f.color,boxShadow:`0 0 18px ${f.color}`}}/>
-              </div>
-              <div style={{fontSize:17,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif",marginBottom:10}}>{f.title}</div>
-              <p style={{fontSize:12,color:"#aaa",lineHeight:1.6,margin:0}}>{f.text}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-      <Card className="elite-surface" style={{padding:"20px"}}>
-        <div className="elite-content">
-          <div className="elite-section-title">
-            <div>
-              <h2>Identidade visual nova</h2>
-              <p>DNZ Central nasce para parecer ferramenta de operação criativa, não só painel administrativo.</p>
-            </div>
-          </div>
-          <div className="elite-access-grid">
-            {[
-              ["Logo próprio","Marca geométrica, compacta e pronta para sidebar, PDF e proposta."],
-              ["Tom de produto","Studio OS comunica venda, produção, documento e financeiro."],
-              ["Premium sem excesso","Visual escuro, técnico e direto, inspirado no Frame."],
-              ["White label","A marca do usuário ainda pode substituir logo, nome e cor."],
-            ].map(([a,b])=><div className="elite-access-item" key={a}><strong>{a}</strong><span>{b}</span></div>)}
-          </div>
-        </div>
-      </Card>
-      </>}
-    </div>
-  );
-};
-
-const TabPlans = ({state,dispatch,isAdmin,setTab})=>{
-  const current=getPlanMeta(effectivePlanId(state,isAdmin));
-  const sub=getSubscription(state);
-  const recommendedPlanId=recommendedPlanForState(state);
-  const activatePlan=plan=>{
-    if(!isAdmin)return;
-    dispatch({type:"SET_SUBSCRIPTION",data:{plan:plan.id,status:"active",source:"admin",startedAt:new Date().toISOString(),expiresAt:null}});
-  };
-  const resetTrial=()=>dispatch({type:"SET_SUBSCRIPTION",data:{...DEFAULT_SUBSCRIPTION,startedAt:new Date().toISOString()}});
-  return (
-    <div className="page-stack">
-      <Card className="elite-surface" style={{padding:"24px"}}>
-        <div className="elite-content">
-          <div className="page-hero-row">
-            <div>
-              <div className="elite-kicker">PLANOS DNZ</div>
-              <div className="page-title" style={{fontSize:34}}>Escolha o nível da sua operação criativa</div>
-              <p className="page-subtitle">Compare CRM, produção, documentos PDF, checklists premium, financeiro e white label antes de liberar o workspace completo.</p>
-              <div style={{marginTop:14,display:"flex",gap:8,flexWrap:"wrap"}}>
-                <PlanBadge state={state} isAdmin={isAdmin}/>
-                <Tag color={current.color}>Fonte: {isAdmin?"admin":sub.source||"local"}</Tag>
-              </div>
-            </div>
-            <div style={{minWidth:220}}>
-              <Card style={{padding:"14px",background:`${current.color}12`,borderColor:`${current.color}35`}}>
-                <div style={{fontSize:10,color:current.color,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginBottom:8}}>Plano atual</div>
-                <div style={{fontSize:24,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif"}}>{current.name}</div>
-                <div style={{fontSize:12,color:C.muted,marginTop:4}}>{sub.status==="active"||isAdmin?"Acesso liberado":"Teste ou acesso comercial pendente"}</div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </Card>
-      <PlanAudit state={state} setTab={setTab}/>
-      <div className="plan-grid">
-        {PLANS.map(plan=>{
-          const href=`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(salesMessageForPlan(plan))}`;
-          const active=effectivePlanId(state,isAdmin)===plan.id;
-          return <PlanDeliverables key={plan.id} plan={plan} recommended={recommendedPlanId===plan.id} active={active} onBuy={href} onActivate={()=>activatePlan(plan)} isAdmin={isAdmin}/>;
-        })}
-      </div>
-      <PlanMatrix/>
-      <div className="mobile-two-grid" style={{display:"grid",gridTemplateColumns:"1.2fr .8fr",gap:12}}>
-        <Card>
-          <SectionTitle>JORNADA DE COMPRA</SectionTitle>
-          {[
-            ["Sobre","Primeiro o usuário entende a promessa do Studio OS."],
-            ["Planos","Depois compara Solo, Pro, Studio ou White Label."],
-            ["Login","Só então entra no workspace para validar a operação."],
-            ["Compra","WhatsApp converte agora; billing real entra na próxima fase."],
-          ].map(([a,b])=><div key={a} style={{display:"grid",gridTemplateColumns:"150px 1fr",gap:12,padding:"10px 0",borderBottom:`1px solid ${C.border}`}}><div style={{fontSize:12,color:"#fff",fontWeight:900}}>{a}</div><div style={{fontSize:12,color:C.muted,lineHeight:1.45}}>{b}</div></div>)}
-        </Card>
-        <Card style={{background:"rgba(249,115,22,.06)",borderColor:"rgba(249,115,22,.22)"}}>
-          <SectionTitle>PRÓXIMO PASSO</SectionTitle>
-          <p style={{fontSize:13,color:"#bbb",lineHeight:1.55,margin:"0 0 14px"}}>A vitrine agora vende o que o produto já entrega: pipeline, PDF, checklist premium, CRM e financeiro. Billing real pode entrar depois.</p>
-          <Btn onClick={()=>setTab("business")} variant="ghost" style={{width:"100%",justifyContent:"center"}}>Revisar negócio</Btn>
-          {isAdmin&&<Btn onClick={resetTrial} variant="danger" size="sm" style={{width:"100%",justifyContent:"center",marginTop:8}}>Voltar para trial</Btn>}
-        </Card>
-      </div>
-    </div>
-  );
-};
-
-const TabTemplates = ({state,dispatch,setTab,isAdmin})=>{
-  const taskTemplates=[
-    {title:"Rotina de follow-up comercial",tag:"crm",items:["Revisar leads quentes","Enviar proposta pendente","Cobrar retorno de orçamento","Atualizar probabilidade no CRM"]},
-    {title:"Pré-produção audiovisual",tag:"produção",items:["Confirmar briefing","Fechar roteiro","Separar referências","Montar plano de captação"]},
-    {title:"Fechamento financeiro semanal",tag:"financeiro",items:["Conferir recebidos","Atualizar atrasados","Registrar despesas","Projetar próxima semana"]},
-  ];
-  const projectTemplates=AUDIOVISUAL_PRESETS.map(p=>({presetId:p.id,title:p.title,type:p.type,checklist:p.checklist}));
-  const firstClient=(state.clients||[])[0];
-  const canUsePlaybooks=hasPlanAccess(state,"studio",isAdmin);
-  const addTasks=t=>{
-    t.items.forEach((title,i)=>dispatch({type:"ADD_TASK",task:{title,tag:t.tag,priority:i===0?"high":"medium",dueDate:""},silent:true}));
-    setTab("tasks");
-  };
-  const addProject=t=>{
-    if(!firstClient){setTab("clients");return;}
-    dispatch({type:"ADD_CLIENT_VIDEO",id:firstClient.id,video:buildVideoProject({presetId:t.presetId,title:t.title,type:t.type,deadline:"",link:"",checklist:t.checklist})});
-    setTab("projects");
-  };
-  const applyPlaybook=pb=>{
-    if(!canUsePlaybooks){setTab("plans");return;}
-    const clientId=Date.now();
-    const preset=presetById(pb.presetId);
-    const client={
-      id:clientId,
-      name:`Contato ${pb.niche}`,
-      service:pb.service,
-      value:pb.value,
-      status:"prospecto",
-      payment:"pendente",
-      contract:"",
-      nextMeeting:"",
-      email:"",
-      phone:"",
-      notes:`Playbook aplicado: ${pb.niche}. ${pb.notes}`,
-      nextAction:pb.nextAction,
-      followUpDate:addDaysInput(2),
-      leadTemp:"quente",
-      leadSource:pb.leadSource,
-      probability:65
-    };
-    dispatch({type:"ADD_CLIENT",client,silent:true});
-    dispatch({type:"ADD_CLIENT_VIDEO",id:clientId,video:buildVideoProject({presetId:pb.presetId,title:`Oferta ${pb.niche}`,type:preset.type,deadline:addDaysInput(10),link:"",checklist:preset.checklist}),silent:true});
-    pb.tasks.forEach((title,i)=>dispatch({type:"ADD_TASK",task:{title,tag:`playbook-${pb.id}`,priority:i<2?"high":"medium",dueDate:i<2?addDaysInput(i+1):""},silent:true}));
-    setTab("clients");
-  };
-  return (
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <Card style={{padding:"20px 22px",background:"rgba(234,179,8,.06)",borderColor:"rgba(234,179,8,.22)"}}>
-        <div style={{fontSize:11,color:"#eab308",fontWeight:900,letterSpacing:".14em",textTransform:"uppercase",marginBottom:6}}>TEMPLATES OPERACIONAIS</div>
-        <p style={{fontSize:13,color:"#bbb",lineHeight:1.55,margin:0}}>Modelos prontos para acelerar rotina, produção e financeiro sem criar tudo do zero.</p>
-      </Card>
-      <div className="mobile-two-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        <Card style={{padding:"18px"}}>
-          <SectionTitle>TAREFAS PRONTAS</SectionTitle>
-          {taskTemplates.map(t=><button key={t.title} onClick={()=>addTasks(t)} style={{width:"100%",textAlign:"left",padding:"12px",borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)",color:"#ddd",cursor:"pointer",fontFamily:"inherit",marginBottom:9}}>
-            <div style={{fontSize:13,fontWeight:900,color:"#fff"}}>{t.title}</div>
-            <div style={{fontSize:11,color:C.muted,marginTop:4}}>{t.items.length} tarefas · {t.tag}</div>
-          </button>)}
-        </Card>
-        <Card style={{padding:"18px"}}>
-          <SectionTitle>PROJETOS PRONTOS</SectionTitle>
-          {!firstClient&&<div style={{fontSize:12,color:"#eab308",marginBottom:10}}>Cadastre um cliente para aplicar templates de projeto.</div>}
-          {projectTemplates.map(t=><button key={t.title} onClick={()=>addProject(t)} style={{width:"100%",textAlign:"left",padding:"12px",borderRadius:12,border:`1px solid ${firstClient?C.border:"rgba(234,179,8,.25)"}`,background:firstClient?"rgba(255,255,255,.035)":"rgba(234,179,8,.06)",color:"#ddd",cursor:"pointer",fontFamily:"inherit",marginBottom:9}}>
-            <div style={{fontSize:13,fontWeight:900,color:"#fff"}}>{t.title}</div>
-            <div style={{fontSize:11,color:C.muted,marginTop:4}}>{t.checklist.length} etapas · {t.type}</div>
-          </button>)}
-        </Card>
-      </div>
-      <Card style={{padding:"18px",background:"rgba(139,92,246,.055)",borderColor:"rgba(139,92,246,.22)"}}>
-        <div className="page-hero-row" style={{marginBottom:14}}>
-          <div>
-            <div style={{fontSize:11,color:"#8b5cf6",fontWeight:900,letterSpacing:".14em",textTransform:"uppercase",marginBottom:6}}>PLAYBOOKS POR NICHO · STUDIO</div>
-            <div style={{fontSize:20,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif"}}>Venda e operação pré-montadas para nichos criativos</div>
-            <p style={{fontSize:12,color:C.muted,lineHeight:1.5,margin:"6px 0 0",maxWidth:720}}>Cada playbook cria um lead quente, um projeto audiovisual inicial e tarefas comerciais específicas. Isso transforma a promessa Studio em função real.</p>
-          </div>
-          {!canUsePlaybooks&&<Btn onClick={()=>setTab("plans")} size="sm" variant="ghost">Ver plano Studio</Btn>}
-        </div>
-        {!canUsePlaybooks&&<PlanGate state={state} isAdmin={isAdmin} required="studio" setTab={setTab} title="Playbooks por nicho são entregável Studio" text="Você pode visualizar os nichos, mas aplicar lead, projeto e tarefas automaticamente faz parte do plano Studio."/>}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:10,marginTop:12}} className="mobile-two-grid">
-          {NICHE_PLAYBOOKS.map(pb=>(
-            <div key={pb.id} style={{padding:14,borderRadius:16,border:`1px solid ${pb.color}28`,background:`${pb.color}0d`}}>
-              <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",marginBottom:10}}>
-                <div>
-                  <div style={{fontSize:10,color:pb.color,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase"}}>{pb.service}</div>
-                  <div style={{fontSize:16,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif",marginTop:4}}>{pb.niche}</div>
-                </div>
-                <Tag color={pb.color}>{fmtCurrency(pb.value)}</Tag>
-              </div>
-              <p style={{fontSize:12,color:"#bbb",lineHeight:1.5,margin:"0 0 10px"}}>{pb.promise}</p>
-              <div style={{display:"grid",gap:5,marginBottom:10}}>
-                {pb.offer.slice(0,3).map(x=><div key={x} style={{fontSize:11,color:"#ddd",display:"flex",gap:7}}><span style={{color:pb.color,fontWeight:900}}>✓</span><span>{x}</span></div>)}
-              </div>
-              <div style={{fontSize:11,color:C.muted,lineHeight:1.45,marginBottom:12}}>{pb.tasks.length} tarefas · lead quente · projeto com preset · follow-up em 2 dias</div>
-              <button onClick={()=>applyPlaybook(pb)} style={{width:"100%",minHeight:38,borderRadius:11,border:`1px solid ${canUsePlaybooks?pb.color+"66":C.border}`,background:canUsePlaybooks?`linear-gradient(135deg,${pb.color},${C.orangeD})`:"rgba(255,255,255,.04)",color:canUsePlaybooks?"#fff":C.muted,fontFamily:"inherit",fontSize:12,fontWeight:900,cursor:"pointer"}}>{canUsePlaybooks?"Aplicar playbook":"Upgrade para aplicar"}</button>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  );
-};
-
 // ── DASHBOARD ──────────────────────────────────────────────────────────
 const RevenueOSScore = ({state,setTab,privacyMode,isAdmin,onToggleMoney})=>{
   const clients=state.clients||[],projects=clients.flatMap(c=>(c.videos||[])),entries=state.financeEntries||[];
@@ -3572,25 +2598,25 @@ const RevenueOSScore = ({state,setTab,privacyMode,isAdmin,onToggleMoney})=>{
     {label:"Produção mapeada",done:projects.length>0,tab:"projects",hint:"Use presets audiovisuais para abrir projetos."},
     {label:"Financeiro previsível",done:entries.length>0||clients.some(c=>Number(c.value||0)>0),tab:"finance",hint:"Registre contratos, entradas ou despesas."},
     {label:"Negócio configurado",done:!!state.business?.onboarded,tab:"business",hint:"Configure marca, WhatsApp e ticket médio."},
-    {label:"Plano comercial definido",done:hasPlanAccess(state,"solo",isAdmin),tab:"plans",hint:"Converta trial em plano ativo."},
+    {label:"Brand Book disponível",done:true,tab:"brandbook",hint:"Revise logo, cores, voz e exportação."},
   ];
   const score=Math.round(checks.filter(c=>c.done).length/checks.length*100);
-  const pipeline=clients.filter(c=>c.status!=="concluido").reduce((a,c)=>a+Number(c.value||0)*(Number(c.closeProbability||c.probability||50)/100),0);
+  const pipeline=clients.filter(c=>!["entregue","pago"].includes(normalizeClientStatus(c))).reduce((a,c)=>a+Number(c.value||0)*(Number(c.closeProbability||c.probability||50)/100),0);
   return (
     <Card style={{padding:"18px",background:"linear-gradient(135deg,rgba(249,115,22,.08),rgba(255,255,255,.025))",borderColor:"rgba(249,115,22,.2)",overflow:"hidden"}}>
       <div className="revenue-score-grid">
         <div style={{textAlign:"center"}}>
           <div style={{width:128,height:128,borderRadius:"50%",margin:"0 auto",display:"grid",placeItems:"center",background:`conic-gradient(${score>=70?"#10b981":score>=40?C.orange:"#eab308"} ${score*3.6}deg, rgba(255,255,255,.07) 0deg)`,boxShadow:"0 24px 70px rgba(0,0,0,.35)"}}>
             <div style={{width:104,height:104,borderRadius:"50%",background:"#151515",display:"grid",placeItems:"center"}}>
-              <div><div style={{fontSize:30,fontWeight:900,color:"#fff",fontFamily:"'Syne',sans-serif",lineHeight:1}}>{score}%</div><div style={{fontSize:9,color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginTop:4}}>Studio OS</div></div>
+              <div><div style={{fontSize:30,fontWeight:900,color:"#fff",fontFamily:"'Syne',sans-serif",lineHeight:1}}>{score}%</div><div style={{fontSize:9,color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginTop:4}}>{APP_NAME}</div></div>
             </div>
           </div>
         </div>
         <div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:10,flexWrap:"wrap"}}>
             <div style={{minWidth:0,flex:"1 1 220px"}}>
-              <div style={{fontSize:11,color:C.orange,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase"}}>Score de maturidade</div>
-              <div style={{fontSize:17,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif",marginTop:4}}>Venda, entrega e recebimento conectados</div>
+              <div style={{fontSize:11,color:C.orange,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase"}}>Radar operacional</div>
+              <div style={{fontSize:17,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif",marginTop:4}}>Próximas decisões da {state.business?.brandName||APP_NAME}</div>
             </div>
             <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"flex-end",flexWrap:"wrap",maxWidth:"100%"}}>
               <EyeToggle hidden={privacyMode} onClick={onToggleMoney}/>
@@ -3613,13 +2639,13 @@ const ExecutiveBriefing = ({state,setTab,privacyMode})=>{
   const clients=state.clients||[];
   const projects=clients.flatMap(c=>(c.videos||[]).map(v=>({client:c,video:v})));
   const entries=state.financeEntries||[];
-  const activeClients=clients.filter(c=>c.status==="ativo").length;
-  const pipelineValue=clients.filter(c=>c.status!=="concluido").reduce((a,c)=>a+Number(c.value||0)*(Number(c.closeProbability||50)/100),0);
+  const activeClients=clients.filter(c=>!["entregue","pago"].includes(normalizeClientStatus(c))).length;
+  const pipelineValue=clients.filter(c=>!["entregue","pago"].includes(normalizeClientStatus(c))).reduce((a,c)=>a+Number(c.value||0)*(Number(c.closeProbability||50)/100),0);
   const productionOpen=projects.filter(p=>p.video.status!=="entregue").length;
   const receivable=clients.filter(c=>c.payment!=="pago").reduce((a,c)=>a+Number(c.value||0),0)+entries.filter(e=>e.type==="entrada"&&e.status!=="pago").reduce((a,e)=>a+Number(e.value||0),0);
   const tasksDue=(state.tasks||[]).filter(t=>!t.completed&&["overdue","today"].includes(taskBucket(t))).length;
   const cards=[
-    {label:"Pipeline ponderado",value:fmtDashboardMoney(pipelineValue,privacyMode),note:`${activeClients} cliente${activeClients===1?" ativo":"s ativos"}`,tab:"clients",color:"#10b981",money:true},
+    {label:"Receita prevista",value:fmtDashboardMoney(pipelineValue,privacyMode),note:`${activeClients} cliente${activeClients===1?" em negociação":"s em negociação"}`,tab:"clients",color:"#10b981",money:true},
     {label:"Produção aberta",value:productionOpen,note:"projetos ainda não entregues",tab:"projects",color:"#8b5cf6"},
     {label:"A receber",value:fmtDashboardMoney(receivable,privacyMode),note:"contratos e lançamentos pendentes",tab:"finance",color:"#3b82f6",money:true},
     {label:"Agenda crítica",value:tasksDue,note:"tarefas para hoje ou atrasadas",tab:"tasks",color:C.orange},
@@ -3642,21 +2668,17 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
   const [revealDashboardMoney,setRevealDashboardMoney]=useState(false);
   const [showDashboardDetails,setShowDashboardDetails]=useState(false);
   const today=todayStr(),lv=getLevel(state.xp);
-  const habitsToday=state.habits.filter(h=>h.completedDates?.includes(today)).length;
-  const avgGoal=state.goals.length?Math.round(state.goals.reduce((a,g)=>a+g.progress,0)/state.goals.length):0;
   const pendingTasks=state.tasks.filter(t=>!t.completed);
   const overdueTasks=pendingTasks.filter(t=>taskBucket(t)==="overdue");
   const todayTasks=pendingTasks.filter(t=>taskBucket(t)==="today");
   const totalReceivable=(state.clients||[]).filter(c=>c.payment!=="pago").reduce((a,c)=>a+Number(c.value||0),0);
   const overduePayments=(state.clients||[]).filter(c=>c.payment==="atrasado");
-  const pendingFollowUps=(state.clients||[]).filter(c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&c.status!=="concluido");
+  const pendingFollowUps=(state.clients||[]).filter(c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&! ["entregue","pago"].includes(normalizeClientStatus(c)));
   const pendingVideos=(state.clients||[]).reduce((a,c)=>(c.videos||[]).filter(v=>v.status!=="entregue").length+a,0);
   const projectSteps=(state.clients||[]).flatMap(c=>(c.videos||[]).flatMap(v=>(v.productionSchedule||[]).filter(s=>!s.done&&s.date&&v.status!=="entregue").map(s=>({client:c,video:v,step:s,diff:dayDiff(s.date)}))));
   const lateProjectSteps=projectSteps.filter(x=>x.diff<0);
   const todayProjectSteps=projectSteps.filter(x=>x.diff===0);
   const upcomingMeetings=(state.clients||[]).filter(c=>{if(!c.nextMeeting)return false;const diff=Math.ceil((new Date(c.nextMeeting)-new Date())/(1000*60*60*24));return diff>=0&&diff<=7;}).sort((a,b)=>new Date(a.nextMeeting)-new Date(b.nextMeeting));
-  const focusPriorities=state.focusDayPriorities||[];
-  const focusDone=focusPriorities.filter(p=>p.done).length;
   const lastBackup=localStorage.getItem("dcc_last_backup");
   const backupDays=lastBackup?Math.floor((new Date()-new Date(lastBackup))/(1000*60*60*24)):null;
   const attention=[
@@ -3678,7 +2700,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
     todayTasks.length&&{title:"Executar as atividades de hoje",text:`${todayTasks.length} atividade${todayTasks.length>1?"s":""} para finalizar hoje.`,tab:"tasks",color:"#10b981"},
     upcomingMeetings.length&&{title:"Preparar reunião",text:`${upcomingMeetings.length} ${upcomingMeetings.length>1?"reuniões":"reunião"} nos próximos dias.`,tab:"clients",color:"#3b82f6"},
   ].filter(Boolean);
-  const primaryAction=dailyActions[0]||{title:"Comece por um cliente",text:"Cadastre ou atualize um cliente para o DNZ Central montar o resto da operação.",tab:"clients",color:C.orange};
+  const primaryAction=dailyActions[0]||{title:"Comece por um cliente",text:`Cadastre ou atualize um cliente para ${state.business?.brandName||APP_NAME} organizar proposta, produção e revisão.`,tab:"clients",color:C.orange};
   const dashboardPrivacy=privacyMode||!revealDashboardMoney;
   const toggleDashboardMoney=()=>{
     if(dashboardPrivacy){
@@ -3716,7 +2738,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
             <div style={{fontSize:10,color:C.orange,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase",marginBottom:8}}>Direção do dia</div>
             <p style={{margin:"0 0 12px",fontSize:13,color:"#d6d6d6",lineHeight:1.55}}>"{QUOTES[quoteIdx%QUOTES.length]}"</p>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-              <button className="elite-secondary" onClick={()=>setTab("focus")} style={{minHeight:38,padding:"0 10px"}}>Modo foco</button>
+              <button className="elite-secondary" onClick={()=>setTab("videoReview")} style={{minHeight:38,padding:"0 10px"}}>Video Review</button>
               <button className="elite-secondary" onClick={()=>setTab("clients")} style={{minHeight:38,padding:"0 10px"}}>CRM</button>
             </div>
           </div>
@@ -3784,23 +2806,12 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
 	        </button>
 	      </div>
 
-	      {showDashboardDetails&&focusPriorities.length>0&&(
-	        <Card style={{padding:"14px 18px",background:"rgba(139,92,246,.07)",borderColor:"rgba(139,92,246,.2)",cursor:"pointer"}} onClick={()=>setTab("focus")}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <span style={{fontSize:11,color:"#8b5cf6",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase"}}>🧠 FOCO DO DIA</span>
-            <Tag color="#8b5cf6">{focusDone}/{focusPriorities.length}</Tag>
-          </div>
-          <Bar v={focusPriorities.length?Math.round(focusDone/focusPriorities.length*100):0} color="#8b5cf6" h={6}/>
-          {focusPriorities.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,marginTop:8,opacity:p.done?.5:1}}><span style={{color:p.done?"#8b5cf6":"#555",fontSize:12}}>{p.done?"✓":"○"}</span><span style={{fontSize:13,color:p.done?C.muted:"#ccc",textDecoration:p.done?"line-through":"none"}}>{p.text}</span></div>)}
-        </Card>
-      )}
-
 	      {showDashboardDetails&&<div className="summary-strip">
 	        {[
-          {v:`${habitsToday}/${state.habits.length}`,l:"Hábitos",c:C.orange,icon:"🔥"},
-          {v:pendingTasks.length,l:"Atividades",c:"#fb923c",icon:"✅"},
-          {v:`${avgGoal}%`,l:"Metas",c:"#8b5cf6",icon:"🎯"},
-          {v:(state.clients||[]).filter(c=>c.status==="ativo").length,l:"Clientes",c:"#10b981",icon:"🤝"},
+          {v:(state.reviewDeliverables||[]).filter(r=>!["aprovado","approved"].includes(String(r.status||"").toLowerCase())).length,l:"Reviews pendentes",c:"#06b6d4",icon:"◉"},
+          {v:pendingTasks.length,l:"Atividades abertas",c:"#fb923c",icon:"✓"},
+          {v:pendingVideos,l:"Projetos abertos",c:"#8b5cf6",icon:"▶"},
+          {v:(state.clients||[]).filter(c=>!["entregue","pago"].includes(normalizeClientStatus(c))).length,l:"Clientes ativos",c:"#10b981",icon:"◆"},
         ].map((s,i)=>(
           <Card key={i} style={{padding:"14px 12px",textAlign:"center"}}>
             <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
@@ -3846,17 +2857,24 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
         </div>
         <aside className="side-panel">
           <Card style={{padding:"16px 18px"}}>
-            <SectionTitle>HÁBITOS HOJE</SectionTitle>
-            {state.habits.map(h=>{const done=h.completedDates?.includes(today);return <div key={h.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}><button onClick={()=>dispatch({type:"TOGGLE_HABIT",id:h.id,date:today})} style={{width:28,height:28,borderRadius:9,border:`2px solid ${done?h.color:C.border}`,background:done?`${h.color}20`:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0,transition:"all .2s"}}>{done?"✓":h.icon}</button><span style={{flex:1,fontSize:13,color:done?h.color:"#ccc",transition:"color .2s"}}>{h.title}</span><span style={{fontSize:11,color:"#eab308"}}>{h.streak}</span></div>;})}
+            <SectionTitle>VIDEO REVIEW</SectionTitle>
+            {(state.reviewDeliverables||[]).slice(0,4).map(r=>(
+              <button key={r.id||r.token||r.title} onClick={()=>setTab("videoReview")} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"9px 0",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,color:"#ddd",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                <span style={{minWidth:0}}><span className="private-data" style={{display:"block",fontSize:12,fontWeight:900,color:"#eee",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.title||"Review sem título"}</span><span style={{display:"block",fontSize:10,color:C.muted,marginTop:2}}>{r.status||"aguardando"}</span></span>
+                <span style={{fontSize:10,color:"#06b6d4",fontWeight:900}}>abrir</span>
+              </button>
+            ))}
+            {!(state.reviewDeliverables||[]).length&&<div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>Nenhum review aberto. Use esta área para enviar links de aprovação para clientes.</div>}
           </Card>
           <Card style={{padding:"16px 18px"}}>
-            <SectionTitle>PROGRESSO DAS METAS</SectionTitle>
-            {state.goals.slice(0,3).map(g=>(
-              <div key={g.id} style={{marginBottom:12}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:12,color:"#ccc",flex:1,paddingRight:8}}>{g.title.substring(0,36)}{g.title.length>36?"...":""}</span><span style={{fontSize:12,fontWeight:700,color:C.orange}}>{g.progress}%</span></div>
-                <Bar v={g.progress} h={5}/>
-              </div>
+            <SectionTitle>DOCUMENTOS</SectionTitle>
+            {(state.studioDocs||[]).slice(0,4).map(d=>(
+              <button key={d.id||d.title} onClick={()=>setTab("studio")} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"9px 0",background:"transparent",border:"none",borderBottom:`1px solid ${C.border}`,color:"#ddd",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                <span style={{minWidth:0}}><span style={{display:"block",fontSize:12,fontWeight:900,color:"#eee",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{d.title||d.type||"Documento"}</span><span style={{display:"block",fontSize:10,color:C.muted,marginTop:2}}>{d.type||"PDF operacional"}</span></span>
+                <span style={{fontSize:10,color:"#3b82f6",fontWeight:900}}>abrir</span>
+              </button>
             ))}
+            {!(state.studioDocs||[]).length&&<div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>Briefing, roteiro, callsheet e checklist aparecem aqui quando forem salvos.</div>}
           </Card>
         </aside>
 	      </div>}
@@ -3864,69 +2882,198 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
   );
 };
 
+const TabGSD = ({state,dispatch,setTab})=>{
+  const agent=normalizeGsdAgent(state.gsdAgent);
+  const [entry,setEntry]=useState("");
+  const [entryType,setEntryType]=useState("context");
+  const [focus,setFocus]=useState(agent.currentFocus||"");
+  const clients=state.clients||[];
+  const openTasks=(state.tasks||[]).filter(t=>!t.completed);
+  const activeProjects=clients.flatMap(c=>(c.videos||[]).map(v=>({client:c,video:v}))).filter(p=>p.video.status!=="entregue");
+  const overdueTasks=openTasks.filter(t=>taskBucket(t)==="overdue");
+  const dueToday=openTasks.filter(t=>taskBucket(t)==="today");
+  const followUps=clients.filter(c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&!["entregue","pago"].includes(normalizeClientStatus(c)));
+  const saveEntry=()=>{
+    const text=entry.trim();
+    if(!text)return;
+    dispatch({type:"ADD_GSD_CONTEXT",entry:{type:entryType,text,tags:["gsd",entryType]}});
+    setEntry("");
+  };
+  const saveFocus=()=>{
+    dispatch({type:"UPDATE_GSD_AGENT",data:{enabled:true,currentFocus:focus,lastActivatedAt:new Date().toISOString()}});
+  };
+  const createTaskFromMemory=m=>{
+    dispatch({type:"ADD_TASK",task:{title:m.text.slice(0,96),priority:m.type==="decision"?"high":"medium",tag:"GSD",dueDate:inputDate()}});
+    setTab("tasks");
+  };
+  const captureSnapshot=()=>{
+    const lines=[
+      focus&&`Foco atual: ${focus}`,
+      overdueTasks.length&&`${overdueTasks.length} tarefa(s) atrasada(s)`,
+      dueToday.length&&`${dueToday.length} tarefa(s) para hoje`,
+      followUps.length&&`${followUps.length} follow-up(s) pendente(s)`,
+      activeProjects.length&&`${activeProjects.length} projeto(s) em produção`
+    ].filter(Boolean);
+    dispatch({type:"ADD_GSD_CONTEXT",entry:{type:"snapshot",text:lines.length?lines.join(" | "):"Operação sem pendências críticas no momento.",tags:["gsd","snapshot"]}});
+  };
+  const memory=agent.memory||[];
+  const typeMeta={
+    context:{label:"Contexto",color:"#3b82f6"},
+    decision:{label:"Decisão",color:"#10b981"},
+    blocker:{label:"Bloqueio",color:"#ef4444"},
+    next:{label:"Próxima ação",color:C.orange},
+    snapshot:{label:"Snapshot",color:"#8b5cf6"}
+  };
+  return (
+    <div className="page-stack">
+      <Card className="page-hero" style={{background:"linear-gradient(135deg,rgba(255,36,0,.12),rgba(255,255,255,.035))",borderColor:"rgba(255,36,0,.24)"}}>
+        <div className="page-hero-row">
+          <div>
+            <div className="page-eyebrow" style={{color:C.orange}}>GSD AGENT ATIVO</div>
+            <div className="page-title">Get Shit Done</div>
+            <p className="page-subtitle">Agente de contexto da operação: captura memória, decisões e próximas ações para nada importante sumir no meio do dia.</p>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>
+              <Tag color={agent.enabled?"#10b981":"#eab308"}>{agent.enabled?"ativo":"pausado"}</Tag>
+              <Tag color="#8b5cf6">{memory.length} memórias</Tag>
+              <Tag color={C.orange}>{agent.mode}</Tag>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
+            <Btn onClick={()=>dispatch({type:"UPDATE_GSD_AGENT",data:{enabled:!agent.enabled,lastActivatedAt:new Date().toISOString()}})} variant={agent.enabled?"ghost":"success"}>{agent.enabled?"Pausar":"Ativar"}</Btn>
+            <Btn onClick={captureSnapshot} variant="ghost">Capturar agora</Btn>
+          </div>
+        </div>
+      </Card>
+
+      <div className="split-layout">
+        <div className="dense-list">
+          <Card>
+            <SectionTitle>FOCO DO AGENTE</SectionTitle>
+            <Txt label="Foco atual" value={focus} onChange={setFocus} rows={3} placeholder="Ex: fechar proposta X, destravar edição Y, preparar reunião com cliente Z"/>
+            <Btn onClick={saveFocus}>Salvar foco GSD</Btn>
+          </Card>
+
+          <Card>
+            <SectionTitle action={<Tag color={typeMeta[entryType]?.color}>{typeMeta[entryType]?.label}</Tag>}>NOVA MEMÓRIA</SectionTitle>
+            <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>
+              {Object.entries(typeMeta).filter(([id])=>id!=="snapshot").map(([id,meta])=>(
+                <button key={id} onClick={()=>setEntryType(id)} style={{height:32,borderRadius:10,border:`1px solid ${entryType===id?meta.color:C.border}`,background:entryType===id?`${meta.color}18`:"rgba(255,255,255,.04)",color:entryType===id?meta.color:C.muted,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer",padding:"0 10px"}}>{meta.label}</button>
+              ))}
+            </div>
+            <Txt label="Contexto" value={entry} onChange={setEntry} rows={5} placeholder="Cole aqui o que precisa ser lembrado pelo GSD."/>
+            <Btn onClick={saveEntry}>Guardar contexto</Btn>
+          </Card>
+
+          <Card>
+            <SectionTitle>MEMÓRIA GSD</SectionTitle>
+            {memory.length===0&&<div style={{fontSize:13,color:C.muted,lineHeight:1.5}}>Sem contexto salvo ainda. Guarde decisões, bloqueios e próximos passos para o agente carregar a operação com você.</div>}
+            <div style={{display:"grid",gap:10}}>
+              {memory.map(m=>{
+                const meta=typeMeta[m.type]||typeMeta.context;
+                return (
+                  <div key={m.id} style={{padding:"13px 14px",borderRadius:14,border:`1px solid ${meta.color}30`,background:`${meta.color}10`}}>
+                    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",marginBottom:7}}>
+                      <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
+                        <Tag color={meta.color}>{meta.label}</Tag>
+                        <span style={{fontSize:10,color:C.muted,fontWeight:800}}>{new Date(m.createdAt).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>
+                      </div>
+                      <button onClick={()=>dispatch({type:"REMOVE_GSD_CONTEXT",id:m.id})} aria-label="Remover memória GSD" style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
+                    </div>
+                    <div style={{fontSize:13,color:"#ddd",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{m.text}</div>
+                    <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
+                      <Btn onClick={()=>createTaskFromMemory(m)} variant="ghost" size="sm">Virar tarefa hoje</Btn>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+
+        <aside className="dashboard-rail">
+          <Card style={{padding:"18px",background:"rgba(16,185,129,.06)",borderColor:"rgba(16,185,129,.2)"}}>
+            <SectionTitle>LEITURA OPERACIONAL</SectionTitle>
+            {[
+              {label:"Atrasadas",value:overdueTasks.length,color:"#ef4444",tab:"tasks"},
+              {label:"Hoje",value:dueToday.length,color:"#10b981",tab:"tasks"},
+              {label:"Follow-ups",value:followUps.length,color:"#3b82f6",tab:"clients"},
+              {label:"Projetos ativos",value:activeProjects.length,color:"#8b5cf6",tab:"projects"}
+            ].map(item=>(
+              <button key={item.label} onClick={()=>setTab(item.tab)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"10px 0",border:"none",borderBottom:`1px solid ${C.border}`,background:"transparent",color:"#ddd",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
+                <span style={{fontSize:13,fontWeight:900}}>{item.label}</span>
+                <Tag color={item.color}>{item.value}</Tag>
+              </button>
+            ))}
+          </Card>
+
+          <Card>
+            <SectionTitle>REGRAS GSD</SectionTitle>
+            <div style={{display:"grid",gap:8}}>
+              {(agent.operatingRules||[]).map(rule=>(
+                <div key={rule} style={{fontSize:12,color:"#ccc",lineHeight:1.45,padding:"9px 10px",borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)"}}>{rule}</div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <SectionTitle>ATALHOS</SectionTitle>
+            <div style={{display:"grid",gap:8}}>
+              <Btn onClick={()=>setTab("tasks")} variant="ghost" style={{justifyContent:"center"}}>Abrir atividades</Btn>
+              <Btn onClick={()=>setTab("clients")} variant="ghost" style={{justifyContent:"center"}}>Abrir CRM</Btn>
+              <Btn onClick={()=>setTab("projects")} variant="ghost" style={{justifyContent:"center"}}>Abrir projetos</Btn>
+            </div>
+          </Card>
+        </aside>
+      </div>
+    </div>
+  );
+};
+
 // ── MAIN APP ───────────────────────────────────────────────────────────
 const TABS=[
-  {id:"about",     label:"Sobre",     icon:"◐"},
   {id:"dashboard", label:"Hoje", icon:"⊞"},
-  {id:"focus",     label:"Rotina",      icon:"◎"},
-  {id:"habits",    label:"Hábitos",   icon:"◌"},
-  {id:"goals",     label:"Metas",     icon:"◇"},
+  {id:"gsd",       label:"GSD", icon:"G"},
   {id:"tasks",     label:"Atividades",   icon:"✓"},
   {id:"agenda",    label:"Agenda",    icon:"□"},
   {id:"clients",   label:"Clientes",  icon:"◈"},
   {id:"projects",  label:"Projetos",  icon:"▦"},
   {id:"videoReview",label:"Video Review",icon:"▶"},
   {id:"studio",    label:"Documentos",    icon:"▣"},
-  {id:"finance",   label:"Dinheiro",icon:"◆"},
+  {id:"brandbook", label:"Brand Book", icon:"◩"},
+  {id:"finance",   label:"Caixa",icon:"◆"},
   {id:"proposta",  label:"Propostas",  icon:"§"},
-  {id:"plans",     label:"Planos",    icon:"◧"},
-  {id:"templates", label:"Templates", icon:"▧"},
   {id:"business",  label:"Negócio",   icon:"◒"},
-  {id:"notes",     label:"Notas",     icon:"✎"},
-  {id:"pomodoro",  label:"Pomodoro",  icon:"◷"},
-  {id:"analytics", label:"Resultados", icon:"▲"},
-  {id:"review",    label:"Revisão Semanal",   icon:"◉"},
-  {id:"mission",   label:"Missão",    icon:"◎"},
   {id:"export",    label:"Relatórios",icon:"▤"},
 ];
 const NAV_GROUPS=[
-  {label:"Entrada",items:["about","plans"]},
-  {label:"Central",items:["dashboard","focus"]},
-  {label:"Operação",items:["tasks","agenda","projects","videoReview","studio","pomodoro"]},
-  {label:"Comercial",items:["clients","finance","proposta"]},
-  {label:"Estratégia",items:["habits","goals","analytics","review","mission"]},
-  {label:"Sistema",items:["templates","business","notes","export"]},
+  {label:"Produto principal",items:["videoReview"]},
+  {label:"Operação",items:["dashboard","gsd","tasks","agenda","projects","studio","brandbook"]},
+  {label:"Comercial",items:["clients","proposta","finance"]},
+  {label:"Sistema",items:["business","export"]},
 ];
-const BEGINNER_TABS = ["about","plans","dashboard","clients","projects","videoReview","studio","finance","tasks","business"];
+const BEGINNER_TABS = ["dashboard","gsd","videoReview","clients","proposta","projects","studio","brandbook","finance","tasks","business","export"];
+const WORKSPACE_TAB_IDS = new Set(BEGINNER_TABS);
 const PROFILE_PRESETS = [
   {id:"filmmaker",label:"Filmmaker",type:"Filmmaker / produtor audiovisual",services:["Vídeo Institucional","Reels","Eventos","Drone"],ticket:2500,first:"Cadastrar cliente e criar projeto de captação."},
   {id:"editor",label:"Editor",type:"Editor de vídeo",services:["Edição de Reels","Edição para YouTube","Motion simples","Pacote mensal"],ticket:1200,first:"Cadastrar cliente recorrente e acompanhar revisões."},
   {id:"studio",label:"Produtora",type:"Produtora audiovisual",services:["Institucional","Campanha","Evento","Conteúdo mensal"],ticket:5000,first:"Organizar pipeline, callsheet e financeiro por projeto."},
   {id:"agency",label:"Agência / Social",type:"Agência criativa / social media",services:["Conteúdo mensal","Tráfego criativo","Stories","Campanhas"],ticket:3500,first:"Separar clientes mensais, demandas e entregas."},
 ];
-const HABIT_ICON_PRESETS=[
-  ["⭐","Geral"],["💪","Treino"],["📚","Leitura"],["🧘","Meditar"],["🎬","Criar"],["💤","Sono"],
-  ["🏃","Corrida"],["✍️","Escrever"],["🎯","Meta"],["💡","Ideia"],["🔥","Energia"],["🎸","Música"],
-  ["🥗","Nutrição"],["💧","Água"],["🎨","Arte"],["🌊","Surf"],["☀️","Sol"],["🧠","Estudo"]
-];
-
 function App(){
-  const [state,setRaw]=useState(INIT),[tab,setTab]=useState("about"),[quoteIdx,setQuoteIdx]=useState(0);
+  const [state,setRaw]=useState(INIT),[tab,setTab]=useState("dashboard"),[quoteIdx,setQuoteIdx]=useState(0);
   const [privacyMode,setPrivacyMode]=useState(()=>localStorage.getItem("dcc_privacy")==="1");
   const [compactMode,setCompactMode]=useState(()=>localStorage.getItem("dcc_compact")==="1");
   const [navMode,setNavMode]=useState(()=>localStorage.getItem("dnz_nav_mode")||"beginner");
   const [soundEnabled,setSoundEnabled]=useState(()=>localStorage.getItem("dcc_sound")!=="0");
   const [lockEnabled,setLockEnabled]=useState(()=>localStorage.getItem("dcc_lock")!=="0");
-  const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>localStorage.getItem("centralis_sidebar_collapsed")==="1");
-  const [dockOpen,setDockOpen]=useState(()=>localStorage.getItem("centralis_dock_open")==="1");
+  const [sidebarCollapsed,setSidebarCollapsed]=useState(()=>localStorage.getItem("dnz_sidebar_collapsed")==="1");
+  const [dockOpen,setDockOpen]=useState(()=>localStorage.getItem("dnz_dock_open")==="1");
   const [locked,setLocked]=useState(false);
   const [accountOpen,setAccountOpen]=useState(false);
   const [securityOpen,setSecurityOpen]=useState(false);
   const [searchOpen,setSearchOpen]=useState(false);
   const [navOpen,setNavOpen]=useState(false);
   const [toast,setToast]=useState(null);
-  const [salesDismissed,setSalesDismissed]=useState(()=>localStorage.getItem("centralis_sales_dismissed")==="1");
-  const [trialRemaining,setTrialRemaining]=useState(Infinity);
   const [onboardingDismissed,setOnboardingDismissed]=useState(false);
   const [businessOnboardingOpen,setBusinessOnboardingOpen]=useState(false);
   const soundReady=useRef(false);
@@ -3938,18 +3085,29 @@ function App(){
   const workspaceOpened=useRef(false);
   const [session,setSession]=useState(null);
   const [cloudStatus,setCloudStatus]=useState("local");
+  const [route,setRoute]=useState(()=>window.location.pathname || "/");
   const business=normalizeBusiness(state.business);
   const userName=getUserName(session);
   const isAdmin=isAdminSession(session);
-  const publicReviewToken=new URLSearchParams(window.location.search).get("review")||"";
-  const hasFullAccess=isAdmin||hasPlanAccess(state,"solo",false)&&getSubscription(state).status==="active";
-  const publicTabs=["about","plans"];
-  const canUseWorkspace=!!session?.user||hasFullAccess;
+  const reviewPathToken=route.startsWith("/review/")?decodeURIComponent(route.replace(/^\/review\//,"").split(/[?#]/)[0]||""):"";
+  const publicReviewToken=reviewPathToken||new URLSearchParams(window.location.search).get("review")||"";
+  const hasFullAccess=isAdmin;
+  const publicTabs=[];
+  const canUseWorkspace=!!session?.user&&hasFullAccess;
+  const navigateTo=useCallback((path)=>{
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  },[]);
+  useEffect(()=>{
+    const onRoute=()=>setRoute(window.location.pathname || "/");
+    window.addEventListener("popstate",onRoute);
+    return()=>window.removeEventListener("popstate",onRoute);
+  },[]);
   useEffect(()=>{
     if(!canUseWorkspace||workspaceOpened.current)return;
     workspaceOpened.current=true;
     const last=localStorage.getItem("dcc_last_tab");
-    setTab(last&&last!=="about"&&last!=="plans"?last:"dashboard");
+    setTab(WORKSPACE_TAB_IDS.has(last)?last:"dashboard");
   },[canUseWorkspace]);
   const notify=useCallback((msg,kind="success",sound=true)=>{
     setToast({msg,kind});
@@ -3984,8 +3142,9 @@ function App(){
         ADD_GOAL:"Meta salva",UPDATE_GOAL:"Meta atualizada",ADD_NOTE:"Nota salva",ADD_HABIT:"Hábito salvo",
         RESTORE:"Backup importado",CLEAR_DATA:"Dados apagados",ADD_CLIENT_VIDEO:"Vídeo adicionado",ADD_CLIENT_INTERACTION:"Interação registrada",
         UPDATE_BUSINESS:"Negócio atualizado",ADD_CLIENT_PROPOSAL:"Proposta salva no CRM",UPDATE_CLIENT_PROPOSAL:"Proposta atualizada",
-        ADD_FINANCE_ENTRY:"Lançamento salvo",REMOVE_FINANCE_ENTRY:"Lançamento removido",ADD_STUDIO_DOC:"Documento salvo",REMOVE_STUDIO_DOC:"Documento removido",SET_SUBSCRIPTION:"Plano atualizado",
-        ADD_REVIEW_DELIVERABLE:"Review criado",UPDATE_REVIEW_DELIVERABLE:"Review atualizado",ADD_REVIEW_COMMENT:"Comentário salvo",REMOVE_REVIEW_DELIVERABLE:"Review removido"
+        ADD_FINANCE_ENTRY:"Lançamento salvo",REMOVE_FINANCE_ENTRY:"Lançamento removido",ADD_STUDIO_DOC:"Documento salvo",REMOVE_STUDIO_DOC:"Documento removido",SET_SUBSCRIPTION:"Acesso atualizado",
+        ADD_REVIEW_DELIVERABLE:"Review criado",UPDATE_REVIEW_DELIVERABLE:"Review atualizado",ADD_REVIEW_COMMENT:"Comentário salvo",REMOVE_REVIEW_DELIVERABLE:"Review removido",
+        UPDATE_GSD_AGENT:"GSD atualizado",ADD_GSD_CONTEXT:"Contexto guardado",REMOVE_GSD_CONTEXT:"Memória removida",CLEAR_GSD_CONTEXT:"Memória limpa"
       }[action.type]||"Atualizado";
       notify(msg,"success");
     }
@@ -4022,10 +3181,6 @@ function App(){
   useEffect(()=>{
     if(session?.user&&!business.onboarded)setBusinessOnboardingOpen(true);
   },[session?.user?.id,business.onboarded]);
-  useEffect(()=>{
-    setTrialRemaining(Infinity);
-  },[session,hasFullAccess]);
-  useEffect(()=>localStorage.setItem("centralis_sales_dismissed",salesDismissed?"1":"0"),[salesDismissed]);
   useEffect(()=>{const t=setInterval(()=>setQuoteIdx(i=>(i+1)%QUOTES.length),9000);return()=>clearInterval(t);},[]);
   useEffect(()=>{if("scrollRestoration" in history)history.scrollRestoration="manual";},[]);
   useEffect(()=>localStorage.setItem("dcc_last_tab",tab),[tab]);
@@ -4034,8 +3189,8 @@ function App(){
   useEffect(()=>localStorage.setItem("dnz_nav_mode",navMode),[navMode]);
   useEffect(()=>localStorage.setItem("dcc_sound",soundEnabled?"1":"0"),[soundEnabled]);
   useEffect(()=>localStorage.setItem("dcc_lock",lockEnabled?"1":"0"),[lockEnabled]);
-  useEffect(()=>localStorage.setItem("centralis_sidebar_collapsed",sidebarCollapsed?"1":"0"),[sidebarCollapsed]);
-  useEffect(()=>localStorage.setItem("centralis_dock_open",dockOpen?"1":"0"),[dockOpen]);
+  useEffect(()=>localStorage.setItem("dnz_sidebar_collapsed",sidebarCollapsed?"1":"0"),[sidebarCollapsed]);
+  useEffect(()=>localStorage.setItem("dnz_dock_open",dockOpen?"1":"0"),[dockOpen]);
   useEffect(()=>{
     const reset=()=>{
       clearTimeout(lockTimer.current);
@@ -4076,10 +3231,15 @@ function App(){
   const rememberScroll=()=>{scrollMemory.current[tab]=window.scrollY||document.documentElement.scrollTop||0;};
   const goTab=id=>{
     rememberScroll();
-    if(!canUseWorkspace&&!publicTabs.includes(id)){
-      setTab("plans");
+    if(!WORKSPACE_TAB_IDS.has(id)){
+      setTab("dashboard");
       setNavOpen(false);
-      notify("Entre com GitHub para liberar o workspace de teste.","info",false);
+      return;
+    }
+    if(!canUseWorkspace&&!publicTabs.includes(id)){
+      setTab("dashboard");
+      setNavOpen(false);
+      notify("Acesso privado. Entre com o GitHub autorizado.","info",false);
       return;
     }
     if(canUseWorkspace&&navMode==="beginner"&&!BEGINNER_TABS.includes(id)){
@@ -4125,7 +3285,7 @@ function App(){
     </div>
   );
   const NavList=()=>(
-    <div style={{display:"grid",gap:5,overflowY:"auto",paddingRight:2,flex:1,minHeight:0,alignContent:"start"}}>
+    <div className="side-nav-scroll" style={{display:"grid",gap:5,paddingRight:2,flex:1,minHeight:0,alignContent:"start"}}>
       {NAV_GROUPS.map(g=>{
         const visibleItems=g.items.filter(id=>(canUseWorkspace||publicTabs.includes(id))&&(navMode==="advanced"||BEGINNER_TABS.includes(id)));
         if(!visibleItems.length)return null;
@@ -4161,6 +3321,18 @@ function App(){
       </div>
     );
   }
+  if(route==="/"||route==="/home"){
+    return <LandingPage onLogin={()=>navigateTo("/login")}/>;
+  }
+  if(route==="/login"){
+    return <LoginPage session={session} isAdmin={isAdmin} adminEmails={[]} cloudStatus={cloudStatus} onLogin={signInGitHub} onLogout={signOut} onHome={()=>navigateTo("/")}/>;
+  }
+  if(route==="/app"&&!canUseWorkspace){
+    return <LoginPage session={session} isAdmin={isAdmin} adminEmails={[]} cloudStatus={cloudStatus} onLogin={signInGitHub} onLogout={signOut} onHome={()=>navigateTo("/")}/>;
+  }
+  if(route!=="/app"&&canUseWorkspace){
+    navigateTo("/app");
+  }
   return (
     <div className={`app-shell ${!canUseWorkspace?"public-shell":""} ${compactMode?"compact":""} ${privacyMode?"privacy":""} ${sidebarCollapsed?"sidebar-collapsed":""}`}>
       <div style={{position:"fixed",top:-160,right:-80,width:600,height:600,background:"radial-gradient(circle,rgba(249,115,22,.04) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
@@ -4186,7 +3358,7 @@ function App(){
             <div style={{fontSize:10,color:C.muted,marginTop:7}}>Cloud: {cloudStatus==="synced"?"sincronizado":cloudStatus==="syncing"?"salvando":cloudStatus==="loading"?"carregando":"local"}</div>
           </>}
         </div>
-        {canUseWorkspace&&<SecurityPanel session={session} cloudStatus={cloudStatus} privacyMode={privacyMode} lockEnabled={lockEnabled} setLockEnabled={setLockEnabled} onLockNow={()=>setLocked(true)} open={securityOpen} onToggle={()=>setSecurityOpen(v=>!v)} isAdmin={isAdmin}/>}
+        {canUseWorkspace&&<ModularSecurityPanel session={session} cloudStatus={cloudStatus} privacyMode={privacyMode} lockEnabled={lockEnabled} setLockEnabled={setLockEnabled} onLockNow={()=>setLocked(true)} open={securityOpen} onToggle={()=>setSecurityOpen(v=>!v)} isAdmin={isAdmin}/>}
         {canUseWorkspace&&<div className="sidebar-card" style={{marginBottom:10,padding:"8px",borderRadius:13,background:"rgba(255,255,255,.025)",border:`1px solid ${C.border}`}}>
           <div style={{fontSize:10,color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",margin:"0 2px 7px"}}>Modo</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
@@ -4195,7 +3367,7 @@ function App(){
         </div>}
         <NavList/>
         {canUseWorkspace&&<div style={{marginTop:"auto",paddingTop:12,display:"flex",gap:6,alignItems:"center",justifyContent:"space-between"}}>
-          <button onClick={()=>goTab("plans")} title="Plano" className="utility-btn" style={{flex:1,height:34,fontSize:10,color:C.orange}}>Plano</button>
+          <button onClick={()=>goTab("proposta")} title="Proposta" className="utility-btn" style={{flex:1,height:34,fontSize:10,color:C.orange}}>Proposta</button>
           <button onClick={()=>setSearchOpen(true)} title="Busca" className="utility-btn" style={{width:36,height:34,padding:0}}>⌕</button>
         </div>}
       </aside>
@@ -4248,8 +3420,7 @@ function App(){
         </React.Suspense>
       )}
       <BusinessOnboarding open={businessOnboardingOpen} business={business} dispatch={dispatch} onClose={()=>setBusinessOnboardingOpen(false)}/>
-      {session?.user&&!hasFullAccess&&(!salesDismissed||trialRemaining<=0)&&<SalesTrialNotice session={session} userName={userName} remaining={trialRemaining} onClose={()=>setSalesDismissed(true)} onAbout={()=>{setTab("about");setSalesDismissed(true);}}/>}
-      {!onboardingDismissed&&session?.user&&<OnboardingGuide session={session} state={state} setTab={goTab} onDone={()=>{localStorage.setItem(onboardingKey(session),"done");setOnboardingDismissed(true);}}/>}
+      {!onboardingDismissed&&session?.user&&<ModularOnboardingGuide session={session} state={state} setTab={goTab} onDone={()=>{localStorage.setItem(onboardingKey(session),"done");setOnboardingDismissed(true);}}/>}
       {locked&&(
         <div className="lock-screen" role="dialog" aria-modal="true" aria-label="Tela bloqueada">
           <div className="lock-card scale-in">
@@ -4280,17 +3451,14 @@ function App(){
           {canUseWorkspace&&<NotificationsBanner state={state} setTab={goTab}/>}
           {canUseWorkspace&&<ContextAlert tab={tab} state={state} setTab={goTab} notify={notify}/>}
           <div className="fade" key={tab}>
-          {!canUseWorkspace&&!publicTabs.includes(tab)&&<AccessWall onLogin={signInGitHub} onPlans={()=>goTab("plans")}/>}
+          {!canUseWorkspace&&!publicTabs.includes(tab)&&<AccessWall onLogin={signInGitHub}/>}
           {(canUseWorkspace||publicTabs.includes(tab))&&<>
-          {tab==="about"     &&<TabAbout      session={session} onEnter={()=>session?goTab("dashboard"):signInGitHub()} onPlans={()=>goTab("plans")}/>}
-          {tab==="dashboard" &&<TabDashboard  state={state} dispatch={dispatch} quoteIdx={quoteIdx} setTab={goTab} privacyMode={privacyMode} setPrivacyMode={setPrivacyMode} userName={userName} isAdmin={isAdmin}/>}
-          {tab==="focus"     &&<TabFocus      state={state} dispatch={dispatch}/>}
-          {tab==="habits"    &&<TabHabits     state={state} dispatch={dispatch}/>}
-          {tab==="goals"     &&<TabGoals      state={state} dispatch={dispatch}/>}
-          {tab==="tasks"     &&<TabTasks      state={state} dispatch={dispatch}/>}
-          {tab==="agenda"    &&<TabAgenda     state={state} dispatch={dispatch} setTab={goTab}/>}
-          {tab==="clients"   &&<TabClients    state={state} dispatch={dispatch} privacyMode={privacyMode}/>}
-          {tab==="projects"  &&<TabProjects   state={state} dispatch={dispatch}/>}
+          {tab==="dashboard" &&<ModularTabDashboard  state={state} dispatch={dispatch} quoteIdx={quoteIdx} setTab={goTab} privacyMode={privacyMode} setPrivacyMode={setPrivacyMode} userName={userName} isAdmin={isAdmin}/>}
+          {tab==="gsd"       &&<TabGSD        state={state} dispatch={dispatch} setTab={goTab}/>}
+          {tab==="tasks"     &&<ModularTabTasks      state={state} dispatch={dispatch}/>}
+          {tab==="agenda"    &&<ModularTabAgenda     state={state} dispatch={dispatch} setTab={goTab}/>}
+          {tab==="clients"   &&<ModularTabClients    state={state} dispatch={dispatch} privacyMode={privacyMode}/>}
+          {tab==="projects"  &&<ModularTabProjects   state={state} dispatch={dispatch}/>}
           {tab==="videoReview"&&(
             <React.Suspense fallback={<LazyTabFallback label="Carregando Video Review..." />}>
               <TabVideoReview state={state} dispatch={dispatch}/>
@@ -4301,25 +3469,19 @@ function App(){
               <TabStudioDocs state={state} dispatch={dispatch} shared={lazyTabShared}/>
             </React.Suspense>
           )}
+          {tab==="brandbook" &&(
+            <React.Suspense fallback={<LazyTabFallback label="Carregando Brand Book..." />}>
+              <TabBrandBook state={state} dispatch={dispatch} shared={lazyTabShared}/>
+            </React.Suspense>
+          )}
           {tab==="finance"   &&(
             <React.Suspense fallback={<LazyTabFallback label="Carregando Financeiro..." />}>
               <TabFinance state={state} dispatch={dispatch} privacyMode={privacyMode} shared={lazyTabShared}/>
             </React.Suspense>
           )}
-          {tab==="proposta"  &&<TabProposta state={state} dispatch={dispatch}/>}
-          {tab==="plans"     &&<TabPlans state={state} dispatch={dispatch} isAdmin={isAdmin} setTab={goTab}/>}
-          {tab==="templates" &&<TabTemplates  state={state} dispatch={dispatch} setTab={goTab} isAdmin={isAdmin}/>}
-          {tab==="business"  &&<TabBusinessSettings state={state} dispatch={dispatch}/>}
-          {tab==="notes"     &&<TabNotes      state={state} dispatch={dispatch}/>}
-          {tab==="pomodoro"  &&<Pomodoro      settings={state.pomodoroSettings}/>}
-          {tab==="analytics" &&(
-            <React.Suspense fallback={<LazyTabFallback label="Carregando Analytics..." />}>
-              <TabAnalytics state={state} privacyMode={privacyMode} shared={lazyTabShared}/>
-            </React.Suspense>
-          )}
-          {tab==="review"    &&<TabReview     state={state} dispatch={dispatch}/>}
-          {tab==="mission"   &&<TabMission    state={state} dispatch={dispatch}/>}
-          {tab==="export"    &&<TabExport     state={state} dispatch={dispatch}/>}
+          {tab==="proposta"  &&<ModularTabProposta state={state} dispatch={dispatch}/>}
+          {tab==="business"  &&<ModularTabBusinessSettings state={state} dispatch={dispatch}/>}
+          {tab==="export"    &&<ModularTabExport     state={state} dispatch={dispatch}/>}
           </>}
           </div>
         </div>

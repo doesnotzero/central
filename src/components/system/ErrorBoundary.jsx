@@ -1,6 +1,5 @@
 import React from "react";
-
-const APP_NAME = "DNZ Central";
+import { APP_NAME } from "../../theme.config.js";
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -13,7 +12,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error("DNZ UI error", error, info);
+    console.error(`${APP_NAME} UI error`, error, info);
   }
 
   render() {

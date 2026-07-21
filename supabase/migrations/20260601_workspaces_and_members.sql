@@ -2,6 +2,10 @@ create table if not exists public.workspaces (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
+  slug text unique not null,
+  branding_config jsonb default '{}',
+  business_config jsonb default '{}',
+  state jsonb default '{}',
   plan text not null default 'trial',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -18,8 +22,14 @@ create table if not exists public.workspace_members (
 create index if not exists workspaces_owner_id_idx
 on public.workspaces (owner_id);
 
+create index if not exists workspaces_slug_idx
+on public.workspaces (slug);
+
 create index if not exists workspace_members_user_id_idx
 on public.workspace_members (user_id);
+
+create index if not exists workspace_members_workspace_id_idx
+on public.workspace_members (workspace_id);
 
 alter table public.workspaces enable row level security;
 alter table public.workspace_members enable row level security;

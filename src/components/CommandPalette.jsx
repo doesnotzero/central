@@ -3,26 +3,27 @@ import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 
 export default function CommandPalette({open,onClose,state,setTab,dispatch,shared}){
   const {C,Modal,Tag,SectionTitle,STATUS_COLORS,VIDEO_COLORS} = shared;
+  const brandName = state.business?.brandName || "sua marca";
   const [q,setQ]=useState("");
   useEffect(()=>{if(open)setQ("");},[open]);
   const debouncedQ=useDebouncedValue(q,180);
   const term=debouncedQ.trim().toLowerCase();
   const commands=useMemo(()=>[
-    {type:"Ação",title:"Nova tarefa rápida",meta:"Cria uma tarefa sem prazo para classificar depois",color:C.orange,run:()=>dispatch({type:"ADD_TASK",task:{title:debouncedQ.trim()||"Nova tarefa",priority:"medium",tag:"inbox",dueDate:""}})},
-    {type:"Ação",title:"Abrir CRM",meta:"Ir para clientes e pipeline comercial",color:"#10b981",run:()=>setTab("clients")},
-    {type:"Ação",title:"Novo projeto",meta:"Ir para produção audiovisual",color:"#8b5cf6",run:()=>setTab("projects")},
-    {type:"Ação",title:"Agenda inteligente",meta:"Ver próximos prazos e compromissos",color:"#3b82f6",run:()=>setTab("agenda")},
-    {type:"Ação",title:"Templates",meta:"Aplicar modelos prontos",color:"#eab308",run:()=>setTab("templates")},
-    {type:"Ação",title:"Ver planos",meta:"Solo, Pro, Studio e White Label",color:"#10b981",run:()=>setTab("plans")},
-    {type:"Ação",title:"Configurar negócio",meta:"Marca, WhatsApp, ticket médio e dados de proposta",color:"#f97316",run:()=>setTab("business")},
-    {type:"Ação",title:"Criar proposta",meta:"Montar proposta e salvar no CRM",color:"#3b82f6",run:()=>setTab("proposta")},
-  ].filter(i=>!term||`${i.title} ${i.meta}`.toLowerCase().includes(term)).slice(0,5),[term,debouncedQ,dispatch,setTab]);
+    {type:"Produto",title:"Video Review",meta:"Revisões, comentários por timecode e aprovação",color:"#06b6d4",run:()=>setTab("videoReview")},
+    {type:"Comercial",title:"Abrir CRM",meta:"Clientes, pipeline e próximos contatos",color:"#10b981",run:()=>setTab("clients")},
+    {type:"Comercial",title:"Criar proposta",meta:"Escopo, entregáveis, valor e PDF comercial",color:C.orange,run:()=>setTab("proposta")},
+    {type:"Produção",title:"Novo projeto",meta:"Briefing, etapas, prazos e entrega audiovisual",color:"#8b5cf6",run:()=>setTab("projects")},
+    {type:"Marca",title:"Brand Book",meta:`Guia visual ${brandName} e exportação PDF`,color:C.orange,run:()=>setTab("brandbook")},
+    {type:"Documento",title:"Documentos",meta:"Briefing, roteiro, callsheet e checklist",color:"#3b82f6",run:()=>setTab("studio")},
+    {type:"Caixa",title:"Caixa operacional",meta:"Recebimentos, despesas e pendências",color:"#eab308",run:()=>setTab("finance")},
+    {type:"Ação",title:"Nova atividade",meta:"Cria uma tarefa operacional para classificar depois",color:C.orange,run:()=>dispatch({type:"ADD_TASK",task:{title:debouncedQ.trim()||"Nova atividade",priority:"medium",tag:"operacao",dueDate:""}})},
+  ].filter(i=>!term||`${i.title} ${i.meta}`.toLowerCase().includes(term)).slice(0,6),[term,debouncedQ,dispatch,setTab,brandName,C.orange]);
   const items=useMemo(()=>[
     ...state.tasks.map(t=>({type:"Tarefa",tab:"tasks",title:t.title,meta:[t.tag,t.dueDate,t.completed?"concluída":"pendente"].filter(Boolean).join(" · "),color:t.completed?"#6b7280":C.orange})),
-    ...state.goals.map(g=>({type:"Meta",tab:"goals",title:g.title,meta:`${g.progress}% · ${g.level}`,color:"#8b5cf6"})),
     ...(state.clients||[]).map(c=>({type:"Cliente",tab:"clients",title:c.name,meta:[c.service,c.status,c.payment,c.leadTemp,c.nextAction].filter(Boolean).join(" · "),color:STATUS_COLORS[c.status]||"#10b981"})),
     ...(state.clients||[]).flatMap(c=>(c.videos||[]).map(v=>({type:"Projeto",tab:"projects",title:v.title,meta:[c.name,v.type,v.status,v.deadline].filter(Boolean).join(" · "),color:VIDEO_COLORS[v.status]||"#8b5cf6"}))),
-    ...state.notes.map(n=>({type:"Nota",tab:"notes",title:n.title||n.body?.substring(0,42)||"Nota",meta:n.tag,color:"#eab308"})),
+    ...(state.studioDocs||[]).map(d=>({type:"Documento",tab:"studio",title:d.title||d.type||"Documento",meta:[d.type,d.preset,d.createdAt].filter(Boolean).join(" · "),color:"#3b82f6"})),
+    ...(state.reviewDeliverables||[]).map(r=>({type:"Review",tab:"videoReview",title:r.title||"Video Review",meta:[r.clientName,r.status,r.updatedAt].filter(Boolean).join(" · "),color:"#06b6d4"})),
   ].filter(i=>!term||`${i.type} ${i.title} ${i.meta}`.toLowerCase().includes(term)).slice(0,18),[state,term]);
   return (
     <Modal open={open} onClose={onClose} title="Busca Global" wide>
