@@ -5,9 +5,24 @@ const INSTAGRAM_URL = "https://instagram.com/doesnotzero";
 const LOGO_SRC = "/dnz-assets/dnz-films-logo-transparent.webp";
 
 const portfolioItems = [
-  { title: "Black Venom", category: "Esporte", vimeoId: "1177779611", thumb: "/dnz-assets/1177779611.webp", featured: true },
-  { title: "But Definitely", category: "Surf film", vimeoId: "1177775878", thumb: "/dnz-assets/1177775878.webp" },
-  { title: "JP Surfboards", category: "Marca · Shaper", vimeoId: "1177774829", thumb: "/dnz-assets/1177774829.webp" }
+  { title: "Black Venom", category: "Esporte", type: "vimeo", vimeoId: "1177779611", thumb: "/dnz-assets/1177779611.webp", featured: true },
+  { title: "But Definitely", category: "Surf film", type: "vimeo", vimeoId: "1177775878", thumb: "/dnz-assets/1177775878.webp" },
+  { title: "JP Surfboards", category: "Marca · Shaper", type: "vimeo", vimeoId: "1177774829", thumb: "/dnz-assets/1177774829.webp" }
+];
+
+const fightItems = [
+  { title: "Combate 01", category: "Luta · Atleta", type: "local", src: "/dnz-assets/fight-1.mp4", thumb: "/dnz-assets/fight-1.webp" },
+  { title: "Combate 02", category: "Luta · Atleta", type: "local", src: "/dnz-assets/fight-2.mp4", thumb: "/dnz-assets/fight-2.webp" },
+  { title: "Combate 03", category: "Luta · Atleta", type: "local", src: "/dnz-assets/fight-3.mp4", thumb: "/dnz-assets/fight-3.webp" }
+];
+
+const galleryStills = [
+  { src: "/dnz-assets/still-1.webp", alt: "Still de combate — DNZ Films 01" },
+  { src: "/dnz-assets/still-2.webp", alt: "Still de combate — DNZ Films 02" },
+  { src: "/dnz-assets/still-3.webp", alt: "Still de combate — DNZ Films 03" },
+  { src: "/dnz-assets/still-4.webp", alt: "Still de combate — DNZ Films 04" },
+  { src: "/dnz-assets/still-5.webp", alt: "Still de combate — DNZ Films 05" },
+  { src: "/dnz-assets/still-6.webp", alt: "Still de combate — DNZ Films 06" }
 ];
 
 const PLAY_SVG = '<svg viewBox="0 0 24 24" fill="white"><path d="M9 6v12l10-6L9 6Z"/></svg>';
@@ -21,6 +36,92 @@ const WhatsAppSvg = ({ size = 20 }) => (
 const InstagramSvg = ({ size = 24 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="white" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>
 );
+
+const SOUND_ON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+const SOUND_OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></svg>';
+const PAUSE_SVG = '<svg viewBox="0 0 24 24" fill="white"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>';
+
+const FeedVideo = ({ item }) => {
+  const videoRef = useRef(null);
+  const [muted, setMuted] = useState(true);
+  const [playing, setPlaying] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true;
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          v.play().catch(() => {});
+        } else {
+          v.pause();
+        }
+      });
+    }, { threshold: [0, 0.6, 1] });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    v.addEventListener("play", onPlay);
+    v.addEventListener("pause", onPause);
+    return () => { v.removeEventListener("play", onPlay); v.removeEventListener("pause", onPause); };
+  }, []);
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
+  };
+
+  const toggleMute = e => {
+    e.stopPropagation();
+    const v = videoRef.current;
+    if (!v) return;
+    const next = !v.muted;
+    v.muted = next;
+    setMuted(next);
+    if (!next && v.paused) v.play().catch(() => {});
+  };
+
+  return (
+    <div className="reel-item">
+      <div
+        className={`reel-frame${showControls ? " show" : ""}`}
+        onClick={togglePlay}
+        onMouseEnter={() => setShowControls(true)}
+        onMouseLeave={() => setShowControls(playing ? false : true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); togglePlay(); } }}
+        aria-label={`${playing ? "Pausar" : "Reproduzir"} ${item.title}`}
+      >
+        <video
+          ref={videoRef}
+          src={item.src}
+          poster={item.thumb}
+          muted={muted}
+          loop
+          playsInline
+          preload="metadata"
+        />
+        {!playing && <span className="reel-center-play" aria-hidden="true" dangerouslySetInnerHTML={{ __html: PLAY_SVG }} />}
+        <button type="button" className="reel-sound" onClick={toggleMute} aria-label={muted ? "Ativar som" : "Desativar som"} dangerouslySetInnerHTML={{ __html: muted ? SOUND_OFF_SVG : SOUND_ON_SVG }} />
+        <div className="reel-meta">
+          <span className="reel-cat">{item.category}</span>
+          <span className="reel-name">{item.title}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const LoginPage = ({ session, isAdmin, cloudStatus, onLogin, onLogout, onHome }) => (
   <main id="main-content" className="dnz-login-page">
@@ -75,8 +176,11 @@ const LandingPage = ({ onLogin }) => {
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxVideo, setLightboxVideo] = useState(null);
+  const [lightboxLocalSrc, setLightboxLocalSrc] = useState(null);
   const [lightboxVertical, setLightboxVertical] = useState(false);
   const [lightboxMeta, setLightboxMeta] = useState({ title: "", category: "" });
+
+  const [galleryIndex, setGalleryIndex] = useState(null);
 
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({ project: "", service: "", package: "", deadline: "", nome: "", wpp: "", ig: "", msg: "" });
@@ -91,14 +195,44 @@ const LandingPage = ({ onLogin }) => {
     lastFocusRef.current = document.activeElement;
     const meta = videoMap[vimeoId] || { title: "Vídeo DNZ Films", category: "Portfólio" };
     setLightboxMeta(meta);
+    setLightboxLocalSrc(null);
     setLightboxVideo(vimeoId);
     setLightboxVertical(isVertical);
     setLightboxOpen(true);
   }, [videoMap]);
 
+  const openLocal = useCallback((item, isVertical = false) => {
+    lastFocusRef.current = document.activeElement;
+    setLightboxMeta({ title: item.title || "Vídeo DNZ Films", category: item.category || "Portfólio" });
+    setLightboxVideo(null);
+    setLightboxLocalSrc(item.src);
+    setLightboxVertical(isVertical);
+    setLightboxOpen(true);
+  }, []);
+
   const closeVideo = useCallback(() => {
     setLightboxOpen(false);
     setLightboxVideo(null);
+    setLightboxLocalSrc(null);
+  }, []);
+
+  const openGallery = useCallback(i => {
+    lastFocusRef.current = document.activeElement;
+    setGalleryIndex(i);
+  }, []);
+
+  const closeGallery = useCallback(() => {
+    setGalleryIndex(null);
+    const el = lastFocusRef.current;
+    if (el && typeof el.focus === "function") el.focus();
+  }, []);
+
+  const galleryNav = useCallback(dir => {
+    setGalleryIndex(prev => {
+      if (prev === null) return prev;
+      const n = galleryStills.length;
+      return (prev + dir + n) % n;
+    });
   }, []);
 
   useEffect(() => {
@@ -110,17 +244,40 @@ const LandingPage = ({ onLogin }) => {
   }, [lightboxOpen, lightboxMeta]);
 
   useEffect(() => {
-    if (!lightboxOpen || !lightboxVideo) return;
+    if (!lightboxOpen) return;
     const el = document.getElementById("lightboxVideo");
     if (!el) return;
-    el.innerHTML = `<iframe src="https://player.vimeo.com/video/${lightboxVideo}?autoplay=1&autopause=0&title=0&byline=0&portrait=0&dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Vídeo DNZ Films"></iframe>`;
+    if (lightboxLocalSrc) {
+      el.innerHTML = `<video src="${lightboxLocalSrc}" controls autoplay playsinline preload="metadata" style="width:100%;height:100%;background:#000"></video>`;
+    } else if (lightboxVideo) {
+      el.innerHTML = `<iframe src="https://player.vimeo.com/video/${lightboxVideo}?autoplay=1&autopause=0&title=0&byline=0&portrait=0&dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Vídeo DNZ Films"></iframe>`;
+    } else {
+      return;
+    }
     return () => { el.innerHTML = ""; };
-  }, [lightboxOpen, lightboxVideo]);
+  }, [lightboxOpen, lightboxVideo, lightboxLocalSrc]);
 
   useEffect(() => {
     const handleKey = e => { if (e.key === "Escape") closeVideo(); };
     if (lightboxOpen) { document.addEventListener("keydown", handleKey); return () => document.removeEventListener("keydown", handleKey); }
   }, [lightboxOpen, closeVideo]);
+
+  useEffect(() => {
+    if (galleryIndex === null) return;
+    document.body.style.overflow = "hidden";
+    const handleKey = e => {
+      if (e.key === "Escape") closeGallery();
+      else if (e.key === "ArrowRight") galleryNav(1);
+      else if (e.key === "ArrowLeft") galleryNav(-1);
+    };
+    document.addEventListener("keydown", handleKey);
+    const btn = document.getElementById("galleryClose");
+    if (btn) btn.focus();
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
+  }, [galleryIndex, closeGallery, galleryNav]);
 
   useEffect(() => {
     const canUse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -136,8 +293,8 @@ const LandingPage = ({ onLogin }) => {
       curR.style.transform = `translate(${rx}px, ${ry}px)`;
       raf = requestAnimationFrame(anim);
     };
-    const onOver = e => { if (e.target.closest("a,button,.form-opt,.pac-card,.case-item,.case-link,.proc-step,.work-card,.reel-btn,.phone-btn,.close-btn,.wpp-fixed,.ig-fixed")) curR.classList.add("big"); };
-    const onOut = e => { if (e.target.closest("a,button,.form-opt,.pac-card,.case-item,.case-link,.proc-step,.work-card,.reel-btn,.phone-btn,.close-btn,.wpp-fixed,.ig-fixed")) curR.classList.remove("big"); };
+    const onOver = e => { if (e.target.closest("a,button,.form-opt,.pac-card,.case-item,.case-link,.proc-step,.work-card,.reel-btn,.reel-frame,.gallery-cell,.phone-btn,.close-btn,.wpp-fixed,.ig-fixed")) curR.classList.add("big"); };
+    const onOut = e => { if (e.target.closest("a,button,.form-opt,.pac-card,.case-item,.case-link,.proc-step,.work-card,.reel-btn,.reel-frame,.gallery-cell,.phone-btn,.close-btn,.wpp-fixed,.ig-fixed")) curR.classList.remove("big"); };
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseover", onOver);
     document.addEventListener("mouseout", onOut);
@@ -320,6 +477,47 @@ const LandingPage = ({ onLogin }) => {
 .close-btn:hover{border-color:var(--red)}
 .lightbox.vertical .lightbox-dialog{width:auto;max-width:min(460px,94vw)}
 .lightbox.vertical .lightbox-video{aspect-ratio:9/16;width:min(380px,78vw);max-height:min(82vh,680px);margin:0 auto}
+.dnz-landing-root #galeria{padding:120px 48px;background:var(--black)}
+.dnz-landing-root .gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:56px}
+.dnz-landing-root .gallery-cell{position:relative;aspect-ratio:3/2;overflow:hidden;border:0;padding:0;background:#000;cursor:pointer}
+.dnz-landing-root .gallery-cell img{width:100%;height:100%;object-fit:cover;opacity:.82;filter:saturate(.92) contrast(1.05);transition:opacity .35s,transform .8s ease}
+.dnz-landing-root .gallery-cell:hover img{opacity:1;transform:scale(1.05)}
+.dnz-landing-root .gallery-cell::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(10,10,10,.55));pointer-events:none;opacity:0;transition:opacity .3s}
+.dnz-landing-root .gallery-cell:hover::after{opacity:1}
+.dnz-landing-root .gallery-plus{position:absolute;right:16px;bottom:12px;font-family:var(--D);font-size:34px;line-height:1;color:var(--white);opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s;pointer-events:none;z-index:2}
+.dnz-landing-root .gallery-cell:hover .gallery-plus{opacity:1;transform:translateY(0)}
+.gallery-lb{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:8px;padding:24px;background:rgba(10,10,10,.96);backdrop-filter:blur(12px)}
+.gallery-stage{position:relative;display:flex;flex-direction:column;align-items:center;max-width:min(1200px,92vw);margin:0}
+.gallery-stage img{max-width:100%;max-height:82vh;object-fit:contain;border:1px solid var(--gray3)}
+.gallery-counter{margin-top:16px;font-family:var(--M);font-size:10px;letter-spacing:4px;color:rgba(242,242,242,.5)}
+.gallery-close{position:absolute;top:20px;right:24px;width:48px;height:48px;border:1px solid var(--gray3);background:var(--black);color:var(--white);font-size:24px;cursor:pointer;font-family:var(--M);transition:border-color .2s;z-index:2}
+.gallery-close:hover{border-color:var(--red)}
+.gallery-arrow{flex-shrink:0;width:56px;height:56px;border:1px solid var(--gray3);background:rgba(10,10,10,.6);color:var(--white);font-size:32px;line-height:1;cursor:pointer;font-family:var(--M);transition:border-color .2s,background .2s;display:flex;align-items:center;justify-content:center}
+.gallery-arrow:hover{border-color:var(--red);background:var(--gray2)}
+@media(max-width:900px){
+  .dnz-landing-root .gallery-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .gallery-arrow{position:fixed;bottom:28px;width:52px;height:52px;z-index:2}
+  .gallery-arrow.prev{left:24px}
+  .gallery-arrow.next{right:24px}
+  .gallery-stage img{max-height:70vh}
+}
+.dnz-landing-root #lutas{padding:120px 48px;background:var(--gray)}
+.dnz-landing-root .reel-feed{display:flex;flex-direction:column;align-items:center;gap:40px;margin-top:56px}
+.dnz-landing-root .reel-item{width:100%;display:flex;justify-content:center;scroll-snap-align:center}
+.dnz-landing-root .reel-frame{position:relative;width:min(760px,100%);aspect-ratio:16/9;background:#000;border:1px solid var(--gray3);overflow:hidden;cursor:pointer}
+.dnz-landing-root .reel-frame video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.dnz-landing-root .reel-center-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:72px;height:72px;border:1px solid rgba(242,242,242,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(10,10,10,.5);backdrop-filter:blur(8px);pointer-events:none;transition:opacity .25s}
+.dnz-landing-root .reel-center-play svg{width:26px;height:26px;margin-left:4px}
+.dnz-landing-root .reel-sound{position:absolute;top:16px;right:16px;width:44px;height:44px;border:1px solid var(--gray3);border-radius:50%;background:rgba(10,10,10,.55);backdrop-filter:blur(8px);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;transition:border-color .2s,transform .2s;opacity:.35}
+.dnz-landing-root .reel-frame.show .reel-sound{opacity:1}
+.dnz-landing-root .reel-sound:hover{border-color:var(--red);transform:scale(1.06)}
+.dnz-landing-root .reel-sound svg{width:20px;height:20px}
+.dnz-landing-root .reel-meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:28px 26px 22px;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(10,10,10,.82))}
+.dnz-landing-root .reel-cat{display:block;font-family:var(--M);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:6px}
+.dnz-landing-root .reel-name{font-family:var(--D);font-size:clamp(24px,3vw,38px);letter-spacing:2px;line-height:.95;color:var(--white)}
+@media(max-width:900px){
+  .dnz-landing-root .reel-feed{gap:28px}
+}
 .dnz-landing-root #eventos{padding:120px 48px;background:var(--gray)}
 .dnz-landing-root .eventos-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(260px,.75fr);gap:80px;align-items:center;margin-top:72px}
 .dnz-landing-root .eventos-copy p{font-size:15px;line-height:1.9;color:rgba(242,242,242,.5);margin-bottom:20px}
@@ -354,7 +552,8 @@ const LandingPage = ({ onLogin }) => {
 .dnz-landing-root .prob-right p strong{color:var(--white);font-weight:500}
 .dnz-landing-root #solucao{padding:0 48px 120px}
 .dnz-landing-root .sol-bar{height:1px;background:linear-gradient(to right,var(--red),transparent);margin-bottom:80px}
-.dnz-landing-root .sol-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.dnz-landing-root .sol-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+@media(min-width:901px) and (max-width:1200px){.dnz-landing-root .sol-grid{grid-template-columns:repeat(2,1fr)}}
 .dnz-landing-root .sol-card{background:var(--gray);padding:48px 36px;position:relative;overflow:hidden;transition:background .3s}
 .dnz-landing-root .sol-card:hover{background:var(--gray2)}
 .dnz-landing-root .sol-card::before{content:attr(data-n);position:absolute;top:-16px;right:16px;font-family:var(--D);font-size:120px;color:rgba(242,242,242,.03);line-height:1}
@@ -535,12 +734,12 @@ const LandingPage = ({ onLogin }) => {
           </a>
           <div className="nav-r">
             <ul className="nav-links">
-              <li><a href="#eventos" onClick={e => scrollTo(e, "#eventos")}>Eventos</a></li>
               <li><a href="#trabalhos" onClick={e => scrollTo(e, "#trabalhos")}>Trabalhos</a></li>
+              <li><a href="#lutas" onClick={e => scrollTo(e, "#lutas")}>Lutas</a></li>
+              <li><a href="#galeria" onClick={e => scrollTo(e, "#galeria")}>Galeria</a></li>
               <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>Cases</a></li>
               <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>Sobre</a></li>
               <li><a href="#pacotes" onClick={e => scrollTo(e, "#pacotes")}>Pacotes</a></li>
-              <li><a href="#processo" onClick={e => scrollTo(e, "#processo")}>Processo</a></li>
               <li><button type="button" onClick={onLogin}>Login</button></li>
             </ul>
             <a href="#form-section" className="nav-cta" onClick={e => scrollTo(e, "#form-section")}>Começar →</a>
@@ -564,7 +763,7 @@ const LandingPage = ({ onLogin }) => {
             <div className="hero-sub">DNZ FILMS</div>
             <div className="hero-bottom">
               <p className="hero-desc">
-                <strong>Surf. Atletas. Marcas.</strong><br />
+                <strong>Surf. Atletas. Lutadores. Marcas em movimento.</strong><br />
                 Produção audiovisual com direção, captação e edição — feita pra quem não para.
               </p>
               <div className="hero-actions">
@@ -589,7 +788,7 @@ const LandingPage = ({ onLogin }) => {
 
         <div className="ticker">
           <div className="ticker-t">
-            {["SURF", "DOES NOT ZERO", "ATLETAS", "MOTION NEVER STOPS", "SHAPERS", "DNZ FILMS", "FLORIANÓPOLIS", "SURF", "DOES NOT ZERO", "ATLETAS", "MOTION NEVER STOPS", "SHAPERS", "DNZ FILMS", "FLORIANÓPOLIS"].map((item, idx) => (
+            {["SURF", "DOES NOT ZERO", "ATLETAS", "LUTADORES", "MOTION NEVER STOPS", "SHAPERS", "MARCAS", "DNZ FILMS", "FLORIANÓPOLIS", "SURF", "DOES NOT ZERO", "ATLETAS", "LUTADORES", "MOTION NEVER STOPS", "SHAPERS", "MARCAS", "DNZ FILMS", "FLORIANÓPOLIS"].map((item, idx) => (
               <div className="ticker-i" key={`${item}-${idx}`}>{item} <span className="r"></span></div>
             ))}
           </div>
@@ -618,9 +817,10 @@ const LandingPage = ({ onLogin }) => {
           <div className="sol-bar"></div>
           <div className="sol-grid">
             {[
-              { n: "01", icon: "🌊", name: "SURF", text: "Sessões, atletas, shapers, fábricas de prancha. <strong>Cinema na água.</strong> Do drop ao shape, a gente registra com a mesma entrega de quem tá na água." },
-              { n: "02", icon: "🏃", name: "ATLETAS", text: "Jornadas humanas que merecem ser contadas. <strong>Material pra sponsor. Documentário de temporada.</strong> Conteúdo que mostra o que você fez antes de dizer." },
-              { n: "03", icon: "◎", name: "MARCAS", text: "Marcas que representam algo de verdade. <strong>Não propaganda. Narrativa.</strong> Vídeo que faz o cliente entender o valor antes do preço." }
+              { n: "01", icon: "🌊", name: "SURF", text: "Sessões, atletas, shapers e fábricas de prancha. <strong>Cinema na água.</strong> Do drop ao shape, a gente registra com a mesma entrega de quem tá na linha do pico." },
+              { n: "02", icon: "🥊", name: "LUTADORES", text: "Do treino ao octógono. <strong>Camps, pesagens, corner e a luta.</strong> Material que mostra a rotina, a preparação e a explosão — pra sponsor, pra rede e pra história." },
+              { n: "03", icon: "🏃", name: "ATLETAS", text: "Jornadas humanas que merecem ser contadas. <strong>Material pra sponsor. Documentário de temporada.</strong> Conteúdo que mostra o que você fez antes de dizer." },
+              { n: "04", icon: "◎", name: "MARCAS", text: "Marcas em movimento que representam algo de verdade. <strong>Não propaganda. Narrativa.</strong> Vídeo que faz o cliente entender o valor antes do preço." }
             ].map(s => (
               <div className="sol-card" data-n={s.n} key={s.n}>
                 <div className="sol-icon">{s.icon}</div>
@@ -633,16 +833,16 @@ const LandingPage = ({ onLogin }) => {
 
         <section id="eventos" className="landing-section fu">
           <div className="sec-label">Cobertura de evento</div>
-          <h2 className="sec-title">ENERGIA DE<br />FESTA.</h2>
+          <h2 className="sec-title">ENERGIA AO<br />VIVO.</h2>
           <div className="eventos-grid">
             <div className="eventos-copy">
-              <p>Festa, show, lançamento ou ativação de marca — a DNZ captura a <strong>energia do momento</strong> e entrega em formato vertical pronto pra redes.</p>
-              <p>Do público ao palco, dos bastidores ao aftermovie: vídeo com ritmo, cor e intenção. Não é só registrar. É fazer quem não estava lá <strong>sentir que estava.</strong></p>
+              <p>Show, luta, festa, lançamento ou ativação de marca — a DNZ captura a <strong>energia do ao vivo</strong> e devolve em formato vertical, pronto pra postar enquanto o hype ainda tá quente.</p>
+              <p>Do público ao palco, do backstage ao aftermovie: imagem com ritmo, cor e intenção. Não é só registrar o evento — é fazer quem não estava lá <strong>sentir que perdeu algo.</strong></p>
               <ul className="eventos-list">
-                <li>Reels e stories 9:16 para Instagram e TikTok</li>
-                <li>Aftermovie e cortes rápidos pós-evento</li>
-                <li>Cobertura de palco, público e bastidores</li>
-                <li>Entrega otimizada para redes sociais</li>
+                <li>Reels e stories 9:16 pra Instagram e TikTok</li>
+                <li>Aftermovie e cortes rápidos já no dia seguinte</li>
+                <li>Cobertura de palco, público, bastidores e ação</li>
+                <li>Entrega no timing das redes, sem esfriar</li>
               </ul>
               <button className="btn-red" onClick={() => preset("Cobertura de evento", "MOTION — projeto fechado")}>Pedir cobertura →</button>
             </div>
@@ -675,6 +875,35 @@ const LandingPage = ({ onLogin }) => {
                   <span className="cat">{item.category}</span>
                   <span className="title">{item.title}</span>
                 </span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section id="lutas" className="landing-section fu">
+          <div className="sec-head">
+            <div className="sec-label">Lutas · Feed</div>
+            <h2 className="sec-title">DO TREINO<br />AO COMBATE.</h2>
+            <p className="sec-sub">Role e assista. Cada vídeo dá play sozinho — toque no som pra ativar o áudio. Sem sair da página.</p>
+          </div>
+          <div className="reel-feed">
+            {fightItems.map(item => (
+              <FeedVideo key={item.src} item={item} />
+            ))}
+          </div>
+        </section>
+
+        <section id="galeria" className="landing-section fu">
+          <div className="sec-head">
+            <div className="sec-label">Galeria · Luta</div>
+            <h2 className="sec-title">FRAMES DE<br />COMBATE.</h2>
+            <p className="sec-sub">Stills capturados no calor da luta — o instante antes, o impacto e o que fica depois. Clique pra ampliar e navegue frame a frame.</p>
+          </div>
+          <div className="gallery-grid">
+            {galleryStills.map((s, i) => (
+              <button type="button" className="gallery-cell" key={s.src} onClick={() => openGallery(i)} aria-label={`Ampliar imagem ${i + 1} de ${galleryStills.length}`}>
+                <img src={s.src} alt={s.alt} loading="lazy" />
+                <span className="gallery-plus" aria-hidden="true">+</span>
               </button>
             ))}
           </div>
@@ -737,12 +966,13 @@ const LandingPage = ({ onLogin }) => {
           <h2 className="sec-title">QUEM ESTÁ<br />POR TRÁS.</h2>
           <div className="sobre-grid">
             <div className="sobre-copy">
-              <p><strong>Gabriel d. Pimentel</strong> — diretor, editor e fundador da DNZ Films em Florianópolis. Does Not Zero não é só nome: é a ideia de que movimento, entrega e sensibilidade precisam aparecer em cada frame.</p>
-              <p>Da sessão de surf ao processo de uma fábrica de pranchas, do atleta local à marca que quer narrativa de verdade — a DNZ combina <strong>olhar cinematográfico</strong> com agilidade de quem vive o audiovisual na prática.</p>
+              <p><strong>Gabriel d. Pimentel</strong> — diretor, editor e fundador da DNZ Films, em Florianópolis. Começou filmando o que vive: surf, esporte e gente em movimento. <strong>Does Not Zero</strong> não é só um nome — é o compromisso de que nada sai da mesa sem intenção, ritmo e alma em cada frame.</p>
+              <p>Da line-up ao octógono, da fábrica de pranchas à marca que quer narrativa de verdade: a DNZ une <strong>olhar cinematográfico</strong> com a agilidade de quem vive o audiovisual na prática.</p>
+              <p>Aqui não se terceiriza o cuidado. <strong>Quem dirige é quem edita, quem entrega é quem se importa</strong> — do primeiro corte à cor final.</p>
               <div className="sobre-caps">
                 <div className="sobre-cap"><strong>Direção</strong><span>Conceito, ritmo e narrativa visual</span></div>
-                <div className="sobre-cap"><strong>Captação</strong><span>Surf, esporte, lifestyle e marca</span></div>
-                <div className="sobre-cap"><strong>Pós</strong><span>Edição, cor, som e formatos finais</span></div>
+                <div className="sobre-cap"><strong>Captação</strong><span>Surf, luta, esporte, lifestyle e marca</span></div>
+                <div className="sobre-cap"><strong>Pós</strong><span>Edição, cor, som e cortes pra cada formato</span></div>
               </div>
             </div>
             <div className="sobre-photo">
@@ -763,42 +993,47 @@ const LandingPage = ({ onLogin }) => {
             <div className="pac-card">
               <div className="pac-n">01 / MENSAL</div>
               <div className="pac-name">LOOP</div>
-              <div className="pac-tag">Formato recorrente · presença constante nas redes</div>
+              <div className="pac-tag">Conteúdo recorrente · sua marca sempre em movimento</div>
               <ul className="pac-list">
-                <li>4 reels editados por mês</li>
-                <li>Color grading DNZ</li>
-                <li>Trilha licenciada</li>
-                <li>Entrega em até 7 dias</li>
-                <li>Revisão inclusa</li>
-                <li>Ideal pra: Atletas, surfistas, shapers</li>
+                <li>4 vídeos editados/mês (reels 9:16 ou cortes)</li>
+                <li>Color grading assinatura DNZ</li>
+                <li>Trilha licenciada + sound design</li>
+                <li>Legendas e captions prontos pra postar</li>
+                <li>Entrega em até 7 dias por vídeo</li>
+                <li>1 revisão inclusa por vídeo</li>
+                <li>Calendário de postagem sugerido</li>
+                <li>Ideal pra: atletas, lutadores, surfistas e shapers</li>
               </ul>
               <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset("Conteúdo mensal para redes", "LOOP — conteúdo mensal"); }}>Quero o LOOP →</a>
             </div>
             <div className="pac-card hot">
               <div className="pac-n">02 / PROJETO</div>
               <div className="pac-name">MOTION</div>
-              <div className="pac-tag">Projeto fechado · vídeo principal + cortes</div>
+              <div className="pac-tag">Um filme forte + cortes pra girar nas redes</div>
               <ul className="pac-list">
-                <li>1 vídeo principal (até 3 min)</li>
-                <li>3 cortes para redes sociais</li>
-                <li>Filmagem + Edição completa</li>
-                <li>Color grading cinematográfico</li>
-                <li>Entrega em até 15 dias</li>
-                <li>Ideal pra: Marcas, atletas, lançamentos</li>
+                <li>1 filme principal (até 3 min) com direção</li>
+                <li>3 cortes verticais pra redes sociais</li>
+                <li>Captação em campo (treino, luta, sessão, evento)</li>
+                <li>Filmagem + edição completa</li>
+                <li>Color grading cinematográfico + sound design</li>
+                <li>Entrega em até 15 dias · 2 revisões inclusas</li>
+                <li>Ideal pra: marcas, atletas, lutadores e lançamentos</li>
               </ul>
               <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset("Vídeo para marca / negócio", "MOTION — projeto fechado"); }}>Quero o MOTION →</a>
             </div>
             <div className="pac-card">
               <div className="pac-n">03 / PREMIUM</div>
               <div className="pac-name">ZERO</div>
-              <div className="pac-tag">Produção sob medida · escopo personalizado</div>
+              <div className="pac-tag">Produção completa · documentário e campanha sob medida</div>
               <ul className="pac-list">
-                <li>Projeto completo sob medida</li>
-                <li>Documentário ou campanha</li>
-                <li>Direção criativa inclusa</li>
-                <li>Múltiplos formatos e vídeos</li>
-                <li>Prazo definido em briefing</li>
-                <li>Ideal pra: Projetos grandes e marcas premium</li>
+                <li>Escopo desenhado do zero com você</li>
+                <li>Documentário de temporada, campanha ou série</li>
+                <li>Direção criativa + roteiro</li>
+                <li>Captação multi-dia / múltiplas locações</li>
+                <li>Múltiplos vídeos e formatos (16:9, 9:16, 1:1)</li>
+                <li>Color grading e sound design premium</li>
+                <li>Prazo e entregáveis definidos no briefing</li>
+                <li>Ideal pra: projetos grandes, marcas e atletas premium</li>
               </ul>
               <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset("Documentário", "ZERO — sob medida"); }}>Falar sobre ZERO →</a>
             </div>
@@ -989,10 +1224,12 @@ const LandingPage = ({ onLogin }) => {
           <ul className="f-links">
             <li><a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">@doesnotzero</a></li>
             <li><a href={`https://wa.me/${SALES_WHATSAPP}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
-            <li><a href="#eventos" onClick={e => scrollTo(e, "#eventos")}>Eventos</a></li>
-            <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>Sobre</a></li>
-            <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>Cases</a></li>
             <li><a href="#trabalhos" onClick={e => scrollTo(e, "#trabalhos")}>Trabalhos</a></li>
+            <li><a href="#lutas" onClick={e => scrollTo(e, "#lutas")}>Lutas</a></li>
+            <li><a href="#galeria" onClick={e => scrollTo(e, "#galeria")}>Galeria</a></li>
+            <li><a href="#eventos" onClick={e => scrollTo(e, "#eventos")}>Eventos</a></li>
+            <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>Cases</a></li>
+            <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>Sobre</a></li>
             <li><a href="#pacotes" onClick={e => scrollTo(e, "#pacotes")}>Pacotes</a></li>
             <li><a href="#form-section" onClick={e => scrollTo(e, "#form-section")}>Briefing</a></li>
             <li><button type="button" onClick={onLogin}>Login</button></li>
@@ -1012,6 +1249,18 @@ const LandingPage = ({ onLogin }) => {
               </div>
               <div className="lightbox-video" id="lightboxVideo"></div>
             </div>
+          </div>
+        )}
+
+        {galleryIndex !== null && (
+          <div className="gallery-lb" role="dialog" aria-modal="true" aria-label="Galeria de imagens" onClick={e => { if (e.target === e.currentTarget) closeGallery(); }}>
+            <button className="gallery-close" type="button" id="galleryClose" onClick={closeGallery} aria-label="Fechar galeria">×</button>
+            <button className="gallery-arrow prev" type="button" onClick={() => galleryNav(-1)} aria-label="Imagem anterior">‹</button>
+            <figure className="gallery-stage">
+              <img src={galleryStills[galleryIndex].src} alt={galleryStills[galleryIndex].alt} />
+              <figcaption className="gallery-counter">{galleryIndex + 1} / {galleryStills.length}</figcaption>
+            </figure>
+            <button className="gallery-arrow next" type="button" onClick={() => galleryNav(1)} aria-label="Próxima imagem">›</button>
           </div>
         )}
 

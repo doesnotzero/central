@@ -7,3 +7,7 @@ dist
 npm-debug.log*
 .env*
 .vscode
+
+# Arquivos-fonte de mídia (originais pesados) — o site usa os otimizados em public/dnz-assets/
+assets/movies
+assets/stills
