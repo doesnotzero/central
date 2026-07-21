@@ -21,12 +21,12 @@ function question(query: string): Promise<string> {
 }
 
 export async function setupWhitelabel() {
-  console.log('🚀 Whitelabel Setup - Production OS\n');
+  console.log('🚀 Whitelabel Setup - DNZ Central\n');
 
-  const appName = await question('App Name (default: Production OS): ') || 'Production OS';
-  const appSubtitle = await question('App Subtitle (default: PRODUCTION OS): ') || 'PRODUCTION OS';
-  const brandName = await question('Brand Name (default: Your Brand): ') || 'Your Brand';
-  const companyName = await question('Company Name (default: Your Company): ') || 'Your Company';
+  const appName = await question('App Name (default: DNZ Central): ') || 'DNZ Central';
+  const appSubtitle = await question('App Subtitle (default: DOES NOT ZERO): ') || 'DOES NOT ZERO';
+  const brandName = await question('Brand Name (default: DNZ Films): ') || 'DNZ Films';
+  const companyName = await question('Company Name (default: DNZ Films): ') || 'DNZ Films';
   const primaryColor = await question('Primary Color (default: #ff2400): ') || '#ff2400';
 
   console.log('\n📦 Select features (comma-separated, or press Enter for all):');

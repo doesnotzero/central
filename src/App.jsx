@@ -3099,6 +3099,9 @@ function App(){
     window.dispatchEvent(new PopStateEvent("popstate"));
   },[]);
   useEffect(()=>{
+    if(route!=="/app"&&canUseWorkspace)navigateTo("/app");
+  },[route,canUseWorkspace,navigateTo]);
+  useEffect(()=>{
     const onRoute=()=>setRoute(window.location.pathname || "/");
     window.addEventListener("popstate",onRoute);
     return()=>window.removeEventListener("popstate",onRoute);
@@ -3329,9 +3332,6 @@ function App(){
   }
   if(route==="/app"&&!canUseWorkspace){
     return <LoginPage session={session} isAdmin={isAdmin} adminEmails={[]} cloudStatus={cloudStatus} onLogin={signInGitHub} onLogout={signOut} onHome={()=>navigateTo("/")}/>;
-  }
-  if(route!=="/app"&&canUseWorkspace){
-    navigateTo("/app");
   }
   return (
     <div className={`app-shell ${!canUseWorkspace?"public-shell":""} ${compactMode?"compact":""} ${privacyMode?"privacy":""} ${sidebarCollapsed?"sidebar-collapsed":""}`}>

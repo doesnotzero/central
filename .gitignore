@@ -6,3 +6,4 @@ dist
 .vercel
 npm-debug.log*
 .env*
+.vscode
