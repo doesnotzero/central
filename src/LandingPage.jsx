@@ -1044,6 +1044,7 @@ const LandingPage = ({ onLogin }) => {
 .dnz-landing-root .nav-links a:hover,.dnz-landing-root .nav-links button:hover{opacity:1}
 .dnz-landing-root .nav-cta{font-family:var(--M);font-size:10px;letter-spacing:3px;text-transform:uppercase;background:var(--red);color:var(--white);padding:12px 24px;text-decoration:none;transition:opacity .2s}
 .dnz-landing-root .nav-cta:hover{opacity:.85}
+.dnz-landing-root .nav-login-mobile{display:none}
 .dnz-landing-root .lang-toggle{font-family:var(--M);font-size:10px;letter-spacing:3px;text-transform:uppercase;background:none;border:1px solid var(--gray3);color:rgba(242,242,242,.5);padding:8px 12px;cursor:pointer;transition:border-color .2s,color .2s;display:inline-flex;align-items:center;gap:2px}
 .dnz-landing-root .lang-toggle:hover{border-color:var(--red);color:var(--white)}
 .dnz-landing-root .lang-toggle span{transition:color .2s,opacity .2s;opacity:.55}
@@ -1339,6 +1340,11 @@ const LandingPage = ({ onLogin }) => {
 @media(max-width:900px){
   .dnz-landing-root nav{padding:16px 24px}
   .dnz-landing-root .nav-links{display:none}
+  .dnz-landing-root .nav-login-mobile{display:inline-flex;align-items:center;font-family:var(--M);font-size:10px;letter-spacing:2px;text-transform:uppercase;background:none;border:1px solid var(--gray3);color:rgba(242,242,242,.7);padding:8px 10px;cursor:pointer;transition:border-color .2s,color .2s}
+  .dnz-landing-root .nav-login-mobile:hover{border-color:var(--red);color:var(--white)}
+  .dnz-landing-root .nav-r{gap:8px}
+  .dnz-landing-root .nav-cta{padding:10px 14px;font-size:9px}
+  .dnz-landing-root .lang-toggle{padding:8px 9px;font-size:9px}
   .dnz-landing-root #hero{padding:96px 24px 60px}
   .dnz-landing-root .nav-logo img{height:44px}
   .dnz-landing-root .hero-bottom{flex-direction:column;align-items:flex-start}
@@ -1382,6 +1388,7 @@ const LandingPage = ({ onLogin }) => {
             <button type="button" className="lang-toggle" onClick={toggleLang} aria-label={t("nav.langAria")}>
               <span className={lang === "pt" ? "on" : ""}>PT</span>/<span className={lang === "en" ? "on" : ""}>EN</span>
             </button>
+            <button type="button" className="nav-login-mobile" onClick={onLogin}>{t("nav.login")}</button>
             <a href="#form-section" className="nav-cta" onClick={e => scrollTo(e, "#form-section")}>{t("nav.cta")}</a>
           </div>
         </nav>
