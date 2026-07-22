@@ -5,6 +5,631 @@ const INSTAGRAM_URL = "https://instagram.com/doesnotzero";
 const INSTAGRAM_DEV_URL = "https://instagram.com/doesnotzerodev";
 const LOGO_SRC = "/dnz-assets/dnz-films-logo-transparent.webp";
 
+const LANG_STORAGE_KEY = "dnz_lang";
+
+// ---------------------------------------------------------------------------
+// i18n dictionary — flat "section.key" strings for pt (default) and en.
+// ---------------------------------------------------------------------------
+const translations = {
+  pt: {
+    "nav.trabalhos": "Trabalhos",
+    "nav.lutas": "Lutas",
+    "nav.galeria": "Galeria",
+    "nav.cases": "Cases",
+    "nav.sobre": "Sobre",
+    "nav.pacotes": "Pacotes",
+    "nav.login": "Login",
+    "nav.cta": "Começar →",
+    "nav.logoAria": "DNZ Films — início",
+    "nav.langAria": "Mudar idioma para inglês",
+
+    "hero.tag": "Florianópolis, BR — Does Not Zero",
+    "hero.descStrong": "Surf. Atletas. Lutadores. Marcas em movimento.",
+    "hero.descText": "Produção audiovisual com direção, captação e edição — feita pra quem não para.",
+    "hero.ctaStart": "Começar projeto →",
+    "hero.ctaPortfolio": "Ver portfólio ↓",
+    "hero.showreelAria": "Assistir showreel DNZ Films",
+    "hero.showreelAlt": "Showreel DNZ Films",
+    "hero.reelLabel": "Showreel",
+    "hero.reelTitle": "ASSISTA AO TRABALHO.",
+
+    "ticker.items": ["SURF", "DOES NOT ZERO", "ATLETAS", "LUTADORES", "MOTION NEVER STOPS", "SHAPERS", "MARCAS", "DNZ FILMS", "FLORIANÓPOLIS"],
+
+    "problem.label": "O problema",
+    "problem.title1": "O MOMENTO",
+    "problem.title2": "FOI FORTE.",
+    "problem.title3dim": "O VÍDEO",
+    "problem.title4": "NÃO FOI.",
+    "problem.p1": "Você treinou meses pra uma luta de 3 rounds. Pegou a sessão da vida no dia certo. Uma prancha que levou semanas pra shape. Uma marca que representa algo de verdade.",
+    "problem.p2": "<strong>E o vídeo que sobrou não chega perto do que foi viver aquilo.</strong>",
+    "problem.p3": "Câmera tremida. Corte no meio da ação. Áudio ruim, ritmo errado, música que não bate com a cena. O momento foi brutal — o vídeo ficou morno.",
+    "problem.p4": "A DNZ existe pra isso não acontecer de novo: direção no set, corte com intenção, cor e som fechando a cena. <strong>Pra quem assiste sentir o impacto que você sentiu.</strong>",
+    "problem.link": "Ver como trabalhamos ↓",
+
+    "solucao.cards": [
+      { n: "01", icon: "🌊", name: "SURF", text: "Sessões, atletas, shapers e fábricas de prancha. <strong>Cinema na água.</strong> Do drop ao shape, a gente registra com a mesma entrega de quem tá na linha do pico." },
+      { n: "02", icon: "🥊", name: "LUTADORES", text: "Do treino ao octógono. <strong>Camps, pesagens, corner e a luta.</strong> Material que mostra a rotina, a preparação e a explosão — pra sponsor, pra rede e pra história." },
+      { n: "03", icon: "🏃", name: "ATLETAS", text: "Jornadas humanas que merecem ser contadas. <strong>Material pra sponsor. Documentário de temporada.</strong> Conteúdo que mostra o que você fez antes de dizer." },
+      { n: "04", icon: "◎", name: "MARCAS", text: "Marcas em movimento que representam algo de verdade. <strong>Não propaganda. Narrativa.</strong> Vídeo que faz o cliente entender o valor antes do preço." }
+    ],
+
+    "eventos.label": "Cobertura de evento",
+    "eventos.title1": "ENERGIA AO",
+    "eventos.title2": "VIVO.",
+    "eventos.p1": "Show, luta, festa, lançamento ou ativação de marca — a DNZ captura a <strong>energia do ao vivo</strong> e devolve em formato vertical, pronto pra postar enquanto o hype ainda tá quente.",
+    "eventos.p2": "Do público ao palco, do backstage ao aftermovie: imagem com ritmo, cor e intenção. Não é só registrar o evento — é fazer quem não estava lá <strong>sentir que perdeu algo.</strong>",
+    "eventos.list1": "Reels e stories 9:16 pra Instagram e TikTok",
+    "eventos.list2": "Aftermovie e cortes rápidos já no dia seguinte",
+    "eventos.list3": "Cobertura de palco, público, bastidores e ação",
+    "eventos.list4": "Entrega no timing das redes, sem esfriar",
+    "eventos.btn": "Pedir cobertura →",
+    "eventos.videoAria": "Assistir vídeo Social Impact — cobertura de festa",
+    "eventos.videoAlt": "Social Impact — cobertura de festa",
+    "eventos.phoneCap": "SOCIAL IMPACT · REELS",
+
+    "trabalhos.label": "Portfólio",
+    "trabalhos.title1": "TRABALHOS",
+    "trabalhos.title2": "SELECIONADOS.",
+    "trabalhos.watchAria": "Assistir {title}",
+
+    "lutas.label": "Lutas · Feed",
+    "lutas.title1": "DO TREINO",
+    "lutas.title2": "AO COMBATE.",
+    "lutas.sub": "Role e assista. Cada vídeo dá play sozinho — toque no som pra ativar o áudio. Sem sair da página.",
+    "lutas.pause": "Pausar",
+    "lutas.play": "Reproduzir",
+    "lutas.soundOn": "Desativar som",
+    "lutas.soundOff": "Ativar som",
+
+    "galeria.label": "Galeria · Luta",
+    "galeria.title1": "FRAMES DE",
+    "galeria.title2": "COMBATE.",
+    "galeria.sub": "Stills capturados no calor da luta — o instante antes, o impacto e o que fica depois. Clique pra ampliar e navegue frame a frame.",
+    "galeria.altPrefix": "Still de combate — DNZ Films",
+    "galeria.expandAria": "Ampliar imagem {i} de {total}",
+    "galeria.closeAria": "Fechar galeria",
+    "galeria.prevAria": "Imagem anterior",
+    "galeria.nextAria": "Próxima imagem",
+    "galeria.dialogAria": "Galeria de imagens",
+
+    "cases.label": "Cases reais",
+    "cases.title1": "PROVA",
+    "cases.title2": "REAL.",
+    "cases.c1type": "Documentário · Gabriel Duran · Triatleta Extremo",
+    "cases.c1quote": "\"Gostei muito da forma como você registrou a La Mission. Não só pela imagem, mas pela sensibilidade. Dá pra sentir alma no que você faz.\"",
+    "cases.c1cite": "— Gabriel Duran, Triatleta Extremo & Ultrarunner",
+    "cases.c1lbl": "Does Not Zero",
+    "cases.c2type": "Johnny · Shaper · Fábrica de pranchas · Florianópolis",
+    "cases.c2quote": "\"Sem reajustes. Sem nada. Ficou animal. Animal demais. Parabéns, irmão.\"",
+    "cases.c2cite": "— Johnny, JP Surfboards",
+    "cases.c2lbl": "Sem reajustes",
+    "cases.c2aria": "Assistir JP Surfboards",
+    "cases.c3name": "SEU PROJETO",
+    "cases.c3type": "Em aberto · Surf / Atleta / Marca",
+    "cases.c3quote": "A câmera não para. Seu projeto pode ser o próximo.",
+    "cases.c3btn": "Começar →",
+
+    "sobre.label": "Direção",
+    "sobre.title1": "QUEM ESTÁ",
+    "sobre.title2": "POR TRÁS.",
+    "sobre.p1": "<strong>Gabriel d. Pimentel</strong> — diretor, editor e fundador da DNZ Films, em Florianópolis. Começou filmando o que vive: surf, esporte e gente em movimento. <strong>Does Not Zero</strong> não é só um nome — é o compromisso de que nada sai da mesa sem intenção, ritmo e alma em cada frame.",
+    "sobre.p2": "Da line-up ao octógono, da fábrica de pranchas à marca que quer narrativa de verdade: a DNZ une <strong>olhar cinematográfico</strong> com a agilidade de quem vive o audiovisual na prática.",
+    "sobre.p3": "Aqui não se terceiriza o cuidado. <strong>Quem dirige é quem edita, quem entrega é quem se importa</strong> — do primeiro corte à cor final.",
+    "sobre.cap1t": "Direção",
+    "sobre.cap1d": "Conceito, ritmo e narrativa visual",
+    "sobre.cap2t": "Captação",
+    "sobre.cap2d": "Surf, luta, esporte, lifestyle e marca",
+    "sobre.cap3t": "Pós",
+    "sobre.cap3d": "Edição, cor, som e cortes pra cada formato",
+    "sobre.photoAlt": "Gabriel d. Pimentel — diretor da DNZ Films",
+
+    "pacotes.label": "Pacotes",
+    "pacotes.title1": "ESCOLHA",
+    "pacotes.title2": "SEU FORMATO.",
+    "pacotes.note": "Três formatos, sem complicação. Não sabe qual escolher? O briefing em 4 passos te ajuda a definir.",
+    "pacotes.loop.n": "01 / MENSAL",
+    "pacotes.loop.tag": "Sua marca postando sempre — sem quebrar a cabeça",
+    "pacotes.loop.list1": "4 vídeos/mês (reels 9:16, cortes ou teaser)",
+    "pacotes.loop.list2": "Pauta e ideias pensadas junto com você",
+    "pacotes.loop.list3": "Color grading assinatura DNZ + sound design",
+    "pacotes.loop.list4": "Legendas e captions prontos pra postar",
+    "pacotes.loop.list5": "Trilha licenciada — sem dor de cabeça com direitos",
+    "pacotes.loop.list6": "Até 7 dias por vídeo · 1 revisão cada",
+    "pacotes.loop.list7": "Calendário de postagem sugerido",
+    "pacotes.loop.list8": "Ideal pra: atletas, lutadores, surfistas e shapers",
+    "pacotes.loop.btn": "Quero o LOOP →",
+    "pacotes.motion.n": "02 / PROJETO",
+    "pacotes.motion.tag": "Um filme que vira sua vitrine + cortes pra girar",
+    "pacotes.motion.list1": "1 filme principal (até 3 min) com direção e roteiro",
+    "pacotes.motion.list2": "3 cortes verticais pra redes sociais",
+    "pacotes.motion.list3": "Captação em campo (treino, luta, sessão, evento)",
+    "pacotes.motion.list4": "Filmagem + edição completa",
+    "pacotes.motion.list5": "Color grading cinematográfico + sound design",
+    "pacotes.motion.list6": "Até 15 dias · 2 revisões inclusas",
+    "pacotes.motion.list7": "Arquivos prontos pra site, pitch e redes",
+    "pacotes.motion.list8": "Ideal pra: marcas, atletas, lutadores e lançamentos",
+    "pacotes.motion.btn": "Quero o MOTION →",
+    "pacotes.zero.n": "03 / PREMIUM",
+    "pacotes.zero.tag": "Quando o projeto pede cinema de verdade",
+    "pacotes.zero.list1": "Escopo desenhado do zero, junto com você",
+    "pacotes.zero.list2": "Documentário de temporada, campanha ou série",
+    "pacotes.zero.list3": "Direção criativa + roteiro + pré-produção",
+    "pacotes.zero.list4": "Captação multi-dia e múltiplas locações",
+    "pacotes.zero.list5": "Múltiplos vídeos e formatos (16:9, 9:16, 1:1)",
+    "pacotes.zero.list6": "Color grading e sound design premium",
+    "pacotes.zero.list7": "Acompanhamento próximo do início à entrega",
+    "pacotes.zero.list8": "Ideal pra: projetos grandes, marcas e atletas premium",
+    "pacotes.zero.btn": "Falar sobre ZERO →",
+
+    "processo.label": "Como funciona",
+    "processo.title1": "4 PASSOS.",
+    "processo.title2": "SEM ENROLAÇÃO.",
+    "processo.steps": [
+      { bg: "01", icon: "💬", t: "BRIEFING", d: "Responde 4 perguntas rápidas aqui embaixo. Entendo o projeto, o prazo e o objetivo do vídeo — sem reunião só pra marcar reunião." },
+      { bg: "02", icon: "📋", t: "PROPOSTA", d: "Em até 24h volta uma proposta clara: escopo, prazo e valor na mesa. Sem letra miúda, sem surpresa depois." },
+      { bg: "03", icon: "🎬", t: "PRODUÇÃO", d: "Você filma ou a gente filma junto. O material entra em edição — corte, cor, som e ritmo. Cada frame com propósito." },
+      { bg: "04", icon: "✅", t: "ENTREGA", d: "Vídeo pronto no prazo combinado, com revisão inclusa. Sai daqui pronto pra postar, apresentar ou publicar." }
+    ],
+
+    "form.label": "Briefing",
+    "form.title1": "4 PERGUNTAS.",
+    "form.title2": "PROPOSTA EM 24H.",
+    "form.intro": "Sem call desnecessária, sem formulário chato. Responde 4 perguntas rápidas e sua mensagem cai organizada direto no WhatsApp da DNZ — a proposta personalizada volta em até 24h.",
+    "form.step1.question": "Qual é o seu <em>projeto?</em>",
+    "form.step1.hint": "ESCOLHA A OPÇÃO QUE MAIS SE ENCAIXA",
+    "form.step1.options": [
+      ["Sessão de surf / edição", "Sessão de surf — edição cinematográfica"],
+      ["Conteúdo mensal para redes", "Conteúdo mensal para redes sociais"],
+      ["Projeto de atleta / documentário", "Projeto de atleta — documentário ou sponsor"],
+      ["Shaper / fábrica de prancha", "Shaper ou fábrica — processo e bastidores"],
+      ["Vídeo para marca / negócio", "Vídeo para marca ou negócio"],
+      ["Cobertura de evento", "Cobertura de evento ou ativação"],
+      ["Reel ou vídeo único", "Reel ou vídeo único para redes"],
+      ["Campanha / lançamento", "Campanha ou lançamento de produto"],
+      ["Documentário", "Documentário ou projeto longo"],
+      ["Outro projeto", "Outro — explico melhor no WhatsApp"]
+    ],
+    "form.step2.question": "O que você <em>precisa?</em>",
+    "form.step2.hint": "SERVIÇO E FORMATO DE INTERESSE",
+    "form.step2.options": [
+      ["Só edição — já tenho material", "Só edição — já tenho material filmado"],
+      ["Só filmagem", "Só filmagem / captação"],
+      ["Filmagem + edição completa", "Filmagem + edição completa"],
+      ["Direção criativa + produção", "Direção criativa + produção"],
+      ["Ainda não sei — preciso de orientação", "Ainda não sei — preciso de orientação"]
+    ],
+    "form.step2.hint2": "PACOTE DE INTERESSE (OPCIONAL)",
+    "form.step2.options2": [
+      ["LOOP — conteúdo mensal", "LOOP — conteúdo mensal"],
+      ["MOTION — projeto fechado", "MOTION — projeto fechado"],
+      ["ZERO — sob medida", "ZERO — produção sob medida"],
+      ["Ainda não sei o formato", "Ainda não sei o formato"]
+    ],
+    "form.step3.question": "Qual é o seu <em>prazo?</em>",
+    "form.step3.hint": "QUANDO VOCÊ PRECISA DO VÍDEO",
+    "form.step3.options": [
+      ["Urgente (menos de 1 semana)", "Urgente — menos de 1 semana"],
+      ["Próximas 2 semanas", "Próximas 2 semanas"],
+      ["Este mês", "Este mês"],
+      ["1 a 2 meses", "De 1 a 2 meses"],
+      ["Sem prazo definido", "Sem prazo — quero planejar com calma"]
+    ],
+    "form.step4.question": "Seu <em>contato.</em>",
+    "form.step4.hint": "A GENTE RESPONDE EM ATÉ 24H",
+    "form.step4.nameLabel": "Seu nome",
+    "form.step4.namePlaceholder": "Como você se chama?",
+    "form.step4.wppLabel": "WhatsApp",
+    "form.step4.wppPlaceholder": "(48) 99999-9999",
+    "form.step4.igLabel": "Instagram (opcional)",
+    "form.step4.igPlaceholder": "@seuinstagram",
+    "form.step4.msgLabel": "Contexto extra (opcional)",
+    "form.step4.msgPlaceholder": "Marca, referência, local, onde o vídeo vai ser publicado...",
+    "form.next": "Próximo →",
+    "form.back": "← Voltar",
+    "form.submit": "Enviar via WhatsApp →",
+    "form.success.title": "PRONTO.",
+    "form.success.text": "Sua mensagem foi montada com suas respostas.<br />Se o WhatsApp não abriu, use o botão abaixo.",
+    "form.success.btn": "Abrir WhatsApp",
+
+    "cta.over": "Pronto pra não parar?",
+    "cta.title": "MOTION<br />NEVER<br />STOPS.",
+    "cta.btnStart": "Começar projeto →",
+    "cta.btnInstagram": "@doesnotzero no Instagram",
+
+    "footer.tag": "DOES NOT ZERO — FLORIANÓPOLIS, BR",
+    "footer.blurb": "Produção audiovisual pra surf, luta, atletas e marcas em movimento. Direção, captação e edição — feito por quem vive o movimento.",
+    "footer.trabalhos": "Trabalhos",
+    "footer.lutas": "Lutas",
+    "footer.galeria": "Galeria",
+    "footer.eventos": "Eventos",
+    "footer.cases": "Cases",
+    "footer.sobre": "Sobre",
+    "footer.pacotes": "Pacotes",
+    "footer.briefing": "Briefing",
+    "footer.login": "Login",
+    "footer.copyPrefix": "©",
+    "footer.copySuffix": "DNZ Films — Does Not Zero. Todos os direitos reservados.",
+    "footer.creditPrefix": "Site desenvolvido por ",
+    "footer.logoAria": "DNZ Films",
+    "footer.langLabel": "Idioma",
+
+    "float.wppAria": "Falar no WhatsApp",
+    "float.wppTip": "WHATSAPP",
+    "float.igAria": "Instagram @doesnotzero",
+    "float.igTip": "@DOESNOTZERO",
+    "float.wppMsg": "Olá, DNZ! Vim pelo site e quero saber mais sobre um projeto.",
+
+    "lightbox.fallbackTitle": "Vídeo DNZ Films",
+    "lightbox.fallbackCategory": "Portfólio",
+    "lightbox.showreelTitle": "Showreel DNZ Films",
+    "lightbox.showreelCategory": "Portfólio",
+    "lightbox.socialImpactTitle": "Social Impact",
+    "lightbox.socialImpactCategory": "Cobertura de evento · Reels 9:16",
+    "lightbox.closeAria": "Fechar vídeo",
+    "lightbox.dialogAria": "Player de vídeo",
+
+    "categories.Esporte": "Esporte",
+    "categories.Surf film": "Surf film",
+    "categories.Marca · Shaper": "Marca · Shaper",
+    "categories.Luta · Atleta": "Luta · Atleta",
+    "fightTitles.Combate 01": "Combate 01",
+    "fightTitles.Combate 02": "Combate 02",
+    "fightTitles.Combate 03": "Combate 03",
+
+    "wpp.header": "🎬 *NOVO BRIEFING — DNZ FILMS*",
+    "wpp.greeting": "Olá, DNZ! Me chamo *{nome}* e vim pelo site pedir um orçamento.",
+    "wpp.projectHeader": "*— O PROJETO —*",
+    "wpp.type": "📌 Tipo:",
+    "wpp.service": "🎥 Serviço:",
+    "wpp.format": "📦 Formato:",
+    "wpp.deadline": "⏱️ Prazo:",
+    "wpp.contactHeader": "*— CONTATO —*",
+    "wpp.whatsapp": "📱 WhatsApp:",
+    "wpp.instagram": "📷 Instagram:",
+    "wpp.contextHeader": "*— CONTEXTO —*",
+    "wpp.contextLabel": "📝",
+    "wpp.closing": "Podemos conversar sobre os próximos passos? 🤝",
+
+    "login.status.loading": "Verificando",
+    "login.status.connected": "Conta conectada",
+    "login.status.private": "Acesso privado",
+    "login.kicker": "DNZ FILMS",
+    "login.title": "Area reservada.",
+    "login.desc": "Acesso interno para revisar clientes, propostas, projetos, documentos, financeiro e Video Review da Does Not Zero. Entre apenas com a conta autorizada.",
+    "login.deniedTitle": "Conta sem permissao",
+    "login.deniedText": "{email} nao esta liberada para este workspace.",
+    "login.deniedFallback": "Esta conta",
+    "login.allowedTitle": "Acesso liberado",
+    "login.openWorkspace": "Abrir workspace",
+    "login.logout": "Sair desta conta",
+    "login.enter": "Entrar",
+    "login.backHome": "Voltar para o site",
+    "login.checkingSession": "Verificando sessao...",
+    "login.brand": "Does Not Zero / DNZ Films",
+    "login.logoAria": "Voltar para Does Not Zero"
+  },
+  en: {
+    "nav.trabalhos": "Work",
+    "nav.lutas": "Fights",
+    "nav.galeria": "Gallery",
+    "nav.cases": "Cases",
+    "nav.sobre": "About",
+    "nav.pacotes": "Packages",
+    "nav.login": "Login",
+    "nav.cta": "Get started →",
+    "nav.logoAria": "DNZ Films — home",
+    "nav.langAria": "Switch language to Portuguese",
+
+    "hero.tag": "Florianópolis, Brazil — Does Not Zero",
+    "hero.descStrong": "Surfers. Athletes. Fighters. Brands in motion.",
+    "hero.descText": "Film production with direction, footage and edit — made for those who never stop.",
+    "hero.ctaStart": "Start your project →",
+    "hero.ctaPortfolio": "See our work ↓",
+    "hero.showreelAria": "Watch the DNZ Films showreel",
+    "hero.showreelAlt": "DNZ Films showreel",
+    "hero.reelLabel": "Showreel",
+    "hero.reelTitle": "WATCH THE WORK.",
+
+    "ticker.items": ["SURF", "DOES NOT ZERO", "ATHLETES", "FIGHTERS", "MOTION NEVER STOPS", "SHAPERS", "BRANDS", "DNZ FILMS", "FLORIANÓPOLIS"],
+
+    "problem.label": "The problem",
+    "problem.title1": "THE MOMENT",
+    "problem.title2": "WAS STRONG.",
+    "problem.title3dim": "THE VIDEO",
+    "problem.title4": "WASN'T.",
+    "problem.p1": "You trained for months for a 3 round fight. You caught the session of a lifetime on the right day. A board that took weeks to shape. A brand that stands for something real.",
+    "problem.p2": "<strong>And the video that came out of it doesn't come close to what it felt like living it.</strong>",
+    "problem.p3": "Shaky camera. Cuts in the middle of the action. Bad audio, wrong pacing, music that doesn't match the scene. The moment was brutal — the video fell flat.",
+    "problem.p4": "DNZ exists so that doesn't happen again: direction on set, editing with intention, color and sound locking the scene in. <strong>So whoever's watching feels the impact you felt.</strong>",
+    "problem.link": "See how we work ↓",
+
+    "solucao.cards": [
+      { n: "01", icon: "🌊", name: "SURF", text: "Sessions, athletes, shapers and surfboard factories. <strong>Cinema in the water.</strong> From the drop to the shape, we deliver with the same commitment as those on the peak." },
+      { n: "02", icon: "🥊", name: "FIGHTERS", text: "From training to the octagon. <strong>Camps, weigh-ins, corner work and the fight.</strong> Footage that shows the routine, the prep and the explosion — for sponsors, socials and the story." },
+      { n: "03", icon: "🏃", name: "ATHLETES", text: "Human journeys that deserve to be told. <strong>Sponsor reels. Season documentaries.</strong> Content that shows what you did before you say it." },
+      { n: "04", icon: "◎", name: "BRANDS", text: "Brands in motion that stand for something real. <strong>Not advertising. Storytelling.</strong> Video that gets clients to understand the value before the price." }
+    ],
+
+    "eventos.label": "Event coverage",
+    "eventos.title1": "LIVE",
+    "eventos.title2": "ENERGY.",
+    "eventos.p1": "Shows, fights, parties, launches or brand activations — DNZ captures <strong>live energy</strong> and delivers it in vertical format, ready to post while the hype is still hot.",
+    "eventos.p2": "From the crowd to the stage, from backstage to the aftermovie: footage with rhythm, color and intention. It's not just documenting the event — it's making the people who weren't there <strong>feel like they missed something.</strong>",
+    "eventos.list1": "9:16 reels and stories for Instagram and TikTok",
+    "eventos.list2": "Aftermovie and quick cuts by the next day",
+    "eventos.list3": "Coverage of stage, crowd, backstage and action",
+    "eventos.list4": "Delivered on social media's timing, while it's still hot",
+    "eventos.btn": "Request coverage →",
+    "eventos.videoAria": "Watch the Social Impact video — party coverage",
+    "eventos.videoAlt": "Social Impact — party coverage",
+    "eventos.phoneCap": "SOCIAL IMPACT · REELS",
+
+    "trabalhos.label": "Portfolio",
+    "trabalhos.title1": "SELECTED",
+    "trabalhos.title2": "WORK.",
+    "trabalhos.watchAria": "Watch {title}",
+
+    "lutas.label": "Fights · Feed",
+    "lutas.title1": "FROM TRAINING",
+    "lutas.title2": "TO THE FIGHT.",
+    "lutas.sub": "Scroll and watch. Every video plays on its own — tap the sound icon to turn on audio. No need to leave the page.",
+    "lutas.pause": "Pause",
+    "lutas.play": "Play",
+    "lutas.soundOn": "Mute sound",
+    "lutas.soundOff": "Unmute sound",
+
+    "galeria.label": "Gallery · Fights",
+    "galeria.title1": "FRAMES OF",
+    "galeria.title2": "COMBAT.",
+    "galeria.sub": "Stills captured in the heat of the fight — the instant before, the impact and what's left after. Click to zoom and browse frame by frame.",
+    "galeria.altPrefix": "Fight still — DNZ Films",
+    "galeria.expandAria": "Zoom image {i} of {total}",
+    "galeria.closeAria": "Close gallery",
+    "galeria.prevAria": "Previous image",
+    "galeria.nextAria": "Next image",
+    "galeria.dialogAria": "Image gallery",
+
+    "cases.label": "Real cases",
+    "cases.title1": "PROOF IT",
+    "cases.title2": "WORKS.",
+    "cases.c1type": "Documentary · Gabriel Duran · Extreme Triathlete",
+    "cases.c1quote": "\"I really loved the way you captured La Mission. Not just the visuals, but the sensitivity. You can feel the soul in what you do.\"",
+    "cases.c1cite": "— Gabriel Duran, Extreme Triathlete & Ultrarunner",
+    "cases.c1lbl": "Does Not Zero",
+    "cases.c2type": "Johnny · Shaper · Surfboard factory · Florianópolis",
+    "cases.c2quote": "\"No adjustments needed. Nothing. It came out incredible. Way too good. Congrats, brother.\"",
+    "cases.c2cite": "— Johnny, JP Surfboards",
+    "cases.c2lbl": "Zero revisions needed",
+    "cases.c2aria": "Watch JP Surfboards",
+    "cases.c3name": "YOUR PROJECT",
+    "cases.c3type": "Open slot · Surf / Athlete / Brand",
+    "cases.c3quote": "The camera doesn't stop. Your project could be next.",
+    "cases.c3btn": "Get started →",
+
+    "sobre.label": "Direction",
+    "sobre.title1": "WHO'S BEHIND",
+    "sobre.title2": "THE LENS.",
+    "sobre.p1": "<strong>Gabriel d. Pimentel</strong> — director, editor and founder of DNZ Films, based in Florianópolis. He started out filming what he lives: surf, sport and people in motion. <strong>Does Not Zero</strong> isn't just a name — it's the commitment that nothing leaves the table without intention, rhythm and soul in every frame.",
+    "sobre.p2": "From the lineup to the octagon, from the surfboard factory to the brand that wants real storytelling: DNZ blends a <strong>cinematic eye</strong> with the agility of someone who lives film production in practice.",
+    "sobre.p3": "Nothing here gets outsourced. <strong>Whoever directs also edits, whoever delivers actually cares</strong> — from the first cut to the final color.",
+    "sobre.cap1t": "Direction",
+    "sobre.cap1d": "Concept, pacing and visual storytelling",
+    "sobre.cap2t": "Footage",
+    "sobre.cap2d": "Surf, fights, sports, lifestyle and brands",
+    "sobre.cap3t": "Post",
+    "sobre.cap3d": "Editing, color, sound and cuts for every format",
+    "sobre.photoAlt": "Gabriel d. Pimentel — director at DNZ Films",
+
+    "pacotes.label": "Packages",
+    "pacotes.title1": "CHOOSE",
+    "pacotes.title2": "YOUR FORMAT.",
+    "pacotes.note": "Three formats, no complications. Not sure which to pick? The 4 step briefing below helps you decide.",
+    "pacotes.loop.n": "01 / MONTHLY",
+    "pacotes.loop.tag": "Your brand posting consistently — no headaches",
+    "pacotes.loop.list1": "4 videos/month (9:16 reels, cutdowns or teasers)",
+    "pacotes.loop.list2": "Content ideas planned together with you",
+    "pacotes.loop.list3": "DNZ signature color grading + sound design",
+    "pacotes.loop.list4": "Captions ready to post",
+    "pacotes.loop.list5": "Licensed music — no rights headaches",
+    "pacotes.loop.list6": "Up to 7 days per video · 1 revision each",
+    "pacotes.loop.list7": "Suggested posting calendar",
+    "pacotes.loop.list8": "Great for: athletes, fighters, surfers and shapers",
+    "pacotes.loop.btn": "I want LOOP →",
+    "pacotes.motion.n": "02 / PROJECT",
+    "pacotes.motion.tag": "A film that becomes your showcase + cutdowns to spread it",
+    "pacotes.motion.list1": "1 main film (up to 3 min) with direction and script",
+    "pacotes.motion.list2": "3 vertical cutdowns for social media",
+    "pacotes.motion.list3": "On-location shooting (training, fight, session, event)",
+    "pacotes.motion.list4": "Full filming + editing",
+    "pacotes.motion.list5": "Cinematic color grading + sound design",
+    "pacotes.motion.list6": "Up to 15 days · 2 revisions included",
+    "pacotes.motion.list7": "Files ready for your site, pitch decks and socials",
+    "pacotes.motion.list8": "Great for: brands, athletes, fighters and launches",
+    "pacotes.motion.btn": "I want MOTION →",
+    "pacotes.zero.n": "03 / PREMIUM",
+    "pacotes.zero.tag": "When the project calls for real cinema",
+    "pacotes.zero.list1": "Scope designed from scratch, together with you",
+    "pacotes.zero.list2": "Season documentary, campaign or series",
+    "pacotes.zero.list3": "Creative direction + script + pre-production",
+    "pacotes.zero.list4": "Multi-day shoots across multiple locations",
+    "pacotes.zero.list5": "Multiple videos and formats (16:9, 9:16, 1:1)",
+    "pacotes.zero.list6": "Premium color grading and sound design",
+    "pacotes.zero.list7": "Close support from kickoff to delivery",
+    "pacotes.zero.list8": "Great for: large-scale projects, brands and premium athletes",
+    "pacotes.zero.btn": "Let's talk ZERO →",
+
+    "processo.label": "How it works",
+    "processo.title1": "4 STEPS.",
+    "processo.title2": "NO RUNAROUND.",
+    "processo.steps": [
+      { bg: "01", icon: "💬", t: "BRIEFING", d: "Answer 4 quick questions below. We get the project, the deadline and the goal of the video — no meeting just to schedule a meeting." },
+      { bg: "02", icon: "📋", t: "PROPOSAL", d: "Within 24h you get a clear proposal: scope, timeline and price on the table. No fine print, no surprises later." },
+      { bg: "03", icon: "🎬", t: "PRODUCTION", d: "You film it, or we film it together. Footage moves into editing — cut, color, sound and pacing. Every frame with purpose." },
+      { bg: "04", icon: "✅", t: "DELIVERY", d: "Video delivered on the agreed timeline, with a revision included. Ready to post, present or publish." }
+    ],
+
+    "form.label": "Briefing",
+    "form.title1": "4 QUESTIONS.",
+    "form.title2": "PROPOSAL IN 24H.",
+    "form.intro": "No unnecessary calls, no annoying forms. Answer 4 quick questions and your message lands organized straight into DNZ's WhatsApp — your personalized proposal comes back within 24h.",
+    "form.step1.question": "What's your <em>project?</em>",
+    "form.step1.hint": "PICK THE OPTION THAT FITS BEST",
+    "form.step1.options": [
+      ["Surf session / edit", "Surf session — cinematic edit"],
+      ["Monthly social content", "Monthly content for social media"],
+      ["Athlete project / documentary", "Athlete project — documentary or sponsor reel"],
+      ["Shaper / surfboard factory", "Shaper or factory — process and behind the scenes"],
+      ["Video for a brand / business", "Video for a brand or business"],
+      ["Event coverage", "Event coverage or activation"],
+      ["Single reel or video", "Single reel or video for social media"],
+      ["Campaign / launch", "Product campaign or launch"],
+      ["Documentary", "Documentary or long-form project"],
+      ["Other project", "Other — I'll explain more on WhatsApp"]
+    ],
+    "form.step2.question": "What do you <em>need?</em>",
+    "form.step2.hint": "SERVICE AND FORMAT OF INTEREST",
+    "form.step2.options": [
+      ["Editing only — I already have footage", "Editing only — I already have footage"],
+      ["Filming only", "Filming / footage only"],
+      ["Filming + full editing", "Filming + full editing"],
+      ["Creative direction + production", "Creative direction + production"],
+      ["Not sure yet — need guidance", "Not sure yet — need guidance"]
+    ],
+    "form.step2.hint2": "PACKAGE OF INTEREST (OPTIONAL)",
+    "form.step2.options2": [
+      ["LOOP — monthly content", "LOOP — monthly content"],
+      ["MOTION — one-off project", "MOTION — one-off project"],
+      ["ZERO — custom made", "ZERO — custom production"],
+      ["Not sure about the format yet", "Not sure about the format yet"]
+    ],
+    "form.step3.question": "What's your <em>deadline?</em>",
+    "form.step3.hint": "WHEN YOU NEED THE VIDEO",
+    "form.step3.options": [
+      ["Urgent (less than 1 week)", "Urgent — less than 1 week"],
+      ["Next 2 weeks", "Next 2 weeks"],
+      ["This month", "This month"],
+      ["1 to 2 months", "1 to 2 months"],
+      ["No fixed deadline", "No deadline — I want to plan carefully"]
+    ],
+    "form.step4.question": "Your <em>contact.</em>",
+    "form.step4.hint": "WE REPLY WITHIN 24H",
+    "form.step4.nameLabel": "Your name",
+    "form.step4.namePlaceholder": "What's your name?",
+    "form.step4.wppLabel": "WhatsApp",
+    "form.step4.wppPlaceholder": "(48) 99999-9999",
+    "form.step4.igLabel": "Instagram (optional)",
+    "form.step4.igPlaceholder": "@yourinstagram",
+    "form.step4.msgLabel": "Extra context (optional)",
+    "form.step4.msgPlaceholder": "Brand, reference, location, where the video will be published...",
+    "form.next": "Next →",
+    "form.back": "← Back",
+    "form.submit": "Send via WhatsApp →",
+    "form.success.title": "ALL SET.",
+    "form.success.text": "Your message was put together from your answers.<br />If WhatsApp didn't open, use the button below.",
+    "form.success.btn": "Open WhatsApp",
+
+    "cta.over": "Ready to never stop?",
+    "cta.title": "MOTION<br />NEVER<br />STOPS.",
+    "cta.btnStart": "Start your project →",
+    "cta.btnInstagram": "@doesnotzero on Instagram",
+
+    "footer.tag": "DOES NOT ZERO — FLORIANÓPOLIS, BRAZIL",
+    "footer.blurb": "Film production for surf, fights, athletes and brands in motion. Direction, footage and editing — made by people who live the movement.",
+    "footer.trabalhos": "Work",
+    "footer.lutas": "Fights",
+    "footer.galeria": "Gallery",
+    "footer.eventos": "Events",
+    "footer.cases": "Cases",
+    "footer.sobre": "About",
+    "footer.pacotes": "Packages",
+    "footer.briefing": "Briefing",
+    "footer.login": "Login",
+    "footer.copyPrefix": "©",
+    "footer.copySuffix": "DNZ Films — Does Not Zero. All rights reserved.",
+    "footer.creditPrefix": "Website by ",
+    "footer.logoAria": "DNZ Films",
+    "footer.langLabel": "Language",
+
+    "float.wppAria": "Chat on WhatsApp",
+    "float.wppTip": "WHATSAPP",
+    "float.igAria": "Instagram @doesnotzero",
+    "float.igTip": "@DOESNOTZERO",
+    "float.wppMsg": "Hi DNZ! I found you through the website and want to know more about a project.",
+
+    "lightbox.fallbackTitle": "DNZ Films Video",
+    "lightbox.fallbackCategory": "Portfolio",
+    "lightbox.showreelTitle": "DNZ Films Showreel",
+    "lightbox.showreelCategory": "Portfolio",
+    "lightbox.socialImpactTitle": "Social Impact",
+    "lightbox.socialImpactCategory": "Event coverage · 9:16 Reels",
+    "lightbox.closeAria": "Close video",
+    "lightbox.dialogAria": "Video player",
+
+    "categories.Esporte": "Sports",
+    "categories.Surf film": "Surf Film",
+    "categories.Marca · Shaper": "Brand · Shaper",
+    "categories.Luta · Atleta": "Fight · Athlete",
+    "fightTitles.Combate 01": "Fight 01",
+    "fightTitles.Combate 02": "Fight 02",
+    "fightTitles.Combate 03": "Fight 03",
+
+    "wpp.header": "🎬 *NEW BRIEFING — DNZ FILMS*",
+    "wpp.greeting": "Hi DNZ! My name is *{nome}* and I came through the website to ask for a quote.",
+    "wpp.projectHeader": "*— THE PROJECT —*",
+    "wpp.type": "📌 Type:",
+    "wpp.service": "🎥 Service:",
+    "wpp.format": "📦 Format:",
+    "wpp.deadline": "⏱️ Deadline:",
+    "wpp.contactHeader": "*— CONTACT —*",
+    "wpp.whatsapp": "📱 WhatsApp:",
+    "wpp.instagram": "📷 Instagram:",
+    "wpp.contextHeader": "*— CONTEXT —*",
+    "wpp.contextLabel": "📝",
+    "wpp.closing": "Can we talk about next steps? 🤝",
+
+    "login.status.loading": "Checking",
+    "login.status.connected": "Account connected",
+    "login.status.private": "Private access",
+    "login.kicker": "DNZ FILMS",
+    "login.title": "Restricted area.",
+    "login.desc": "Internal access to review clients, proposals, projects, documents, finances and Video Review at Does Not Zero. Sign in only with an authorized account.",
+    "login.deniedTitle": "Account not authorized",
+    "login.deniedText": "{email} is not authorized for this workspace.",
+    "login.deniedFallback": "This account",
+    "login.allowedTitle": "Access granted",
+    "login.openWorkspace": "Open workspace",
+    "login.logout": "Sign out",
+    "login.enter": "Sign in",
+    "login.backHome": "Back to the website",
+    "login.checkingSession": "Checking session...",
+    "login.brand": "Does Not Zero / DNZ Films",
+    "login.logoAria": "Back to Does Not Zero"
+  }
+};
+
+const getInitialLang = () => {
+  if (typeof window === "undefined") return "pt";
+  try {
+    const stored = window.localStorage.getItem(LANG_STORAGE_KEY);
+    if (stored === "pt" || stored === "en") return stored;
+  } catch (e) { /* localStorage unavailable */ }
+  const nav = typeof navigator !== "undefined" ? navigator.language || "" : "";
+  return nav.toLowerCase().startsWith("en") ? "en" : "pt";
+};
+
+const translate = (lang, key, vars) => {
+  const dict = translations[lang] || translations.pt;
+  let value = dict[key];
+  if (value === undefined) value = translations.pt[key];
+  if (value === undefined) return key;
+  if (typeof value === "string" && vars) {
+    Object.keys(vars).forEach(k => {
+      value = value.replace(new RegExp(`\\{${k}\\}`, "g"), vars[k]);
+    });
+  }
+  return value;
+};
+
 const portfolioItems = [
   { title: "Black Venom", category: "Esporte", type: "vimeo", vimeoId: "1177779611", thumb: "/dnz-assets/1177779611.webp", featured: true },
   { title: "But Definitely", category: "Surf film", type: "vimeo", vimeoId: "1177775878", thumb: "/dnz-assets/1177775878.webp" },
@@ -42,7 +667,7 @@ const SOUND_ON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke
 const SOUND_OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="m22 9-6 6"/><path d="m16 9 6 6"/></svg>';
 const PAUSE_SVG = '<svg viewBox="0 0 24 24" fill="white"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>';
 
-const FeedVideo = ({ item }) => {
+const FeedVideo = ({ item, t }) => {
   const videoRef = useRef(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
@@ -102,7 +727,7 @@ const FeedVideo = ({ item }) => {
         role="button"
         tabIndex={0}
         onKeyDown={e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); togglePlay(); } }}
-        aria-label={`${playing ? "Pausar" : "Reproduzir"} ${item.title}`}
+        aria-label={`${playing ? t("lutas.pause") : t("lutas.play")} ${t(`fightTitles.${item.title}`)}`}
       >
         <video
           ref={videoRef}
@@ -114,65 +739,66 @@ const FeedVideo = ({ item }) => {
           preload="metadata"
         />
         {!playing && <span className="reel-center-play" aria-hidden="true" dangerouslySetInnerHTML={{ __html: PLAY_SVG }} />}
-        <button type="button" className="reel-sound" onClick={toggleMute} aria-label={muted ? "Ativar som" : "Desativar som"} dangerouslySetInnerHTML={{ __html: muted ? SOUND_OFF_SVG : SOUND_ON_SVG }} />
+        <button type="button" className="reel-sound" onClick={toggleMute} aria-label={muted ? t("lutas.soundOff") : t("lutas.soundOn")} dangerouslySetInnerHTML={{ __html: muted ? SOUND_OFF_SVG : SOUND_ON_SVG }} />
         <div className="reel-meta">
-          <span className="reel-cat">{item.category}</span>
-          <span className="reel-name">{item.title}</span>
+          <span className="reel-cat">{t(`categories.${item.category}`)}</span>
+          <span className="reel-name">{t(`fightTitles.${item.title}`)}</span>
         </div>
       </div>
     </div>
   );
 };
 
-const LoginPage = ({ session, isAdmin, cloudStatus, onLogin, onLogout, onHome }) => (
-  <main id="main-content" className="dnz-login-page">
-    <div className="dnz-login-bg" />
-    <section className="dnz-login-card">
-      <div className="dnz-login-top">
-        <button type="button" className="dnz-login-logo" onClick={onHome} aria-label="Voltar para Does Not Zero">
-          <img src={LOGO_SRC} alt="DNZ Films" />
-        </button>
-        <span>{cloudStatus === "loading" ? "Verificando" : session?.user ? "Conta conectada" : "Acesso privado"}</span>
-      </div>
-      <div className="dnz-login-kicker">DNZ FILMS</div>
-      <h1>Area reservada.</h1>
-      <p>
-        Acesso interno para revisar clientes, propostas, projetos, documentos, financeiro e Video Review da Does Not Zero.
-        Entre apenas com a conta autorizada.
-      </p>
-      {session?.user && !isAdmin && (
-        <div className="dnz-denied">
-          <strong>Conta sem permissao</strong>
-          <span>{session.user.email || "Esta conta"} nao esta liberada para este workspace.</span>
+const LoginPage = ({ session, isAdmin, cloudStatus, onLogin, onLogout, onHome }) => {
+  const [lang] = useState(getInitialLang);
+  const t = (key, vars) => translate(lang, key, vars);
+
+  return (
+    <main id="main-content" className="dnz-login-page">
+      <div className="dnz-login-bg" />
+      <section className="dnz-login-card">
+        <div className="dnz-login-top">
+          <button type="button" className="dnz-login-logo" onClick={onHome} aria-label={t("login.logoAria")}>
+            <img src={LOGO_SRC} alt="DNZ Films" />
+          </button>
+          <span>{cloudStatus === "loading" ? t("login.status.loading") : session?.user ? t("login.status.connected") : t("login.status.private")}</span>
         </div>
-      )}
-      {session?.user && isAdmin && (
-        <div className="dnz-allowed">
-          <strong>Acesso liberado</strong>
-          <span>{session.user.email}</span>
-        </div>
-      )}
-      <div className="dnz-login-actions">
-        {session?.user ? (
-          <>
-            {isAdmin && <a className="dnz-btn-red" href="/app">Abrir workspace</a>}
-            <button type="button" className="dnz-btn-ghost" onClick={onLogout}>Sair desta conta</button>
-          </>
-        ) : (
-          <button type="button" className="dnz-btn-red" onClick={onLogin}>Entrar</button>
+        <div className="dnz-login-kicker">{t("login.kicker")}</div>
+        <h1>{t("login.title")}</h1>
+        <p>{t("login.desc")}</p>
+        {session?.user && !isAdmin && (
+          <div className="dnz-denied">
+            <strong>{t("login.deniedTitle")}</strong>
+            <span>{t("login.deniedText", { email: session.user.email || t("login.deniedFallback") })}</span>
+          </div>
         )}
-        <button type="button" className="dnz-btn-ghost" onClick={onHome}>Voltar para o site</button>
-      </div>
-      <div className="dnz-login-meta">
-        <span>{cloudStatus === "loading" ? "Verificando sessao..." : "Does Not Zero / DNZ Films"}</span>
-      </div>
-    </section>
-  </main>
-);
+        {session?.user && isAdmin && (
+          <div className="dnz-allowed">
+            <strong>{t("login.allowedTitle")}</strong>
+            <span>{session.user.email}</span>
+          </div>
+        )}
+        <div className="dnz-login-actions">
+          {session?.user ? (
+            <>
+              {isAdmin && <a className="dnz-btn-red" href="/app">{t("login.openWorkspace")}</a>}
+              <button type="button" className="dnz-btn-ghost" onClick={onLogout}>{t("login.logout")}</button>
+            </>
+          ) : (
+            <button type="button" className="dnz-btn-red" onClick={onLogin}>{t("login.enter")}</button>
+          )}
+          <button type="button" className="dnz-btn-ghost" onClick={onHome}>{t("login.backHome")}</button>
+        </div>
+        <div className="dnz-login-meta">
+          <span>{cloudStatus === "loading" ? t("login.checkingSession") : t("login.brand")}</span>
+        </div>
+      </section>
+    </main>
+  );
+};
 
 const LandingPage = ({ onLogin }) => {
-  const cursorRef = useRef(null);
-  const cursorRRef = useRef(null);
+
   const lastFocusRef = useRef(null);
   const footerRef = useRef(null);
 
@@ -190,29 +816,41 @@ const LandingPage = ({ onLogin }) => {
   const [answers, setAnswers] = useState({ project: "", service: "", package: "", deadline: "", nome: "", wpp: "", ig: "", msg: "" });
   const [submitted, setSubmitted] = useState(false);
 
+  const [lang, setLang] = useState(getInitialLang);
+  const t = useCallback((key, vars) => translate(lang, key, vars), [lang]);
+
+  useEffect(() => {
+    try { window.localStorage.setItem(LANG_STORAGE_KEY, lang); } catch (e) { /* localStorage unavailable */ }
+    document.documentElement.lang = lang === "en" ? "en" : "pt-BR";
+  }, [lang]);
+
+  const toggleLang = useCallback(() => {
+    setLang(prev => (prev === "en" ? "pt" : "en"));
+  }, []);
+
   const videoMap = {};
   portfolioItems.forEach(i => { videoMap[i.vimeoId] = i; });
-  videoMap["1177771656"] = { title: "Showreel DNZ Films", category: "Portfólio" };
-  videoMap["1177798436"] = { title: "Social Impact", category: "Cobertura de evento · Reels 9:16", vertical: true };
+  videoMap["1177771656"] = { title: t("lightbox.showreelTitle"), category: t("lightbox.showreelCategory") };
+  videoMap["1177798436"] = { title: t("lightbox.socialImpactTitle"), category: t("lightbox.socialImpactCategory"), vertical: true };
 
   const openVideo = useCallback((vimeoId, isVertical = false) => {
     lastFocusRef.current = document.activeElement;
-    const meta = videoMap[vimeoId] || { title: "Vídeo DNZ Films", category: "Portfólio" };
+    const meta = videoMap[vimeoId] || { title: t("lightbox.fallbackTitle"), category: t("lightbox.fallbackCategory") };
     setLightboxMeta(meta);
     setLightboxLocalSrc(null);
     setLightboxVideo(vimeoId);
     setLightboxVertical(isVertical);
     setLightboxOpen(true);
-  }, [videoMap]);
+  }, [videoMap, t]);
 
   const openLocal = useCallback((item, isVertical = false) => {
     lastFocusRef.current = document.activeElement;
-    setLightboxMeta({ title: item.title || "Vídeo DNZ Films", category: item.category || "Portfólio" });
+    setLightboxMeta({ title: item.title || t("lightbox.fallbackTitle"), category: item.category || t("lightbox.fallbackCategory") });
     setLightboxVideo(null);
     setLightboxLocalSrc(item.src);
     setLightboxVertical(isVertical);
     setLightboxOpen(true);
-  }, []);
+  }, [t]);
 
   const closeVideo = useCallback(() => {
     setLightboxOpen(false);
@@ -254,12 +892,12 @@ const LandingPage = ({ onLogin }) => {
     if (lightboxLocalSrc) {
       el.innerHTML = `<video src="${lightboxLocalSrc}" controls autoplay playsinline preload="metadata" style="width:100%;height:100%;background:#000"></video>`;
     } else if (lightboxVideo) {
-      el.innerHTML = `<iframe src="https://player.vimeo.com/video/${lightboxVideo}?autoplay=1&autopause=0&title=0&byline=0&portrait=0&dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Vídeo DNZ Films"></iframe>`;
+      el.innerHTML = `<iframe src="https://player.vimeo.com/video/${lightboxVideo}?autoplay=1&autopause=0&title=0&byline=0&portrait=0&dnt=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${t("lightbox.fallbackTitle")}"></iframe>`;
     } else {
       return;
     }
     return () => { el.innerHTML = ""; };
-  }, [lightboxOpen, lightboxVideo, lightboxLocalSrc]);
+  }, [lightboxOpen, lightboxVideo, lightboxLocalSrc, t]);
 
   useEffect(() => {
     const handleKey = e => { if (e.key === "Escape") closeVideo(); };
@@ -282,35 +920,6 @@ const LandingPage = ({ onLogin }) => {
       document.body.style.overflow = "";
     };
   }, [galleryIndex, closeGallery, galleryNav]);
-
-  useEffect(() => {
-    const canUse = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    if (!canUse) return;
-    const cur = cursorRef.current;
-    const curR = cursorRRef.current;
-    if (!cur || !curR) return;
-    let mx = 0, my = 0, rx = 0, ry = 0, raf = null;
-    const onMove = e => { mx = e.clientX; my = e.clientY; cur.style.transform = `translate(${mx - 5}px, ${my - 5}px)`; };
-    const anim = () => {
-      rx += (mx - rx - 18) * 0.14;
-      ry += (my - ry - 18) * 0.14;
-      curR.style.transform = `translate(${rx}px, ${ry}px)`;
-      raf = requestAnimationFrame(anim);
-    };
-    const onOver = e => { if (e.target.closest("a,button,.form-opt,.pac-card,.case-item,.case-link,.proc-step,.work-card,.reel-btn,.reel-frame,.gallery-cell,.phone-btn,.close-btn,.wpp-fixed,.ig-fixed")) curR.classList.add("big"); };
-    const onOut = e => { if (e.target.closest("a,button,.form-opt,.pac-card,.case-item,.case-link,.proc-step,.work-card,.reel-btn,.reel-frame,.gallery-cell,.phone-btn,.close-btn,.wpp-fixed,.ig-fixed")) curR.classList.remove("big"); };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseover", onOver);
-    document.addEventListener("mouseout", onOut);
-    raf = requestAnimationFrame(anim);
-    return () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseover", onOver);
-      document.removeEventListener("mouseout", onOut);
-      if (raf) cancelAnimationFrame(raf);
-      curR.classList.remove("big");
-    };
-  }, []);
 
   useEffect(() => {
     const obs = new IntersectionObserver(entries => {
@@ -369,27 +978,27 @@ const LandingPage = ({ onLogin }) => {
 
   const buildWppUrl = () => {
     const lines = [
-      "🎬 *NOVO BRIEFING — DNZ FILMS*",
+      t("wpp.header"),
       "",
-      `Olá, DNZ! Me chamo *${answers.nome.trim()}* e vim pelo site pedir um orçamento.`,
+      t("wpp.greeting", { nome: answers.nome.trim() }),
       "",
-      "*— O PROJETO —*",
-      `📌 Tipo: ${answers.project}`,
-      `🎥 Serviço: ${answers.service}`
+      t("wpp.projectHeader"),
+      `${t("wpp.type")} ${answers.project}`,
+      `${t("wpp.service")} ${answers.service}`
     ];
-    if (answers.package) lines.push(`📦 Formato: ${answers.package}`);
-    lines.push(`⏱️ Prazo: ${answers.deadline}`);
+    if (answers.package) lines.push(`${t("wpp.format")} ${answers.package}`);
+    lines.push(`${t("wpp.deadline")} ${answers.deadline}`);
     lines.push("");
-    lines.push("*— CONTATO —*");
-    lines.push(`📱 WhatsApp: ${answers.wpp}`);
-    if (answers.ig) lines.push(`📷 Instagram: ${answers.ig}`);
+    lines.push(t("wpp.contactHeader"));
+    lines.push(`${t("wpp.whatsapp")} ${answers.wpp}`);
+    if (answers.ig) lines.push(`${t("wpp.instagram")} ${answers.ig}`);
     if (answers.msg) {
       lines.push("");
-      lines.push("*— CONTEXTO —*");
-      lines.push(`📝 ${answers.msg.trim()}`);
+      lines.push(t("wpp.contextHeader"));
+      lines.push(`${t("wpp.contextLabel")} ${answers.msg.trim()}`);
     }
     lines.push("");
-    lines.push("Podemos conversar sobre os próximos passos? 🤝");
+    lines.push(t("wpp.closing"));
     const text = lines.join("\n");
     return `https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(text)}`;
   };
@@ -426,14 +1035,6 @@ const LandingPage = ({ onLogin }) => {
 .dnz-landing-root img,.dnz-landing-root iframe{display:block;max-width:100%}
 .dnz-landing-root button{color:inherit;font:inherit}
 .dnz-landing-root a:focus-visible,.dnz-landing-root button:focus-visible,.dnz-landing-root .form-opt:focus-visible{outline:2px solid var(--red);outline-offset:3px}
-.cur,.cur-r{display:none}
-@media(hover:hover) and (pointer:fine){
-  .dnz-landing-root{cursor:none}
-  .cur,.cur-r{display:block}
-  .cur{width:10px;height:10px;background:var(--red);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;mix-blend-mode:difference;transition:transform .08s}
-  .cur-r{width:36px;height:36px;border:1px solid rgba(242,242,242,.3);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transition:transform .14s}
-  .cur-r.big{width:56px;height:56px;border-color:var(--red)}
-}
 .dnz-landing-root nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:20px 48px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to bottom,rgba(10,10,10,.92),rgba(10,10,10,.4),transparent)}
 .dnz-landing-root .nav-logo{display:block;text-decoration:none;line-height:0}
 .dnz-landing-root .nav-logo img{height:55px;width:auto;display:block;filter:hue-rotate(338deg) saturate(1.35) brightness(1.02)}
@@ -443,6 +1044,11 @@ const LandingPage = ({ onLogin }) => {
 .dnz-landing-root .nav-links a:hover,.dnz-landing-root .nav-links button:hover{opacity:1}
 .dnz-landing-root .nav-cta{font-family:var(--M);font-size:10px;letter-spacing:3px;text-transform:uppercase;background:var(--red);color:var(--white);padding:12px 24px;text-decoration:none;transition:opacity .2s}
 .dnz-landing-root .nav-cta:hover{opacity:.85}
+.dnz-landing-root .lang-toggle{font-family:var(--M);font-size:10px;letter-spacing:3px;text-transform:uppercase;background:none;border:1px solid var(--gray3);color:rgba(242,242,242,.5);padding:8px 12px;cursor:pointer;transition:border-color .2s,color .2s;display:inline-flex;align-items:center;gap:2px}
+.dnz-landing-root .lang-toggle:hover{border-color:var(--red);color:var(--white)}
+.dnz-landing-root .lang-toggle span{transition:color .2s,opacity .2s;opacity:.55}
+.dnz-landing-root .lang-toggle span.on{color:var(--red);opacity:1}
+.dnz-landing-root .f-links .lang-toggle{border:1px solid var(--gray3);padding:6px 10px}
 .dnz-landing-root #hero{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:108px 48px 80px;position:relative;overflow:hidden}
 .dnz-landing-root .hero-bg{position:absolute;inset:0;z-index:0;pointer-events:none}
 .dnz-landing-root .hero-noise{position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");opacity:.25}
@@ -759,24 +1365,24 @@ const LandingPage = ({ onLogin }) => {
       `}</style>
 
       <div id="main-content" className="dnz-landing-root">
-        <div className="cur" id="cur" ref={cursorRef}></div>
-        <div className="cur-r" id="curR" ref={cursorRRef}></div>
-
         <nav>
-          <a href="#hero" className="nav-logo" onClick={e => scrollTo(e, "#hero")} aria-label="DNZ Films — início">
+          <a href="#hero" className="nav-logo" onClick={e => scrollTo(e, "#hero")} aria-label={t("nav.logoAria")}>
             <img src={LOGO_SRC} alt="DNZ Films" />
           </a>
           <div className="nav-r">
             <ul className="nav-links">
-              <li><a href="#trabalhos" onClick={e => scrollTo(e, "#trabalhos")}>Trabalhos</a></li>
-              <li><a href="#lutas" onClick={e => scrollTo(e, "#lutas")}>Lutas</a></li>
-              <li><a href="#galeria" onClick={e => scrollTo(e, "#galeria")}>Galeria</a></li>
-              <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>Cases</a></li>
-              <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>Sobre</a></li>
-              <li><a href="#pacotes" onClick={e => scrollTo(e, "#pacotes")}>Pacotes</a></li>
-              <li><button type="button" onClick={onLogin}>Login</button></li>
+              <li><a href="#trabalhos" onClick={e => scrollTo(e, "#trabalhos")}>{t("nav.trabalhos")}</a></li>
+              <li><a href="#lutas" onClick={e => scrollTo(e, "#lutas")}>{t("nav.lutas")}</a></li>
+              <li><a href="#galeria" onClick={e => scrollTo(e, "#galeria")}>{t("nav.galeria")}</a></li>
+              <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>{t("nav.cases")}</a></li>
+              <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>{t("nav.sobre")}</a></li>
+              <li><a href="#pacotes" onClick={e => scrollTo(e, "#pacotes")}>{t("nav.pacotes")}</a></li>
+              <li><button type="button" onClick={onLogin}>{t("nav.login")}</button></li>
             </ul>
-            <a href="#form-section" className="nav-cta" onClick={e => scrollTo(e, "#form-section")}>Começar →</a>
+            <button type="button" className="lang-toggle" onClick={toggleLang} aria-label={t("nav.langAria")}>
+              <span className={lang === "pt" ? "on" : ""}>PT</span>/<span className={lang === "en" ? "on" : ""}>EN</span>
+            </button>
+            <a href="#form-section" className="nav-cta" onClick={e => scrollTo(e, "#form-section")}>{t("nav.cta")}</a>
           </div>
         </nav>
 
@@ -788,7 +1394,7 @@ const LandingPage = ({ onLogin }) => {
           </div>
           <div className="hero-scroll"></div>
           <div className="hero-inner">
-            <div className="hero-tag">Florianópolis, BR — Does Not Zero</div>
+            <div className="hero-tag">{t("hero.tag")}</div>
             <div className="hero-h">
               DOES<br />
               NOT<br />
@@ -797,22 +1403,22 @@ const LandingPage = ({ onLogin }) => {
             <div className="hero-sub">DNZ FILMS</div>
             <div className="hero-bottom">
               <p className="hero-desc">
-                <strong>Surf. Atletas. Lutadores. Marcas em movimento.</strong><br />
-                Produção audiovisual com direção, captação e edição — feita pra quem não para.
+                <strong>{t("hero.descStrong")}</strong><br />
+                {t("hero.descText")}
               </p>
               <div className="hero-actions">
-                <a href="#form-section" className="btn-red" onClick={e => scrollTo(e, "#form-section")}>Começar projeto →</a>
-                <a href="#trabalhos" className="btn-ghost" onClick={e => scrollTo(e, "#trabalhos")}>Ver portfólio ↓</a>
+                <a href="#form-section" className="btn-red" onClick={e => scrollTo(e, "#form-section")}>{t("hero.ctaStart")}</a>
+                <a href="#trabalhos" className="btn-ghost" onClick={e => scrollTo(e, "#trabalhos")}>{t("hero.ctaPortfolio")}</a>
               </div>
             </div>
           </div>
           <div className="hero-reel">
-            <button type="button" className="reel-btn" onClick={() => openVideo("1177771656")} aria-label="Assistir showreel DNZ Films">
-              <img src="/dnz-assets/showreel-preview.webp" alt="Showreel DNZ Films" loading="eager" />
+            <button type="button" className="reel-btn" onClick={() => openVideo("1177771656")} aria-label={t("hero.showreelAria")}>
+              <img src="/dnz-assets/showreel-preview.webp" alt={t("hero.showreelAlt")} loading="eager" />
               <div className="reel-overlay">
                 <div>
-                  <div className="reel-label">Showreel</div>
-                  <div className="reel-title">ASSISTA AO TRABALHO.</div>
+                  <div className="reel-label">{t("hero.reelLabel")}</div>
+                  <div className="reel-title">{t("hero.reelTitle")}</div>
                 </div>
                 <div className="reel-play" aria-hidden="true" dangerouslySetInnerHTML={{ __html: PLAY_SVG }} />
               </div>
@@ -822,7 +1428,7 @@ const LandingPage = ({ onLogin }) => {
 
         <div className="ticker">
           <div className="ticker-t">
-            {["SURF", "DOES NOT ZERO", "ATLETAS", "LUTADORES", "MOTION NEVER STOPS", "SHAPERS", "MARCAS", "DNZ FILMS", "FLORIANÓPOLIS", "SURF", "DOES NOT ZERO", "ATLETAS", "LUTADORES", "MOTION NEVER STOPS", "SHAPERS", "MARCAS", "DNZ FILMS", "FLORIANÓPOLIS"].map((item, idx) => (
+            {[...t("ticker.items"), ...t("ticker.items")].map((item, idx) => (
               <div className="ticker-i" key={`${item}-${idx}`}>{item} <span className="r"></span></div>
             ))}
           </div>
@@ -830,32 +1436,27 @@ const LandingPage = ({ onLogin }) => {
 
         <section id="problema" className="landing-section fu">
           <div className="prob-left">
-            <div className="label">O problema</div>
+            <div className="label">{t("problem.label")}</div>
             <h2 className="prob-title">
-              O MOMENTO<br />
-              FOI FORTE.<br />
-              <span className="dim">O VÍDEO</span><br />
-              NÃO FOI.
+              {t("problem.title1")}<br />
+              {t("problem.title2")}<br />
+              <span className="dim">{t("problem.title3dim")}</span><br />
+              {t("problem.title4")}
             </h2>
           </div>
           <div className="prob-right">
-            <p>Você treinou meses pra uma luta de 3 rounds. Pegou a sessão da vida no dia certo. Uma prancha que levou semanas pra shape. Uma marca que representa algo de verdade.</p>
-            <p><strong>E o vídeo que sobrou não chega perto do que foi viver aquilo.</strong></p>
-            <p>Câmera tremida. Corte no meio da ação. Áudio ruim, ritmo errado, música que não bate com a cena. O momento foi brutal — o vídeo ficou morno.</p>
-            <p>A DNZ existe pra isso não acontecer de novo: direção no set, corte com intenção, cor e som fechando a cena. <strong>Pra quem assiste sentir o impacto que você sentiu.</strong></p>
-            <a href="#solucao" className="arrow-down" onClick={e => scrollTo(e, "#solucao")}>Ver como trabalhamos ↓</a>
+            <p>{t("problem.p1")}</p>
+            <p dangerouslySetInnerHTML={{ __html: t("problem.p2") }} />
+            <p>{t("problem.p3")}</p>
+            <p dangerouslySetInnerHTML={{ __html: t("problem.p4") }} />
+            <a href="#solucao" className="arrow-down" onClick={e => scrollTo(e, "#solucao")}>{t("problem.link")}</a>
           </div>
         </section>
 
         <section id="solucao" className="landing-section fu">
           <div className="sol-bar"></div>
           <div className="sol-grid">
-            {[
-              { n: "01", icon: "🌊", name: "SURF", text: "Sessões, atletas, shapers e fábricas de prancha. <strong>Cinema na água.</strong> Do drop ao shape, a gente registra com a mesma entrega de quem tá na linha do pico." },
-              { n: "02", icon: "🥊", name: "LUTADORES", text: "Do treino ao octógono. <strong>Camps, pesagens, corner e a luta.</strong> Material que mostra a rotina, a preparação e a explosão — pra sponsor, pra rede e pra história." },
-              { n: "03", icon: "🏃", name: "ATLETAS", text: "Jornadas humanas que merecem ser contadas. <strong>Material pra sponsor. Documentário de temporada.</strong> Conteúdo que mostra o que você fez antes de dizer." },
-              { n: "04", icon: "◎", name: "MARCAS", text: "Marcas em movimento que representam algo de verdade. <strong>Não propaganda. Narrativa.</strong> Vídeo que faz o cliente entender o valor antes do preço." }
-            ].map(s => (
+            {t("solucao.cards").map(s => (
               <div className="sol-card" data-n={s.n} key={s.n}>
                 <div className="sol-icon">{s.icon}</div>
                 <div className="sol-name">{s.name}</div>
@@ -866,30 +1467,30 @@ const LandingPage = ({ onLogin }) => {
         </section>
 
         <section id="eventos" className="landing-section fu">
-          <div className="sec-label">Cobertura de evento</div>
-          <h2 className="sec-title">ENERGIA AO<br />VIVO.</h2>
+          <div className="sec-label">{t("eventos.label")}</div>
+          <h2 className="sec-title">{t("eventos.title1")}<br />{t("eventos.title2")}</h2>
           <div className="eventos-grid">
             <div className="eventos-copy">
-              <p>Show, luta, festa, lançamento ou ativação de marca — a DNZ captura a <strong>energia do ao vivo</strong> e devolve em formato vertical, pronto pra postar enquanto o hype ainda tá quente.</p>
-              <p>Do público ao palco, do backstage ao aftermovie: imagem com ritmo, cor e intenção. Não é só registrar o evento — é fazer quem não estava lá <strong>sentir que perdeu algo.</strong></p>
+              <p dangerouslySetInnerHTML={{ __html: t("eventos.p1") }} />
+              <p dangerouslySetInnerHTML={{ __html: t("eventos.p2") }} />
               <ul className="eventos-list">
-                <li>Reels e stories 9:16 pra Instagram e TikTok</li>
-                <li>Aftermovie e cortes rápidos já no dia seguinte</li>
-                <li>Cobertura de palco, público, bastidores e ação</li>
-                <li>Entrega no timing das redes, sem esfriar</li>
+                <li>{t("eventos.list1")}</li>
+                <li>{t("eventos.list2")}</li>
+                <li>{t("eventos.list3")}</li>
+                <li>{t("eventos.list4")}</li>
               </ul>
-              <button className="btn-red" onClick={() => preset("Cobertura de evento", "MOTION — projeto fechado")}>Pedir cobertura →</button>
+              <button className="btn-red" onClick={() => preset(t("form.step1.options")[5][0], t("form.step2.options2")[1][0])}>{t("eventos.btn")}</button>
             </div>
             <div className="eventos-phone-wrap">
               <div>
                 <div className="phone-shell">
-                  <button type="button" className="phone-btn" onClick={() => openVideo("1177798436", true)} aria-label="Assistir vídeo Social Impact — cobertura de festa">
-                    <img src="/dnz-assets/social-impact.webp" alt="Social Impact — cobertura de festa" loading="lazy" />
+                  <button type="button" className="phone-btn" onClick={() => openVideo("1177798436", true)} aria-label={t("eventos.videoAria")}>
+                    <img src="/dnz-assets/social-impact.webp" alt={t("eventos.videoAlt")} loading="lazy" />
                     <div className="phone-overlay"></div>
                     <span className="phone-play" aria-hidden="true" dangerouslySetInnerHTML={{ __html: PLAY_SVG }} />
                   </button>
                 </div>
-                <div className="phone-cap"><em>9:16</em> · SOCIAL IMPACT · REELS</div>
+                <div className="phone-cap"><em>9:16</em> · {t("eventos.phoneCap")}</div>
               </div>
             </div>
           </div>
@@ -897,16 +1498,16 @@ const LandingPage = ({ onLogin }) => {
 
         <section id="trabalhos" className="landing-section fu">
           <div className="sec-head">
-            <div className="sec-label">Portfólio</div>
-            <h2 className="sec-title">TRABALHOS<br />SELECIONADOS.</h2>
+            <div className="sec-label">{t("trabalhos.label")}</div>
+            <h2 className="sec-title">{t("trabalhos.title1")}<br />{t("trabalhos.title2")}</h2>
           </div>
           <div className="work-grid">
             {portfolioItems.map(item => (
-              <button className={`work-card${item.featured ? " featured" : ""}`} type="button" key={item.vimeoId} onClick={() => openVideo(item.vimeoId)} aria-label={`Assistir ${item.title}`}>
+              <button className={`work-card${item.featured ? " featured" : ""}`} type="button" key={item.vimeoId} onClick={() => openVideo(item.vimeoId)} aria-label={t("trabalhos.watchAria", { title: item.title })}>
                 <img src={item.thumb} alt={item.title} loading="lazy" />
                 <span className="work-play" aria-hidden="true" dangerouslySetInnerHTML={{ __html: PLAY_SVG }} />
                 <span className="work-caption">
-                  <span className="cat">{item.category}</span>
+                  <span className="cat">{t(`categories.${item.category}`)}</span>
                   <span className="title">{item.title}</span>
                 </span>
               </button>
@@ -916,27 +1517,27 @@ const LandingPage = ({ onLogin }) => {
 
         <section id="lutas" className="landing-section fu">
           <div className="sec-head">
-            <div className="sec-label">Lutas · Feed</div>
-            <h2 className="sec-title">DO TREINO<br />AO COMBATE.</h2>
-            <p className="sec-sub">Role e assista. Cada vídeo dá play sozinho — toque no som pra ativar o áudio. Sem sair da página.</p>
+            <div className="sec-label">{t("lutas.label")}</div>
+            <h2 className="sec-title">{t("lutas.title1")}<br />{t("lutas.title2")}</h2>
+            <p className="sec-sub">{t("lutas.sub")}</p>
           </div>
           <div className="reel-feed">
             {fightItems.map(item => (
-              <FeedVideo key={item.src} item={item} />
+              <FeedVideo key={item.src} item={item} t={t} />
             ))}
           </div>
         </section>
 
         <section id="galeria" className="landing-section fu">
           <div className="sec-head">
-            <div className="sec-label">Galeria · Luta</div>
-            <h2 className="sec-title">FRAMES DE<br />COMBATE.</h2>
-            <p className="sec-sub">Stills capturados no calor da luta — o instante antes, o impacto e o que fica depois. Clique pra ampliar e navegue frame a frame.</p>
+            <div className="sec-label">{t("galeria.label")}</div>
+            <h2 className="sec-title">{t("galeria.title1")}<br />{t("galeria.title2")}</h2>
+            <p className="sec-sub">{t("galeria.sub")}</p>
           </div>
           <div className="gallery-grid">
             {galleryStills.map((s, i) => (
-              <button type="button" className="gallery-cell" key={s.src} onClick={() => openGallery(i)} aria-label={`Ampliar imagem ${i + 1} de ${galleryStills.length}`}>
-                <img src={s.src} alt={s.alt} loading="lazy" />
+              <button type="button" className="gallery-cell" key={s.src} onClick={() => openGallery(i)} aria-label={t("galeria.expandAria", { i: i + 1, total: galleryStills.length })}>
+                <img src={s.src} alt={`${t("galeria.altPrefix")} ${String(i + 1).padStart(2, "0")}`} loading="lazy" />
                 <span className="gallery-plus" aria-hidden="true">+</span>
               </button>
             ))}
@@ -945,72 +1546,72 @@ const LandingPage = ({ onLogin }) => {
 
         <section id="cases" className="landing-section fu">
           <div className="sec-head">
-            <div className="sec-label">Cases reais</div>
-            <h2 className="sec-title">PROVA<br />REAL.</h2>
+            <div className="sec-label">{t("cases.label")}</div>
+            <h2 className="sec-title">{t("cases.title1")}<br />{t("cases.title2")}</h2>
           </div>
           <div className="cases-list">
             <div className="case-item">
               <div className="case-n">01</div>
               <div>
                 <div className="case-name">LA MISSION</div>
-                <div className="case-type">Documentário · Gabriel Duran · Triatleta Extremo</div>
+                <div className="case-type">{t("cases.c1type")}</div>
               </div>
               <div className="case-quote">
-                "Gostei muito da forma como você registrou a La Mission. Não só pela imagem, mas pela sensibilidade. Dá pra sentir alma no que você faz."
-                <cite>— Gabriel Duran, Triatleta Extremo & Ultrarunner</cite>
+                {t("cases.c1quote")}
+                <cite>{t("cases.c1cite")}</cite>
               </div>
               <div className="case-stat">
                 <div className="val">∅</div>
-                <div className="lbl">Does Not Zero</div>
+                <div className="lbl">{t("cases.c1lbl")}</div>
               </div>
             </div>
-            <div className="case-item case-link" role="button" tabIndex={0} onClick={() => openVideo("1177774829")} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openVideo("1177774829"); } }} aria-label="Assistir JP Surfboards">
+            <div className="case-item case-link" role="button" tabIndex={0} onClick={() => openVideo("1177774829")} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openVideo("1177774829"); } }} aria-label={t("cases.c2aria")}>
               <div className="case-n">02</div>
               <div>
                 <div className="case-name">JP SURFBOARDS</div>
-                <div className="case-type">Johnny · Shaper · Fábrica de pranchas · Florianópolis</div>
+                <div className="case-type">{t("cases.c2type")}</div>
               </div>
               <div className="case-quote">
-                "Sem reajustes. Sem nada. Ficou animal. Animal demais. Parabéns, irmão."
-                <cite>— Johnny, JP Surfboards</cite>
+                {t("cases.c2quote")}
+                <cite>{t("cases.c2cite")}</cite>
               </div>
               <div className="case-stat">
                 <div className="val">∅</div>
-                <div className="lbl">Sem reajustes</div>
+                <div className="lbl">{t("cases.c2lbl")}</div>
               </div>
             </div>
             <div className="case-item">
               <div className="case-n">03</div>
               <div>
-                <div className="case-name">SEU PROJETO</div>
-                <div className="case-type">Em aberto · Surf / Atleta / Marca</div>
+                <div className="case-name">{t("cases.c3name")}</div>
+                <div className="case-type">{t("cases.c3type")}</div>
               </div>
               <div className="case-quote">
-                A câmera não para. Seu projeto pode ser o próximo.
+                {t("cases.c3quote")}
               </div>
               <div className="case-stat">
-                <a href="#form-section" className="btn-red" style={{ fontSize: 10, padding: "14px 24px" }} onClick={e => { e.preventDefault(); preset("", ""); }}>Começar →</a>
+                <a href="#form-section" className="btn-red" style={{ fontSize: 10, padding: "14px 24px" }} onClick={e => { e.preventDefault(); preset("", ""); }}>{t("cases.c3btn")}</a>
               </div>
             </div>
           </div>
         </section>
 
         <section id="sobre" className="landing-section fu">
-          <div className="sec-label">Direção</div>
-          <h2 className="sec-title">QUEM ESTÁ<br />POR TRÁS.</h2>
+          <div className="sec-label">{t("sobre.label")}</div>
+          <h2 className="sec-title">{t("sobre.title1")}<br />{t("sobre.title2")}</h2>
           <div className="sobre-grid">
             <div className="sobre-copy">
-              <p><strong>Gabriel d. Pimentel</strong> — diretor, editor e fundador da DNZ Films, em Florianópolis. Começou filmando o que vive: surf, esporte e gente em movimento. <strong>Does Not Zero</strong> não é só um nome — é o compromisso de que nada sai da mesa sem intenção, ritmo e alma em cada frame.</p>
-              <p>Da line-up ao octógono, da fábrica de pranchas à marca que quer narrativa de verdade: a DNZ une <strong>olhar cinematográfico</strong> com a agilidade de quem vive o audiovisual na prática.</p>
-              <p>Aqui não se terceiriza o cuidado. <strong>Quem dirige é quem edita, quem entrega é quem se importa</strong> — do primeiro corte à cor final.</p>
+              <p dangerouslySetInnerHTML={{ __html: t("sobre.p1") }} />
+              <p dangerouslySetInnerHTML={{ __html: t("sobre.p2") }} />
+              <p dangerouslySetInnerHTML={{ __html: t("sobre.p3") }} />
               <div className="sobre-caps">
-                <div className="sobre-cap"><strong>Direção</strong><span>Conceito, ritmo e narrativa visual</span></div>
-                <div className="sobre-cap"><strong>Captação</strong><span>Surf, luta, esporte, lifestyle e marca</span></div>
-                <div className="sobre-cap"><strong>Pós</strong><span>Edição, cor, som e cortes pra cada formato</span></div>
+                <div className="sobre-cap"><strong>{t("sobre.cap1t")}</strong><span>{t("sobre.cap1d")}</span></div>
+                <div className="sobre-cap"><strong>{t("sobre.cap2t")}</strong><span>{t("sobre.cap2d")}</span></div>
+                <div className="sobre-cap"><strong>{t("sobre.cap3t")}</strong><span>{t("sobre.cap3d")}</span></div>
               </div>
             </div>
             <div className="sobre-photo">
-              <img src="/dnz-assets/dante.webp" alt="Gabriel d. Pimentel — diretor da DNZ Films" loading="lazy" />
+              <img src="/dnz-assets/dante.webp" alt={t("sobre.photoAlt")} loading="lazy" />
             </div>
           </div>
         </section>
@@ -1018,73 +1619,68 @@ const LandingPage = ({ onLogin }) => {
         <section id="pacotes" className="landing-section fu">
           <div className="pac-head">
             <div>
-              <div className="sec-label">Pacotes</div>
-              <h2 className="sec-title">ESCOLHA<br />SEU FORMATO.</h2>
+              <div className="sec-label">{t("pacotes.label")}</div>
+              <h2 className="sec-title">{t("pacotes.title1")}<br />{t("pacotes.title2")}</h2>
             </div>
-            <p className="pac-note">Três formatos, sem complicação. Não sabe qual escolher? O briefing em 4 passos te ajuda a definir.</p>
+            <p className="pac-note">{t("pacotes.note")}</p>
           </div>
           <div className="pac-grid">
             <div className="pac-card">
-              <div className="pac-n">01 / MENSAL</div>
+              <div className="pac-n">{t("pacotes.loop.n")}</div>
               <div className="pac-name">LOOP</div>
-              <div className="pac-tag">Sua marca postando sempre — sem quebrar a cabeça</div>
+              <div className="pac-tag">{t("pacotes.loop.tag")}</div>
               <ul className="pac-list">
-                <li>4 vídeos/mês (reels 9:16, cortes ou teaser)</li>
-                <li>Pauta e ideias pensadas junto com você</li>
-                <li>Color grading assinatura DNZ + sound design</li>
-                <li>Legendas e captions prontos pra postar</li>
-                <li>Trilha licenciada — sem dor de cabeça com direitos</li>
-                <li>Até 7 dias por vídeo · 1 revisão cada</li>
-                <li>Calendário de postagem sugerido</li>
-                <li>Ideal pra: atletas, lutadores, surfistas e shapers</li>
+                <li>{t("pacotes.loop.list1")}</li>
+                <li>{t("pacotes.loop.list2")}</li>
+                <li>{t("pacotes.loop.list3")}</li>
+                <li>{t("pacotes.loop.list4")}</li>
+                <li>{t("pacotes.loop.list5")}</li>
+                <li>{t("pacotes.loop.list6")}</li>
+                <li>{t("pacotes.loop.list7")}</li>
+                <li>{t("pacotes.loop.list8")}</li>
               </ul>
-              <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset("Conteúdo mensal para redes", "LOOP — conteúdo mensal"); }}>Quero o LOOP →</a>
+              <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset(t("form.step1.options")[1][0], t("form.step2.options2")[0][0]); }}>{t("pacotes.loop.btn")}</a>
             </div>
             <div className="pac-card hot">
-              <div className="pac-n">02 / PROJETO</div>
+              <div className="pac-n">{t("pacotes.motion.n")}</div>
               <div className="pac-name">MOTION</div>
-              <div className="pac-tag">Um filme que vira sua vitrine + cortes pra girar</div>
+              <div className="pac-tag">{t("pacotes.motion.tag")}</div>
               <ul className="pac-list">
-                <li>1 filme principal (até 3 min) com direção e roteiro</li>
-                <li>3 cortes verticais pra redes sociais</li>
-                <li>Captação em campo (treino, luta, sessão, evento)</li>
-                <li>Filmagem + edição completa</li>
-                <li>Color grading cinematográfico + sound design</li>
-                <li>Até 15 dias · 2 revisões inclusas</li>
-                <li>Arquivos prontos pra site, pitch e redes</li>
-                <li>Ideal pra: marcas, atletas, lutadores e lançamentos</li>
+                <li>{t("pacotes.motion.list1")}</li>
+                <li>{t("pacotes.motion.list2")}</li>
+                <li>{t("pacotes.motion.list3")}</li>
+                <li>{t("pacotes.motion.list4")}</li>
+                <li>{t("pacotes.motion.list5")}</li>
+                <li>{t("pacotes.motion.list6")}</li>
+                <li>{t("pacotes.motion.list7")}</li>
+                <li>{t("pacotes.motion.list8")}</li>
               </ul>
-              <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset("Vídeo para marca / negócio", "MOTION — projeto fechado"); }}>Quero o MOTION →</a>
+              <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset(t("form.step1.options")[4][0], t("form.step2.options2")[1][0]); }}>{t("pacotes.motion.btn")}</a>
             </div>
             <div className="pac-card">
-              <div className="pac-n">03 / PREMIUM</div>
+              <div className="pac-n">{t("pacotes.zero.n")}</div>
               <div className="pac-name">ZERO</div>
-              <div className="pac-tag">Quando o projeto pede cinema de verdade</div>
+              <div className="pac-tag">{t("pacotes.zero.tag")}</div>
               <ul className="pac-list">
-                <li>Escopo desenhado do zero, junto com você</li>
-                <li>Documentário de temporada, campanha ou série</li>
-                <li>Direção criativa + roteiro + pré-produção</li>
-                <li>Captação multi-dia e múltiplas locações</li>
-                <li>Múltiplos vídeos e formatos (16:9, 9:16, 1:1)</li>
-                <li>Color grading e sound design premium</li>
-                <li>Acompanhamento próximo do início à entrega</li>
-                <li>Ideal pra: projetos grandes, marcas e atletas premium</li>
+                <li>{t("pacotes.zero.list1")}</li>
+                <li>{t("pacotes.zero.list2")}</li>
+                <li>{t("pacotes.zero.list3")}</li>
+                <li>{t("pacotes.zero.list4")}</li>
+                <li>{t("pacotes.zero.list5")}</li>
+                <li>{t("pacotes.zero.list6")}</li>
+                <li>{t("pacotes.zero.list7")}</li>
+                <li>{t("pacotes.zero.list8")}</li>
               </ul>
-              <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset("Documentário", "ZERO — sob medida"); }}>Falar sobre ZERO →</a>
+              <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset(t("form.step1.options")[8][0], t("form.step2.options2")[2][0]); }}>{t("pacotes.zero.btn")}</a>
             </div>
           </div>
         </section>
 
         <section id="processo" className="landing-section fu">
-          <div className="sec-label">Como funciona</div>
-          <h2 className="sec-title">4 PASSOS.<br />SEM ENROLAÇÃO.</h2>
+          <div className="sec-label">{t("processo.label")}</div>
+          <h2 className="sec-title">{t("processo.title1")}<br />{t("processo.title2")}</h2>
           <div className="proc-grid">
-            {[
-              { bg: "01", icon: "💬", t: "BRIEFING", d: "Responde 4 perguntas rápidas aqui embaixo. Entendo o projeto, o prazo e o objetivo do vídeo — sem reunião só pra marcar reunião." },
-              { bg: "02", icon: "📋", t: "PROPOSTA", d: "Em até 24h volta uma proposta clara: escopo, prazo e valor na mesa. Sem letra miúda, sem surpresa depois." },
-              { bg: "03", icon: "🎬", t: "PRODUÇÃO", d: "Você filma ou a gente filma junto. O material entra em edição — corte, cor, som e ritmo. Cada frame com propósito." },
-              { bg: "04", icon: "✅", t: "ENTREGA", d: "Vídeo pronto no prazo combinado, com revisão inclusa. Sai daqui pronto pra postar, apresentar ou publicar." }
-            ].map(p => (
+            {t("processo.steps").map(p => (
               <div className="proc-step" key={p.bg}>
                 <div className="proc-bg">{p.bg}</div>
                 <div className="proc-line"></div>
@@ -1099,9 +1695,9 @@ const LandingPage = ({ onLogin }) => {
         <section id="form-section">
           <div className="form-wrap">
             <div className="form-intro fu">
-              <div className="sec-label">Briefing</div>
-              <h2 className="sec-title">4 PERGUNTAS.<br />PROPOSTA EM 24H.</h2>
-              <p>Sem call desnecessária, sem formulário chato. Responde 4 perguntas rápidas e sua mensagem cai organizada direto no WhatsApp da DNZ — a proposta personalizada volta em até 24h.</p>
+              <div className="sec-label">{t("form.label")}</div>
+              <h2 className="sec-title">{t("form.title1")}<br />{t("form.title2")}</h2>
+              <p>{t("form.intro")}</p>
             </div>
             <div className={`form-steps${submitted ? " hidden" : ""}`}>
               <div className={`form-step-ind${step > 1 ? " done" : ""}${step === 1 ? " active" : ""}`}></div>
@@ -1111,21 +1707,10 @@ const LandingPage = ({ onLogin }) => {
             </div>
 
             <div className={`form-block${step === 1 ? " active" : ""}`}>
-              <div className="form-q">Qual é o seu <em>projeto?</em></div>
-              <div className="form-hint">ESCOLHA A OPÇÃO QUE MAIS SE ENCAIXA</div>
+              <div className="form-q" dangerouslySetInnerHTML={{ __html: t("form.step1.question") }} />
+              <div className="form-hint">{t("form.step1.hint")}</div>
               <div className="form-opts">
-                {[
-                  ["Sessão de surf / edição", "Sessão de surf — edição cinematográfica"],
-                  ["Conteúdo mensal para redes", "Conteúdo mensal para redes sociais"],
-                  ["Projeto de atleta / documentário", "Projeto de atleta — documentário ou sponsor"],
-                  ["Shaper / fábrica de prancha", "Shaper ou fábrica — processo e bastidores"],
-                  ["Vídeo para marca / negócio", "Vídeo para marca ou negócio"],
-                  ["Cobertura de evento", "Cobertura de evento ou ativação"],
-                  ["Reel ou vídeo único", "Reel ou vídeo único para redes"],
-                  ["Campanha / lançamento", "Campanha ou lançamento de produto"],
-                  ["Documentário", "Documentário ou projeto longo"],
-                  ["Outro projeto", "Outro — explico melhor no WhatsApp"]
-                ].map(([key, label]) => (
+                {t("form.step1.options").map(([key, label]) => (
                   <div key={key} className={`form-opt${answers.project === key ? " sel" : ""}`} role="button" tabIndex={0} onClick={() => selectOpt("project", key)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectOpt("project", key); } }} aria-pressed={answers.project === key}>
                     <div className="opt-mark"></div>
                     {label}
@@ -1134,35 +1719,24 @@ const LandingPage = ({ onLogin }) => {
               </div>
               <div className="form-nav">
                 <div className="form-counter">1 / 4</div>
-                <button className="btn-next" disabled={!answers.project} onClick={() => goToStep(2)}>Próximo →</button>
+                <button className="btn-next" disabled={!answers.project} onClick={() => goToStep(2)}>{t("form.next")}</button>
               </div>
             </div>
 
             <div className={`form-block${step === 2 ? " active" : ""}`}>
-              <div className="form-q">O que você <em>precisa?</em></div>
-              <div className="form-hint">SERVIÇO E FORMATO DE INTERESSE</div>
+              <div className="form-q" dangerouslySetInnerHTML={{ __html: t("form.step2.question") }} />
+              <div className="form-hint">{t("form.step2.hint")}</div>
               <div className="form-opts">
-                {[
-                  ["Só edição — já tenho material", "Só edição — já tenho material filmado"],
-                  ["Só filmagem", "Só filmagem / captação"],
-                  ["Filmagem + edição completa", "Filmagem + edição completa"],
-                  ["Direção criativa + produção", "Direção criativa + produção"],
-                  ["Ainda não sei — preciso de orientação", "Ainda não sei — preciso de orientação"]
-                ].map(([key, label]) => (
+                {t("form.step2.options").map(([key, label]) => (
                   <div key={key} className={`form-opt${answers.service === key ? " sel" : ""}`} role="button" tabIndex={0} onClick={() => selectOpt("service", key)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectOpt("service", key); } }} aria-pressed={answers.service === key}>
                     <div className="opt-mark"></div>
                     {label}
                   </div>
                 ))}
               </div>
-              <div className="form-hint" style={{ marginTop: 32, marginBottom: 24 }}>PACOTE DE INTERESSE (OPCIONAL)</div>
+              <div className="form-hint" style={{ marginTop: 32, marginBottom: 24 }}>{t("form.step2.hint2")}</div>
               <div className="form-opts">
-                {[
-                  ["LOOP — conteúdo mensal", "LOOP — conteúdo mensal"],
-                  ["MOTION — projeto fechado", "MOTION — projeto fechado"],
-                  ["ZERO — sob medida", "ZERO — produção sob medida"],
-                  ["Ainda não sei o formato", "Ainda não sei o formato"]
-                ].map(([key, label]) => (
+                {t("form.step2.options2").map(([key, label]) => (
                   <div key={key} className={`form-opt${answers.package === key ? " sel" : ""}`} role="button" tabIndex={0} onClick={() => selectOpt("package", key)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectOpt("package", key); } }} aria-pressed={answers.package === key}>
                     <div className="opt-mark"></div>
                     {label}
@@ -1170,23 +1744,17 @@ const LandingPage = ({ onLogin }) => {
                 ))}
               </div>
               <div className="form-nav">
-                <button className="btn-back" onClick={() => goToStep(1)}>← Voltar</button>
+                <button className="btn-back" onClick={() => goToStep(1)}>{t("form.back")}</button>
                 <div className="form-counter">2 / 4</div>
-                <button className="btn-next" disabled={!answers.service} onClick={() => goToStep(3)}>Próximo →</button>
+                <button className="btn-next" disabled={!answers.service} onClick={() => goToStep(3)}>{t("form.next")}</button>
               </div>
             </div>
 
             <div className={`form-block${step === 3 ? " active" : ""}`}>
-              <div className="form-q">Qual é o seu <em>prazo?</em></div>
-              <div className="form-hint">QUANDO VOCÊ PRECISA DO VÍDEO</div>
+              <div className="form-q" dangerouslySetInnerHTML={{ __html: t("form.step3.question") }} />
+              <div className="form-hint">{t("form.step3.hint")}</div>
               <div className="form-opts">
-                {[
-                  ["Urgente (menos de 1 semana)", "Urgente — menos de 1 semana"],
-                  ["Próximas 2 semanas", "Próximas 2 semanas"],
-                  ["Este mês", "Este mês"],
-                  ["1 a 2 meses", "De 1 a 2 meses"],
-                  ["Sem prazo definido", "Sem prazo — quero planejar com calma"]
-                ].map(([key, label]) => (
+                {t("form.step3.options").map(([key, label]) => (
                   <div key={key} className={`form-opt${answers.deadline === key ? " sel" : ""}`} role="button" tabIndex={0} onClick={() => selectOpt("deadline", key)} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectOpt("deadline", key); } }} aria-pressed={answers.deadline === key}>
                     <div className="opt-mark"></div>
                     {label}
@@ -1194,45 +1762,45 @@ const LandingPage = ({ onLogin }) => {
                 ))}
               </div>
               <div className="form-nav">
-                <button className="btn-back" onClick={() => goToStep(2)}>← Voltar</button>
+                <button className="btn-back" onClick={() => goToStep(2)}>{t("form.back")}</button>
                 <div className="form-counter">3 / 4</div>
-                <button className="btn-next" disabled={!answers.deadline} onClick={() => goToStep(4)}>Próximo →</button>
+                <button className="btn-next" disabled={!answers.deadline} onClick={() => goToStep(4)}>{t("form.next")}</button>
               </div>
             </div>
 
             <div className={`form-block${step === 4 ? " active" : ""}`}>
-              <div className="form-q">Seu <em>contato.</em></div>
-              <div className="form-hint">A GENTE RESPONDE EM ATÉ 24H</div>
+              <div className="form-q" dangerouslySetInnerHTML={{ __html: t("form.step4.question") }} />
+              <div className="form-hint">{t("form.step4.hint")}</div>
               <div className="form-input-wrap">
-                <label>Seu nome</label>
-                <input type="text" placeholder="Como você se chama?" autoComplete="name" required value={answers.nome} onChange={e => setAnswers(prev => ({ ...prev, nome: e.target.value }))} />
+                <label>{t("form.step4.nameLabel")}</label>
+                <input type="text" placeholder={t("form.step4.namePlaceholder")} autoComplete="name" required value={answers.nome} onChange={e => setAnswers(prev => ({ ...prev, nome: e.target.value }))} />
               </div>
               <div className="form-input-wrap">
-                <label>WhatsApp</label>
-                <input type="tel" placeholder="(48) 99999-9999" autoComplete="tel" inputMode="tel" required value={answers.wpp} onChange={e => setAnswers(prev => ({ ...prev, wpp: formatPhone(e.target.value) }))} />
+                <label>{t("form.step4.wppLabel")}</label>
+                <input type="tel" placeholder={t("form.step4.wppPlaceholder")} autoComplete="tel" inputMode="tel" required value={answers.wpp} onChange={e => setAnswers(prev => ({ ...prev, wpp: formatPhone(e.target.value) }))} />
               </div>
               <div className="form-input-wrap">
-                <label>Instagram (opcional)</label>
-                <input type="text" placeholder="@seuinstagram" value={answers.ig} onChange={e => setAnswers(prev => ({ ...prev, ig: e.target.value }))} />
+                <label>{t("form.step4.igLabel")}</label>
+                <input type="text" placeholder={t("form.step4.igPlaceholder")} value={answers.ig} onChange={e => setAnswers(prev => ({ ...prev, ig: e.target.value }))} />
               </div>
               <div className="form-input-wrap">
-                <label>Contexto extra (opcional)</label>
-                <textarea rows="3" placeholder="Marca, referência, local, onde o vídeo vai ser publicado..." value={answers.msg} onChange={e => setAnswers(prev => ({ ...prev, msg: e.target.value }))}></textarea>
+                <label>{t("form.step4.msgLabel")}</label>
+                <textarea rows="3" placeholder={t("form.step4.msgPlaceholder")} value={answers.msg} onChange={e => setAnswers(prev => ({ ...prev, msg: e.target.value }))}></textarea>
               </div>
               <div className="form-nav">
-                <button className="btn-back" onClick={() => goToStep(3)}>← Voltar</button>
+                <button className="btn-back" onClick={() => goToStep(3)}>{t("form.back")}</button>
                 <div className="form-counter">4 / 4</div>
-                <button className="btn-next" disabled={!checkS4} onClick={handleSubmit}>Enviar via WhatsApp →</button>
+                <button className="btn-next" disabled={!checkS4} onClick={handleSubmit}>{t("form.submit")}</button>
               </div>
             </div>
 
             <div className={`form-success${submitted ? " show" : ""}`}>
               <div className="success-icon">⚡</div>
-              <div className="success-title">PRONTO.</div>
-              <p className="success-text">Sua mensagem foi montada com suas respostas.<br />Se o WhatsApp não abriu, use o botão abaixo.</p>
+              <div className="success-title">{t("form.success.title")}</div>
+              <p className="success-text" dangerouslySetInnerHTML={{ __html: t("form.success.text") }} />
               <a href={submitted ? buildWppUrl() : "#"} className="btn-wpp" id="wpp-link" target="_blank" rel="noopener noreferrer">
                 <WhatsAppSvg />
-                Abrir WhatsApp
+                {t("form.success.btn")}
               </a>
             </div>
           </div>
@@ -1240,11 +1808,11 @@ const LandingPage = ({ onLogin }) => {
 
         <section id="cta-final">
           <div className="cta-inner">
-            <div className="cta-over">Pronto pra não parar?</div>
-            <div className="cta-t">MOTION<br />NEVER<br />STOPS.</div>
+            <div className="cta-over">{t("cta.over")}</div>
+            <div className="cta-t" dangerouslySetInnerHTML={{ __html: t("cta.title") }} />
             <div className="cta-btns">
-              <a href="#form-section" className="btn-white" onClick={e => scrollTo(e, "#form-section")}>Começar projeto →</a>
-              <a href={INSTAGRAM_URL} className="btn-out-w" target="_blank" rel="noopener noreferrer">@doesnotzero no Instagram</a>
+              <a href="#form-section" className="btn-white" onClick={e => scrollTo(e, "#form-section")}>{t("cta.btnStart")}</a>
+              <a href={INSTAGRAM_URL} className="btn-out-w" target="_blank" rel="noopener noreferrer">{t("cta.btnInstagram")}</a>
             </div>
           </div>
         </section>
@@ -1252,38 +1820,41 @@ const LandingPage = ({ onLogin }) => {
         <footer ref={footerRef}>
           <div className="f-top">
             <div className="f-brand">
-              <a href="#hero" className="f-logo" onClick={e => scrollTo(e, "#hero")} aria-label="DNZ Films">
+              <a href="#hero" className="f-logo" onClick={e => scrollTo(e, "#hero")} aria-label={t("footer.logoAria")}>
                 <img src={LOGO_SRC} alt="DNZ Films" />
               </a>
-              <div className="f-tag">DOES NOT ZERO — FLORIANÓPOLIS, BR</div>
-              <p className="f-blurb">Produção audiovisual pra surf, luta, atletas e marcas em movimento. Direção, captação e edição — feito por quem vive o movimento.</p>
+              <div className="f-tag">{t("footer.tag")}</div>
+              <p className="f-blurb">{t("footer.blurb")}</p>
             </div>
             <ul className="f-links">
               <li><a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">@doesnotzero</a></li>
               <li><a href={`https://wa.me/${SALES_WHATSAPP}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
-              <li><a href="#trabalhos" onClick={e => scrollTo(e, "#trabalhos")}>Trabalhos</a></li>
-              <li><a href="#lutas" onClick={e => scrollTo(e, "#lutas")}>Lutas</a></li>
-              <li><a href="#galeria" onClick={e => scrollTo(e, "#galeria")}>Galeria</a></li>
-              <li><a href="#eventos" onClick={e => scrollTo(e, "#eventos")}>Eventos</a></li>
-              <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>Cases</a></li>
-              <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>Sobre</a></li>
-              <li><a href="#pacotes" onClick={e => scrollTo(e, "#pacotes")}>Pacotes</a></li>
-              <li><a href="#form-section" onClick={e => scrollTo(e, "#form-section")}>Briefing</a></li>
-              <li><button type="button" onClick={onLogin}>Login</button></li>
+              <li><a href="#trabalhos" onClick={e => scrollTo(e, "#trabalhos")}>{t("footer.trabalhos")}</a></li>
+              <li><a href="#lutas" onClick={e => scrollTo(e, "#lutas")}>{t("footer.lutas")}</a></li>
+              <li><a href="#galeria" onClick={e => scrollTo(e, "#galeria")}>{t("footer.galeria")}</a></li>
+              <li><a href="#eventos" onClick={e => scrollTo(e, "#eventos")}>{t("footer.eventos")}</a></li>
+              <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>{t("footer.cases")}</a></li>
+              <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>{t("footer.sobre")}</a></li>
+              <li><a href="#pacotes" onClick={e => scrollTo(e, "#pacotes")}>{t("footer.pacotes")}</a></li>
+              <li><a href="#form-section" onClick={e => scrollTo(e, "#form-section")}>{t("footer.briefing")}</a></li>
+              <li><button type="button" onClick={onLogin}>{t("footer.login")}</button></li>
+              <li><button type="button" className="lang-toggle" onClick={toggleLang} aria-label={t("nav.langAria")}>
+                <span className={lang === "pt" ? "on" : ""}>PT</span>/<span className={lang === "en" ? "on" : ""}>EN</span>
+              </button></li>
             </ul>
           </div>
           <div className="f-bottom">
-            <div className="f-copy">© <span id="year"></span> DNZ Films — Does Not Zero. Todos os direitos reservados.</div>
+            <div className="f-copy">{t("footer.copyPrefix")} <span id="year"></span> {t("footer.copySuffix")}</div>
             <div className="f-credit">
-              Site desenvolvido por <a href={INSTAGRAM_DEV_URL} target="_blank" rel="noopener noreferrer">doesnotzerodev</a>
+              {t("footer.creditPrefix")}<a href={INSTAGRAM_DEV_URL} target="_blank" rel="noopener noreferrer">doesnotzerodev</a>
             </div>
           </div>
         </footer>
 
         {lightboxOpen && (
-          <div className={`lightbox${lightboxVertical ? " vertical" : ""}`} role="dialog" aria-modal="true" aria-label="Player de vídeo" onClick={e => { if (e.target === e.currentTarget) closeVideo(); }}>
+          <div className={`lightbox${lightboxVertical ? " vertical" : ""}`} role="dialog" aria-modal="true" aria-label={t("lightbox.dialogAria")} onClick={e => { if (e.target === e.currentTarget) closeVideo(); }}>
             <div className="lightbox-dialog">
-              <button className="close-btn" type="button" id="lightboxClose" onClick={closeVideo} aria-label="Fechar vídeo">×</button>
+              <button className="close-btn" type="button" id="lightboxClose" onClick={closeVideo} aria-label={t("lightbox.closeAria")}>×</button>
               <div className="lightbox-head" id="lightboxHead">
                 <div>
                   <div className="lightbox-cat" id="lightboxCat">{lightboxMeta.category}</div>
@@ -1296,24 +1867,24 @@ const LandingPage = ({ onLogin }) => {
         )}
 
         {galleryIndex !== null && (
-          <div className="gallery-lb" role="dialog" aria-modal="true" aria-label="Galeria de imagens" onClick={e => { if (e.target === e.currentTarget) closeGallery(); }}>
-            <button className="gallery-close" type="button" id="galleryClose" onClick={closeGallery} aria-label="Fechar galeria">×</button>
-            <button className="gallery-arrow prev" type="button" onClick={() => galleryNav(-1)} aria-label="Imagem anterior">‹</button>
+          <div className="gallery-lb" role="dialog" aria-modal="true" aria-label={t("galeria.dialogAria")} onClick={e => { if (e.target === e.currentTarget) closeGallery(); }}>
+            <button className="gallery-close" type="button" id="galleryClose" onClick={closeGallery} aria-label={t("galeria.closeAria")}>×</button>
+            <button className="gallery-arrow prev" type="button" onClick={() => galleryNav(-1)} aria-label={t("galeria.prevAria")}>‹</button>
             <figure className="gallery-stage">
-              <img src={galleryStills[galleryIndex].src} alt={galleryStills[galleryIndex].alt} />
+              <img src={galleryStills[galleryIndex].src} alt={`${t("galeria.altPrefix")} ${String(galleryIndex + 1).padStart(2, "0")}`} />
               <figcaption className="gallery-counter">{galleryIndex + 1} / {galleryStills.length}</figcaption>
             </figure>
-            <button className="gallery-arrow next" type="button" onClick={() => galleryNav(1)} aria-label="Próxima imagem">›</button>
+            <button className="gallery-arrow next" type="button" onClick={() => galleryNav(1)} aria-label={t("galeria.nextAria")}>›</button>
           </div>
         )}
 
         <div className={`float-actions${floatHidden ? " hidden" : ""}`}>
-          <a href={`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent("Olá, DNZ! Vim pelo site e quero saber mais sobre um projeto.")}`} className="wpp-fixed" target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp">
-            <span className="float-tip">WHATSAPP</span>
+          <a href={`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(t("float.wppMsg"))}`} className="wpp-fixed" target="_blank" rel="noopener noreferrer" aria-label={t("float.wppAria")}>
+            <span className="float-tip">{t("float.wppTip")}</span>
             <WhatsAppSvg size={26} />
           </a>
-          <a href={INSTAGRAM_URL} className="ig-fixed" target="_blank" rel="noopener noreferrer" aria-label="Instagram @doesnotzero">
-            <span className="float-tip">@DOESNOTZERO</span>
+          <a href={INSTAGRAM_URL} className="ig-fixed" target="_blank" rel="noopener noreferrer" aria-label={t("float.igAria")}>
+            <span className="float-tip">{t("float.igTip")}</span>
             <InstagramSvg />
           </a>
         </div>
