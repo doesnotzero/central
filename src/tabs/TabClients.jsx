@@ -304,6 +304,16 @@ const TabClients = ({state,dispatch,privacyMode})=>{
   }
   return (
     <div>
+      <Card className="page-hero" style={{marginBottom:14}}>
+        <div className="page-hero-row">
+          <div>
+            <div className="page-eyebrow" style={{color:C.orange}}>CRM · HUB DA OPERAÇÃO</div>
+            <div className="page-title">Clientes</div>
+            <p className="page-subtitle">Do lead ao pago: pipeline, propostas, produção e previsão de receita num só lugar.</p>
+          </div>
+          <BrandedButton onClick={()=>{setCf(E);setEditClient(null);setShowAdd(true);}} size="sm">+ Cliente</BrandedButton>
+        </div>
+      </Card>
       <div className="mobile-kpi-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
         <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#10b981",fontFamily:"var(--font-display)"}}>{clients.filter(c=>["briefing","proposta_enviada","em_producao"].includes(normalizeClientStatus(c))).length}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Em operação</div></Card>
         <Card style={{padding:"14px 16px",textAlign:"center"}}>

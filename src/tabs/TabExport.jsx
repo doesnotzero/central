@@ -124,9 +124,14 @@ const TabExport = ({state,dispatch})=>{
   const backupWarn=backupDays===null||backupDays>=7;
   return (
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
-      <Card style={{background:`${C.orange}08`,borderColor:`${C.orange}20`,padding:"20px 22px"}}>
-        <div style={{fontSize:11,color:C.orange,fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",marginBottom:6}}>CENTRAL DE RELATÓRIOS</div>
-        <p style={{margin:0,fontSize:14,color:"#aaa",lineHeight:1.6}}>Escolha relatórios separados por área ou gere um documento completo para imprimir e salvar em PDF.</p>
+      <Card className="page-hero">
+        <div className="page-hero-row">
+          <div>
+            <div className="page-eyebrow" style={{color:C.orange}}>SISTEMA</div>
+            <div className="page-title">Relatórios</div>
+            <p className="page-subtitle">Relatórios por área ou documento completo pra imprimir/salvar em PDF, além de backup dos dados.</p>
+          </div>
+        </div>
       </Card>
       <Card style={{padding:"20px 22px"}}>
         {backupWarn&&<div style={{padding:"10px 12px",borderRadius:12,background:"rgba(234,179,8,.1)",border:"1px solid rgba(234,179,8,.28)",color:"#eab308",fontSize:12,fontWeight:700,marginBottom:14}}>Backup recomendado: {backupDays===null?"nenhum backup registrado":`último backup há ${backupDays} dias`}.</div>}

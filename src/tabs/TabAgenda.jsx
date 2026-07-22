@@ -31,6 +31,15 @@ const TabAgenda = ({state,dispatch,setTab})=>{
   const totalMins=Object.values(state.scheduleBlocks).flat().reduce((a,b)=>{const dur=timeToMins(b.end||"09:00")-timeToMins(b.start||"08:00");return a+(dur>0?dur:0);},0);
   return (
     <div>
+      <Card className="page-hero" style={{marginBottom:14}}>
+        <div className="page-hero-row">
+          <div>
+            <div className="page-eyebrow" style={{color:C.orange}}>OPERAÇÃO</div>
+            <div className="page-title">Agenda</div>
+            <p className="page-subtitle">Prazos de tarefas, reuniões, produção e financeiro dos próximos 7 dias, mais seus blocos de planejamento.</p>
+          </div>
+        </div>
+      </Card>
       <Card style={{padding:"16px 18px",marginBottom:14,background:"rgba(59,130,246,.06)",borderColor:"rgba(59,130,246,.2)"}}>
         <SectionTitle>AGENDA INTELIGENTE</SectionTitle>
         {agendaItems.length===0&&<div style={{fontSize:13,color:C.muted}}>Agenda limpa nos próximos 7 dias. Use blocos semanais para reservar produção, reunião e revisão.</div>}

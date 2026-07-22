@@ -191,9 +191,14 @@ const TabProposta = ({state,dispatch})=>{
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
-      <Card style={{background:"linear-gradient(135deg,rgba(59,130,246,.1),rgba(0,0,0,0))",borderColor:"rgba(59,130,246,.25)",padding:"20px 22px"}}>
-        <div style={{fontSize:11,color:"#3b82f6",fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",marginBottom:4}}>PROPOSTA COMERCIAL</div>
-        <p style={{margin:0,fontSize:13,color:"#aaa",lineHeight:1.5}}>Crie uma proposta profissional com identidade de {business.brandName||APP_NAME}, exporte em PDF e salve no histórico do cliente.</p>
+      <Card className="page-hero">
+        <div className="page-hero-row">
+          <div>
+            <div className="page-eyebrow" style={{color:C.orange}}>COMERCIAL</div>
+            <div className="page-title">Propostas</div>
+            <p className="page-subtitle">Monte uma proposta com a identidade da {business.brandName||APP_NAME}, exporte em PDF e salve no histórico do cliente.</p>
+          </div>
+        </div>
       </Card>
 
       {(savedClients.length>0||savedProjects.length>0)&&<Card>

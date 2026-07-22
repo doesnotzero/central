@@ -30,7 +30,16 @@ const TabTasks = ({state,dispatch})=>{
   const dueTag=t=>{const b=taskBucket(t),diff=dayDiff(t.dueDate);if(b==="overdue")return {txt:`${Math.abs(diff)}d atraso`,c:"#ef4444"};if(b==="today")return {txt:"hoje",c:"#10b981"};if(b==="week")return {txt:`${diff}d`,c:"#3b82f6"};if(b==="later")return {txt:new Date(t.dueDate+"T00:00").toLocaleDateString("pt-BR",{day:"numeric",month:"short"}),c:"#8b5cf6"};return null;};
   return (
     <div>
-      <SectionTitle action={<Btn onClick={()=>setShowAdd(true)} size="sm">+ Nova</Btn>}>TAREFAS INTELIGENTES ({inc.length})</SectionTitle>
+      <Card className="page-hero" style={{marginBottom:14}}>
+        <div className="page-hero-row">
+          <div>
+            <div className="page-eyebrow" style={{color:C.orange}}>OPERAÇÃO</div>
+            <div className="page-title">Atividades</div>
+            <p className="page-subtitle">Tarefas priorizadas por prazo e urgência — {inc.length} em aberto.</p>
+          </div>
+          <Btn onClick={()=>setShowAdd(true)} size="sm">+ Nova</Btn>
+        </div>
+      </Card>
       <div className="mobile-kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,marginBottom:14}}>
         {buckets.map(b=><button key={b.id} onClick={()=>setFilter(b.id)} style={{padding:"10px 8px",borderRadius:12,border:"1px solid",borderColor:filter===b.id?b.color:C.border,background:filter===b.id?`${b.color}14`:"rgba(255,255,255,.025)",color:filter===b.id?b.color:C.muted,cursor:"pointer",fontFamily:"inherit",textAlign:"center"}}><div style={{fontSize:18,fontWeight:900,fontFamily:"var(--font-display)"}}>{b.items.length}</div><div style={{fontSize:9,fontWeight:800,textTransform:"uppercase",marginTop:2}}>{b.label}</div></button>)}
       </div>
