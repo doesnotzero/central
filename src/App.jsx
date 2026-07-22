@@ -1125,19 +1125,23 @@ function App(){
   );
   if(publicReviewToken){
     return (
-      <div className="app-shell public-review-shell">
-        <div style={{position:"fixed",top:-160,right:-80,width:600,height:600,background:"radial-gradient(circle,rgba(6,182,212,.05) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
-        <main id="main-content" className="app-content" tabIndex="-1" style={{marginLeft:0}}>
-          <div className="content-inner" style={{maxWidth:1180}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,marginBottom:18}}>
-              <Brand/>
-              <Tag color="#06b6d4">Link público</Tag>
-            </div>
+      <div className="app-shell review-public-shell">
+        <div className="review-public-glow"/>
+        <header className="review-public-topbar">
+          <Brand/>
+          <div className="review-public-badge"><span className="review-public-dot"/>Revisão de vídeo</div>
+        </header>
+        <main id="main-content" className="review-public-main" tabIndex="-1">
+          <div className="review-public-inner">
             <React.Suspense fallback={<LazyTabFallback label="Carregando Video Review..." />}>
               <TabVideoReview state={state} dispatch={dispatch} publicToken={publicReviewToken} isPublic/>
             </React.Suspense>
           </div>
         </main>
+        <footer className="review-public-foot">
+          <span>{(business.brandName||APP_NAME).toUpperCase()} · aprovação de vídeo</span>
+          <a href="https://dnzcentral.com.br" target="_blank" rel="noopener noreferrer">Feito pela DNZ Films</a>
+        </footer>
       </div>
     );
   }

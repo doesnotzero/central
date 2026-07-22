@@ -329,7 +329,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
   const clearMoment = () => setCommentForm(f => ({ ...f, timestamp: "" }));
 
   if (publicToken && reviewLoading) {
-    return <div className="page-stack"><Card className="page-hero"><div className="page-eyebrow" style={{ color: "#06b6d4" }}>VIDEO REVIEW</div><div className="page-title">Carregando revisão...</div><p className="page-subtitle">Buscando vídeo, status e comentários.</p></Card></div>;
+    return <div className="page-stack"><Card className="page-hero"><div className="page-eyebrow" style={{ color: C.orange }}>REVISÃO DE VÍDEO</div><div className="page-title">Carregando revisão...</div><p className="page-subtitle">Buscando vídeo, status e comentários.</p></Card></div>;
   }
 
   if (publicToken && reviewError && !current) {
@@ -344,20 +344,21 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
         <Card className="page-hero video-review-hero">
           <div className="page-hero-row">
             <div>
-              <div className="page-eyebrow" style={{ color: meta.color }}>VIDEO REVIEW</div>
+              <div className="page-eyebrow" style={{ color: meta.color }}>{isPublic ? "REVISÃO PARA APROVAÇÃO" : "VIDEO REVIEW"}</div>
               <div className="page-title">{current.title}</div>
               <p className="page-subtitle">{current.project_title || "Projeto sem nome"} {current.client_name ? `· ${current.client_name}` : ""} · v{current.version || 1}</p>
+              {isPublic && <p className="page-subtitle" style={{ marginTop: 8, color: "#8b8b8b", fontSize: 12.5 }}>Assista abaixo. Para comentar num ponto exato, pause o vídeo e escreva — o comentário fica fixado naquele segundo. Ao final, escolha <b style={{ color: "#10b981" }}>Aprovado</b> ou peça <b style={{ color: C.orange }}>Ajustes</b>.</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
                 <Tag color={meta.color}>{meta.label}</Tag>
                 <Tag color="#3b82f6">{current.video_source === "drive" ? "Google Drive" : hlsReady ? "HLS/CDN" : "Link direto"}</Tag>
-                <Tag color="#06b6d4">{comments.length} comentário{comments.length === 1 ? "" : "s"}</Tag>
+                <Tag color="#64748b">{comments.length} comentário{comments.length === 1 ? "" : "s"}</Tag>
                 {comments.length > 0 && <Tag color={pendingComments ? C.orange : "#10b981"}>{pendingComments ? `${pendingComments} pendente${pendingComments === 1 ? "" : "s"}` : "Tudo resolvido"}</Tag>}
               </div>
             </div>
             <div className="review-status-actions">
-              <button type="button" onClick={() => setStatus("waiting_review")} className={current.status === "waiting_review" ? "active" : ""} style={{ "--accent": "#eab308" }}><span>Aguardando</span><small>cliente analisando</small></button>
-              <button type="button" onClick={() => setStatus("revision_requested")} className={["revision_requested", "approved_with_changes", "rejected"].includes(current.status) ? "active" : ""} style={{ "--accent": C.orange }}><span>Ajustes</span><small>nova rodada</small></button>
-              <button type="button" onClick={() => setStatus("approved")} className={current.status === "approved" ? "active" : ""} style={{ "--accent": "#10b981" }}><span>Aprovado</span><small>entrega liberada</small></button>
+              <button type="button" onClick={() => setStatus("waiting_review")} className={current.status === "waiting_review" ? "active" : ""} style={{ "--accent": "#eab308" }}><span>Aguardando</span><small>{isPublic ? "ainda avaliando" : "cliente analisando"}</small></button>
+              <button type="button" onClick={() => setStatus("revision_requested")} className={["revision_requested", "approved_with_changes", "rejected"].includes(current.status) ? "active" : ""} style={{ "--accent": C.orange }}><span>Ajustes</span><small>{isPublic ? "quero mudanças" : "nova rodada"}</small></button>
+              <button type="button" onClick={() => setStatus("approved")} className={current.status === "approved" ? "active" : ""} style={{ "--accent": "#10b981" }}><span>Aprovado</span><small>{isPublic ? "pode publicar" : "entrega liberada"}</small></button>
             </div>
           </div>
         </Card>
@@ -429,7 +430,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
       <Card className="page-hero video-review-hero">
         <div className="page-hero-row">
           <div>
-            <div className="page-eyebrow" style={{ color: "#06b6d4" }}>PRODUTO PRINCIPAL</div>
+            <div className="page-eyebrow" style={{ color: C.orange }}>PRODUTO PRINCIPAL</div>
             <div className="page-title">Video Review premium para aprovação de cliente</div>
             <p className="page-subtitle">Envie um link limpo, receba comentários por timecode e feche a decisão em três estados: aguardando, ajustes ou aprovado.</p>
           </div>
