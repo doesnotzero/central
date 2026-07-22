@@ -124,7 +124,7 @@ export const SystemHealth = ({ state, setTab }) => {
     <div className="health-grid">
       <Card style={{ padding: "16px", background: "rgba(59,130,246,.06)", borderColor: "rgba(59,130,246,.2)" }}>
         <div style={{ fontSize: 11, color: "#3b82f6", fontWeight: 900, letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 8 }}>SAÚDE DO SISTEMA</div>
-        <div style={{ fontSize: 34, fontWeight: 900, color: score >= 75 ? "#10b981" : score >= 50 ? "#eab308" : "#ef4444", fontFamily: "'Syne',sans-serif" }}>{score}%</div>
+        <div style={{ fontSize: 34, fontWeight: 900, color: score >= 75 ? "#10b981" : score >= 50 ? "#eab308" : "#ef4444", fontFamily: "var(--font-display)" }}>{score}%</div>
         <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>Pronto para operar e preparar deploy.</div>
         <Bar v={score} color={score >= 75 ? "#10b981" : score >= 50 ? "#eab308" : "#ef4444"} h={6} />
       </Card>

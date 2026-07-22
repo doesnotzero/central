@@ -302,7 +302,7 @@ const TabProposta = ({state,dispatch})=>{
           <Divider/>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span style={{fontSize:14,fontWeight:700,color:"#fff"}}>Total Final</span>
-            <span style={{fontSize:28,fontWeight:900,color:"#3b82f6",fontFamily:"'Syne',sans-serif"}}>{fmtCurrency(finalTotal)}</span>
+            <span style={{fontSize:28,fontWeight:900,color:"#3b82f6",fontFamily:"var(--font-display)"}}>{fmtCurrency(finalTotal)}</span>
           </div>
         </Card>
       )}

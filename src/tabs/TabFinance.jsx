@@ -45,10 +45,10 @@ export default function TabFinance({state,dispatch,privacyMode,shared}){
             <div style={{fontSize:10,color:card.color,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase",marginBottom:10}}>Próxima ação</div>
             <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}>
               <div>
-                <div style={{fontSize:18,fontWeight:900,fontFamily:"'Syne',sans-serif",lineHeight:1.1}}>{card.title}</div>
+                <div style={{fontSize:18,fontWeight:900,fontFamily:"var(--font-display)",lineHeight:1.1}}>{card.title}</div>
                 <div style={{fontSize:12,color:"#aaa",lineHeight:1.45,marginTop:6}}>{card.text}</div>
               </div>
-              <div style={{fontSize:26,color:card.color,fontWeight:900,fontFamily:"'Syne',sans-serif"}}>{card.value}</div>
+              <div style={{fontSize:26,color:card.color,fontWeight:900,fontFamily:"var(--font-display)"}}>{card.value}</div>
             </div>
             {card.amount>0&&<div style={{fontSize:13,color:card.color,fontWeight:900,marginTop:12}}>{fmtMoney(card.amount,privacyMode)}</div>}
           </button>

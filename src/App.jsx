@@ -583,7 +583,7 @@ const Modal = ({open,onClose,title,children,wide})=>{
       <div className="modal-backdrop" onClick={onClose}/>
       <div className={`scale-in modal-panel ${wide?"wide":""}`} role="dialog" aria-modal="true" aria-label={title||"Janela"}>
         <div className="modal-head">
-          <h3 style={{margin:0,fontSize:16,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif"}}>{title}</h3>
+          <h3 style={{margin:0,fontSize:16,fontWeight:800,color:"#fff",fontFamily:"var(--font-display)"}}>{title}</h3>
           <button type="button" onClick={onClose} aria-label="Fechar janela" style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:20,lineHeight:1,transition:"color .15s"}} onMouseEnter={e=>e.target.style.color="#fff"} onMouseLeave={e=>e.target.style.color=C.muted}>✕</button>
         </div>
         <div className="modal-scroll modal-body">
@@ -603,7 +603,7 @@ const SectionTitle = ({children,action})=>(
 const PremiumEmpty = ({title,text,action,icon="+"})=>(
   <Card style={{textAlign:"center",padding:"30px 22px",background:"linear-gradient(135deg,rgba(255,255,255,.045),rgba(0,0,0,0))"}}>
     <div style={{width:42,height:42,borderRadius:14,margin:"0 auto 12px",display:"grid",placeItems:"center",background:"rgba(255,36,0,.12)",border:"1px solid rgba(255,36,0,.28)",color:C.orange,fontSize:18,fontWeight:900}}>{icon}</div>
-    <div style={{fontSize:16,fontWeight:900,color:"#fff",fontFamily:"'Syne',sans-serif",marginBottom:6}}>{title}</div>
+    <div style={{fontSize:16,fontWeight:900,color:"#fff",fontFamily:"var(--font-display)",marginBottom:6}}>{title}</div>
     <p style={{fontSize:13,color:C.muted,lineHeight:1.5,margin:"0 auto 14px",maxWidth:420}}>{text}</p>
     {action}
   </Card>
@@ -612,7 +612,7 @@ const AccessWall = ({onLogin})=>(
   <div className="access-wall">
     <div className="access-wall-card scale-in">
       <div className="elite-kicker">ACESSO PRIVADO</div>
-      <h1 style={{fontSize:"clamp(30px,5vw,52px)",lineHeight:1,color:"#fff",fontFamily:"'Syne',sans-serif",margin:"10px 0 12px"}}>Workspace interno do {APP_NAME}.</h1>
+      <h1 style={{fontSize:"clamp(30px,5vw,52px)",lineHeight:1,color:"#fff",fontFamily:"var(--font-display)",margin:"10px 0 12px"}}>Workspace interno do {APP_NAME}.</h1>
       <p style={{fontSize:15,color:"#cfcfcf",lineHeight:1.65,maxWidth:640,margin:"0 0 20px"}}>O {APP_NAME} guarda clientes, propostas, produção, documentos, financeiro e Video Review. A entrada é restrita ao admin autorizado.</p>
       <div className="access-steps">
         {[
@@ -720,7 +720,7 @@ const SystemHealth = ({state,setTab})=>{
     <div className="health-grid">
       <Card style={{padding:"16px",background:"rgba(59,130,246,.06)",borderColor:"rgba(59,130,246,.2)"}}>
         <div style={{fontSize:11,color:"#3b82f6",fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginBottom:8}}>SAÚDE DO SISTEMA</div>
-        <div style={{fontSize:34,fontWeight:900,color:score>=75?"#10b981":score>=50?"#eab308":"#ef4444",fontFamily:"'Syne',sans-serif"}}>{score}%</div>
+        <div style={{fontSize:34,fontWeight:900,color:score>=75?"#10b981":score>=50?"#eab308":"#ef4444",fontFamily:"var(--font-display)"}}>{score}%</div>
         <div style={{fontSize:12,color:C.muted,marginTop:4}}>Pronto para operar e preparar deploy.</div>
         <Bar v={score} color={score>=75?"#10b981":score>=50?"#eab308":"#ef4444"} h={6}/>
       </Card>
@@ -1098,7 +1098,7 @@ function App(){
   const Brand=()=>(
     <div style={{display:"flex",alignItems:"center",gap:10}}>
       <div style={{width:34,height:34,borderRadius:11,background:business.logoUrl?"rgba(255,255,255,.06)":`linear-gradient(135deg,${business.primaryColor||C.orange},${C.orangeD})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:900,color:"#111",boxShadow:`0 8px 24px ${(business.primaryColor||C.orange)}45`,overflow:"hidden"}}><LogoMark business={business} size={34} textColor={business.logoUrl?undefined:"#111"}/></div>
-      <div className="brand-copy"><div style={{fontSize:14,fontWeight:900,color:"#fff",fontFamily:"'Syne',sans-serif",lineHeight:1}}>{(business.brandName||APP_NAME).toUpperCase()}</div><div style={{fontSize:8,color:business.primaryColor||C.orange,fontWeight:800,letterSpacing:".18em"}}>{APP_SUBTITLE}</div></div>
+      <div className="brand-copy"><div style={{fontSize:14,fontWeight:900,color:"#fff",fontFamily:"var(--font-display)",lineHeight:1}}>{(business.brandName||APP_NAME).toUpperCase()}</div><div style={{fontSize:8,color:business.primaryColor||C.orange,fontWeight:800,letterSpacing:".18em"}}>{APP_SUBTITLE}</div></div>
     </div>
   );
   const NavList=()=>(
@@ -1157,7 +1157,7 @@ function App(){
         </div>
         <div className="sidebar-current">
           <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",letterSpacing:".1em",marginBottom:5}}>Visão atual</div>
-          <div style={{display:"flex",alignItems:"center",gap:8,color:"#fff",fontSize:14,fontWeight:900,fontFamily:"'Syne',sans-serif"}}><span style={{color:C.orange}}>{activeTab.icon}</span>{activeTab.label}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,color:"#fff",fontSize:14,fontWeight:900,fontFamily:"var(--font-display)"}}><span style={{color:C.orange}}>{activeTab.icon}</span>{activeTab.label}</div>
         </div>
         <div className="sidebar-card" style={{marginBottom:8,padding:"8px 10px",borderRadius:13,background:isAdmin?"rgba(255,36,0,.08)":session?"rgba(16,185,129,.07)":"rgba(255,255,255,.03)",border:`1px solid ${isAdmin?"rgba(255,36,0,.28)":session?"rgba(16,185,129,.2)":C.border}`}}>
           <button onClick={()=>setAccountOpen(v=>!v)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,background:"transparent",border:"none",padding:0,color:"#ddd",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
@@ -1190,7 +1190,7 @@ function App(){
           <button onClick={()=>setNavOpen(true)} style={{width:38,height:38,borderRadius:11,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.055)",color:"#fff",cursor:"pointer",fontSize:18,lineHeight:1}}>☰</button>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",letterSpacing:".12em"}}>{APP_NAME.toUpperCase()}</div>
-            <div style={{fontSize:15,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{activeTab.label}</div>
+            <div style={{fontSize:15,color:"#fff",fontWeight:900,fontFamily:"var(--font-display)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{activeTab.label}</div>
           </div>
           {canUseWorkspace&&<button onClick={()=>setSearchOpen(true)} title="Busca global" style={{width:38,height:38,borderRadius:11,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.055)",color:C.muted,cursor:"pointer",fontSize:16}}>⌕</button>}
           {canUseWorkspace&&<button onClick={()=>setCompactMode(m=>!m)} title="Modo compacto" style={{width:38,height:38,borderRadius:11,border:`1px solid ${compactMode?C.orange:C.border}`,background:compactMode?"rgba(255,36,0,.13)":"rgba(255,255,255,.055)",color:compactMode?C.orange:C.muted,cursor:"pointer",fontSize:12,fontWeight:900}}>Cx</button>}
@@ -1240,7 +1240,7 @@ function App(){
           <div className="lock-card scale-in">
             <Brand/>
             <div style={{marginTop:20,fontSize:11,color:C.orange,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase"}}>Proteção ativa</div>
-            <h2 style={{fontSize:24,lineHeight:1.15,color:"#fff",fontFamily:"'Syne',sans-serif",margin:"8px 0 8px"}}>Tela bloqueada</h2>
+            <h2 style={{fontSize:24,lineHeight:1.15,color:"#fff",fontFamily:"var(--font-display)",margin:"8px 0 8px"}}>Tela bloqueada</h2>
             <p style={{fontSize:13,color:"#aaa",lineHeight:1.55,marginBottom:18}}>Os dados ficam escondidos depois de alguns minutos sem uso. O login GitHub continua cuidando da identidade, e o Supabase fica responsável pela sincronização.</p>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
               <div className="security-chip"><span>Privacidade</span><span style={{color:privacyMode?C.orange:"#10b981"}}>{privacyMode?"Oculta":"Ativa"}</span></div>
@@ -1273,24 +1273,32 @@ function App(){
           {tab==="clients"   &&<ModularTabClients    state={state} dispatch={dispatch} privacyMode={privacyMode}/>}
           {tab==="projects"  &&<ModularTabProjects   state={state} dispatch={dispatch}/>}
           {tab==="videoReview"&&(
-            <React.Suspense fallback={<LazyTabFallback label="Carregando Video Review..." />}>
-              <TabVideoReview state={state} dispatch={dispatch}/>
-            </React.Suspense>
+            <ErrorBoundary compact>
+              <React.Suspense fallback={<LazyTabFallback label="Carregando Video Review..." />}>
+                <TabVideoReview state={state} dispatch={dispatch}/>
+              </React.Suspense>
+            </ErrorBoundary>
           )}
           {tab==="studio"    &&(
-            <React.Suspense fallback={<LazyTabFallback label="Carregando Studio Docs..." />}>
-              <TabStudioDocs state={state} dispatch={dispatch} shared={lazyTabShared}/>
-            </React.Suspense>
+            <ErrorBoundary compact>
+              <React.Suspense fallback={<LazyTabFallback label="Carregando Studio Docs..." />}>
+                <TabStudioDocs state={state} dispatch={dispatch} shared={lazyTabShared}/>
+              </React.Suspense>
+            </ErrorBoundary>
           )}
           {tab==="brandbook" &&(
-            <React.Suspense fallback={<LazyTabFallback label="Carregando Brand Book..." />}>
-              <TabBrandBook state={state} dispatch={dispatch} shared={lazyTabShared}/>
-            </React.Suspense>
+            <ErrorBoundary compact>
+              <React.Suspense fallback={<LazyTabFallback label="Carregando Brand Book..." />}>
+                <TabBrandBook state={state} dispatch={dispatch} shared={lazyTabShared}/>
+              </React.Suspense>
+            </ErrorBoundary>
           )}
           {tab==="finance"   &&(
-            <React.Suspense fallback={<LazyTabFallback label="Carregando Financeiro..." />}>
-              <TabFinance state={state} dispatch={dispatch} privacyMode={privacyMode} shared={lazyTabShared}/>
-            </React.Suspense>
+            <ErrorBoundary compact>
+              <React.Suspense fallback={<LazyTabFallback label="Carregando Financeiro..." />}>
+                <TabFinance state={state} dispatch={dispatch} privacyMode={privacyMode} shared={lazyTabShared}/>
+              </React.Suspense>
+            </ErrorBoundary>
           )}
           {tab==="proposta"  &&<ModularTabProposta state={state} dispatch={dispatch}/>}
           {tab==="business"  &&<ModularTabBusinessSettings state={state} dispatch={dispatch}/>}

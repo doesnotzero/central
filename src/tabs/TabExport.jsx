@@ -140,7 +140,7 @@ const TabExport = ({state,dispatch})=>{
             {v:reviews.length,l:"Video Reviews",c:"#06b6d4"},
             {v:activeClients,l:"Clientes ativos",c:"#3b82f6"},
             {v:fmtCurrency(paidTotal),l:"Recebido",c:"#eab308"},
-          ].map((s,i)=><div key={i} style={{background:"rgba(255,255,255,.035)",border:`1px solid ${C.border}`,borderRadius:12,padding:"12px",textAlign:"center"}}><div style={{fontSize:i===3?12:22,fontWeight:800,color:s.c,fontFamily:"'Syne',sans-serif"}}>{s.v}</div><div style={{fontSize:10,color:C.muted,marginTop:4}}>{s.l}</div></div>)}
+          ].map((s,i)=><div key={i} style={{background:"rgba(255,255,255,.035)",border:`1px solid ${C.border}`,borderRadius:12,padding:"12px",textAlign:"center"}}><div style={{fontSize:i===3?12:22,fontWeight:800,color:s.c,fontFamily:"var(--font-display)"}}>{s.v}</div><div style={{fontSize:10,color:C.muted,marginTop:4}}>{s.l}</div></div>)}
         </div>
         <SectionTitle>RELATÓRIOS INCLUÍDOS</SectionTitle>
         <div style={{display:"grid",gridTemplateColumns:"1fr",gap:9,marginBottom:16}}>

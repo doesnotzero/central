@@ -120,7 +120,7 @@ const TabProjects = ({state,dispatch})=>{
         {stages.map(s=>{
           const count=s==="all"?projects.length:projects.filter(p=>p.video.status===s).length;
           const color=s==="all"?C.orange:VIDEO_COLORS[s]||C.orange;
-          return <button key={s} onClick={()=>setFilter(s)} style={{padding:"10px 8px",borderRadius:12,border:"1px solid",borderColor:filter===s?color:C.border,background:filter===s?`${color}14`:"rgba(255,255,255,.025)",color:filter===s?color:C.muted,cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:18,fontWeight:900,fontFamily:"'Syne',sans-serif"}}>{count}</div><div style={{fontSize:9,fontWeight:800,textTransform:"uppercase",marginTop:2}}>{s==="all"?"Todos":s}</div></button>;
+          return <button key={s} onClick={()=>setFilter(s)} style={{padding:"10px 8px",borderRadius:12,border:"1px solid",borderColor:filter===s?color:C.border,background:filter===s?`${color}14`:"rgba(255,255,255,.025)",color:filter===s?color:C.muted,cursor:"pointer",fontFamily:"inherit"}}><div style={{fontSize:18,fontWeight:900,fontFamily:"var(--font-display)"}}>{count}</div><div style={{fontSize:9,fontWeight:800,textTransform:"uppercase",marginTop:2}}>{s==="all"?"Todos":s}</div></button>;
         })}
       </div>
       <div className="split-layout">
@@ -135,7 +135,7 @@ const TabProjects = ({state,dispatch})=>{
           return (
             <Card key={`${p.client.id}-${p.video.id}`} onClick={()=>setSelected({clientId:p.client.id,videoId:p.video.id})} style={{cursor:"pointer",padding:"14px 16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"flex-start",marginBottom:8}}>
-                <div style={{minWidth:0}}><div className="private-data" style={{fontSize:15,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif"}}>{p.video.title}</div><div className="private-data" style={{fontSize:12,color:C.muted,marginTop:2}}>{p.client.name} · {p.video.type}</div></div>
+                <div style={{minWidth:0}}><div className="private-data" style={{fontSize:15,fontWeight:800,color:"#fff",fontFamily:"var(--font-display)"}}>{p.video.title}</div><div className="private-data" style={{fontSize:12,color:C.muted,marginTop:2}}>{p.client.name} · {p.video.type}</div></div>
                 <Tag color={VIDEO_COLORS[p.video.status]||C.orange}>{p.video.status}</Tag>
               </div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10,alignItems:"center"}}>{d&&<Tag color={d.c}>{d.txt}</Tag>}{p.video.link&&<Tag color="#3b82f6">link</Tag>}{lateSteps>0&&<Tag color="#ef4444">{lateSteps} marco atraso</Tag>}<Tag color="#8b5cf6">{done}/{checks.length}</Tag><Tag color="#06b6d4">set {premium.done}/{premium.total}</Tag>{p.video.status!=="entregue"&&<button onClick={e=>{e.stopPropagation();update(p,{status:nextStatus});}} style={{marginLeft:"auto",border:`1px solid ${(VIDEO_COLORS[nextStatus]||C.orange)}45`,background:`${VIDEO_COLORS[nextStatus]||C.orange}12`,color:VIDEO_COLORS[nextStatus]||C.orange,borderRadius:9,padding:"5px 9px",fontSize:10,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>Avançar → {nextStatus}</button>}</div>

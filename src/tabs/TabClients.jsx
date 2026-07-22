@@ -204,8 +204,8 @@ const TabClients = ({state,dispatch,privacyMode})=>{
         <button onClick={()=>setSelected(null)} style={{background:"none",border:"none",color:C.orange,cursor:"pointer",fontSize:13,fontWeight:700,marginBottom:16,transition:"opacity .15s"}} onMouseEnter={e=>e.target.style.opacity=".7"} onMouseLeave={e=>e.target.style.opacity="1"}>← Voltar</button>
         <Card style={{background:`${STATUS_COLORS[normalizeClientStatus(client)]||C.orange}08`,borderColor:`${STATUS_COLORS[normalizeClientStatus(client)]||C.orange}25`,marginBottom:14}}>
           <div className="client-detail-head">
-            <div><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}><Tag color={STATUS_COLORS[normalizeClientStatus(client)]||C.orange}>{clientStageLabel(client)}</Tag><Tag color={PAG_COLORS[client.payment]||C.orange}>{client.payment}</Tag><Tag color={TEMP_COLORS[client.leadTemp]||"#eab308"}>{client.leadTemp||"morno"}</Tag><Tag color={(RELATIONSHIP_TYPES.find(r=>r.id===relationType(client))||RELATIONSHIP_TYPES[1]).color}>{(RELATIONSHIP_TYPES.find(r=>r.id===relationType(client))||RELATIONSHIP_TYPES[1]).label}</Tag>{isFollowPending(client)&&<Tag color="#ef4444">follow-up</Tag>}</div><div className="private-data" style={{fontSize:20,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif"}}>{client.name}</div>{client.service&&<div style={{fontSize:13,color:C.muted,marginTop:3}}>{client.service}</div>}</div>
-            <div className="client-detail-value" style={{textAlign:"right"}}><div style={{fontSize:22,fontWeight:800,color:"#10b981",fontFamily:"'Syne',sans-serif"}}>{fmtMoney(client.value,privacyMode)}</div><div style={{fontSize:11,color:C.muted}}>contrato</div></div>
+            <div><div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8,flexWrap:"wrap"}}><Tag color={STATUS_COLORS[normalizeClientStatus(client)]||C.orange}>{clientStageLabel(client)}</Tag><Tag color={PAG_COLORS[client.payment]||C.orange}>{client.payment}</Tag><Tag color={TEMP_COLORS[client.leadTemp]||"#eab308"}>{client.leadTemp||"morno"}</Tag><Tag color={(RELATIONSHIP_TYPES.find(r=>r.id===relationType(client))||RELATIONSHIP_TYPES[1]).color}>{(RELATIONSHIP_TYPES.find(r=>r.id===relationType(client))||RELATIONSHIP_TYPES[1]).label}</Tag>{isFollowPending(client)&&<Tag color="#ef4444">follow-up</Tag>}</div><div className="private-data" style={{fontSize:20,fontWeight:800,color:"#fff",fontFamily:"var(--font-display)"}}>{client.name}</div>{client.service&&<div style={{fontSize:13,color:C.muted,marginTop:3}}>{client.service}</div>}</div>
+            <div className="client-detail-value" style={{textAlign:"right"}}><div style={{fontSize:22,fontWeight:800,color:"#10b981",fontFamily:"var(--font-display)"}}>{fmtMoney(client.value,privacyMode)}</div><div style={{fontSize:11,color:C.muted}}>contrato</div></div>
           </div>
           <Divider/>
           <div className="mobile-two-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -305,14 +305,14 @@ const TabClients = ({state,dispatch,privacyMode})=>{
   return (
     <div>
       <div className="mobile-kpi-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:16}}>
-        <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#10b981",fontFamily:"'Syne',sans-serif"}}>{clients.filter(c=>["briefing","proposta_enviada","em_producao"].includes(normalizeClientStatus(c))).length}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Em operação</div></Card>
+        <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#10b981",fontFamily:"var(--font-display)"}}>{clients.filter(c=>["briefing","proposta_enviada","em_producao"].includes(normalizeClientStatus(c))).length}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Em operação</div></Card>
         <Card style={{padding:"14px 16px",textAlign:"center"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-            <div style={{fontSize:privacyMode?18:13,fontWeight:800,color:"#eab308",fontFamily:"'Syne',sans-serif"}}>{fmtMoney(totalReceivable,privacyMode)}</div>
+            <div style={{fontSize:privacyMode?18:13,fontWeight:800,color:"#eab308",fontFamily:"var(--font-display)"}}>{fmtMoney(totalReceivable,privacyMode)}</div>
           </div>
           <div style={{fontSize:10,color:C.muted,marginTop:2}}>A receber</div>
         </Card>
-        <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#8b5cf6",fontFamily:"'Syne',sans-serif"}}>{clients.reduce((a,c)=>(c.videos||[]).filter(v=>v.status!=="entregue").length+a,0)}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Vídeos pendentes</div></Card>
+        <Card style={{padding:"14px 16px",textAlign:"center"}}><div style={{fontSize:24,fontWeight:800,color:"#8b5cf6",fontFamily:"var(--font-display)"}}>{clients.reduce((a,c)=>(c.videos||[]).filter(v=>v.status!=="entregue").length+a,0)}</div><div style={{fontSize:10,color:C.muted,marginTop:2}}>Vídeos pendentes</div></Card>
       </div>
       <Card style={{padding:"12px 14px",marginBottom:14}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(5,minmax(0,1fr))",gap:8}} className="modal-grid">
@@ -371,7 +371,7 @@ const TabClients = ({state,dispatch,privacyMode})=>{
                   return (
                     <div key={c.id} className="card-hover client-drag-card" draggable onDragStart={e=>{e.dataTransfer.setData("text/plain",String(c.id));e.dataTransfer.effectAllowed="move";setDraggingClient(c.id);}} onDragEnd={()=>setDraggingClient(null)} onClick={()=>setSelected(c.id)} style={{background:"rgba(255,255,255,.04)",border:`1px solid ${col.color}22`,borderRadius:12,padding:"12px 12px",marginBottom:8,cursor:"grab",opacity:String(draggingClient)===String(c.id)?.55:1}}>
                       <div style={{display:"flex",justifyContent:"space-between",gap:8,alignItems:"flex-start",marginBottom:6}}>
-                        <div className="private-data" style={{fontSize:13,fontWeight:800,color:"#fff",fontFamily:"'Syne',sans-serif",lineHeight:1.25}}>{c.name}</div>
+                        <div className="private-data" style={{fontSize:13,fontWeight:800,color:"#fff",fontFamily:"var(--font-display)",lineHeight:1.25}}>{c.name}</div>
                         <div style={{fontSize:11,fontWeight:800,color:"#10b981",whiteSpace:"nowrap"}}>{fmtMoney(forecast(c),privacyMode)}</div>
                       </div>
                       {c.service&&<div style={{fontSize:11,color:C.muted,lineHeight:1.35,marginBottom:5}}>{c.service}</div>}
@@ -418,13 +418,13 @@ const TabClients = ({state,dispatch,privacyMode})=>{
                   {dtm!==null&&dtm<=7&&dtm>=0&&<Tag color="#3b82f6">reunião em {dtm}d</Tag>}
                   {isFollowPending(c)&&<Tag color="#ef4444">follow-up</Tag>}
                 </div>
-                <div className="private-data" style={{fontSize:16,fontWeight:700,color:"#fff",fontFamily:"'Syne',sans-serif"}}>{c.name}</div>
+                <div className="private-data" style={{fontSize:16,fontWeight:700,color:"#fff",fontFamily:"var(--font-display)"}}>{c.name}</div>
                 {c.service&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{c.service}</div>}
                 <div style={{fontSize:11,color:"#aaa",marginTop:5}}>{relationMeta(c)}</div>
                 {c.nextAction&&<div style={{fontSize:11,color:"#aaa",marginTop:5}}>Próxima ação: {c.nextAction}</div>}
               </div>
               <div className="client-list-value" style={{textAlign:"right",flexShrink:0}}>
-                <div style={{fontSize:16,fontWeight:800,color:"#10b981",fontFamily:"'Syne',sans-serif"}}>{fmtMoney(c.value,privacyMode)}</div>
+                <div style={{fontSize:16,fontWeight:800,color:"#10b981",fontFamily:"var(--font-display)"}}>{fmtMoney(c.value,privacyMode)}</div>
                 <div style={{fontSize:10,color:C.muted,marginTop:2}}>prev. {fmtMoney(forecast(c),privacyMode)}</div>
                 {c.nextMeeting&&<div style={{fontSize:11,color:C.muted,marginTop:2}}>📅 {new Date(c.nextMeeting+"T00:00").toLocaleDateString("pt-BR")}</div>}
                 <div style={{display:"flex",gap:6,justifyContent:"flex-end",marginTop:8}} onClick={e=>e.stopPropagation()}>

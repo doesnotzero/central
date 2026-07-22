@@ -96,7 +96,7 @@ export const Modal = ({ open, onClose, title, children, wide }) => {
       <div className="modal-backdrop" onClick={onClose} />
       <div className={`scale-in modal-panel ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={title || "Janela"}>
         <div className="modal-head">
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "'Syne',sans-serif" }}>{title}</h3>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "var(--font-display)" }}>{title}</h3>
           <button type="button" onClick={onClose} aria-label="Fechar janela" style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 20, lineHeight: 1, transition: "color .15s" }} onMouseEnter={(e) => (e.target.style.color = "#fff")} onMouseLeave={(e) => (e.target.style.color = C.muted)}>✕</button>
         </div>
         <div className="modal-scroll modal-body">{children}</div>
@@ -120,7 +120,7 @@ export const SectionTitle = ({ children, action }) => (
 export const PremiumEmpty = ({ title, text, action, icon = "+" }) => (
   <Card style={{ textAlign: "center", padding: "30px 22px", background: "linear-gradient(135deg,rgba(255,255,255,.045),rgba(0,0,0,0))" }}>
     <div style={{ width: 42, height: 42, borderRadius: 14, margin: "0 auto 12px", display: "grid", placeItems: "center", background: "rgba(255,36,0,.12)", border: "1px solid rgba(255,36,0,.28)", color: C.orange, fontSize: 18, fontWeight: 900 }}>{icon}</div>
-    <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", fontFamily: "'Syne',sans-serif", marginBottom: 6 }}>{title}</div>
+    <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", fontFamily: "var(--font-display)", marginBottom: 6 }}>{title}</div>
     <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.5, margin: "0 auto 14px", maxWidth: 420 }}>{text}</p>
     {action}
   </Card>
@@ -131,7 +131,7 @@ export const AccessWall = ({ onLogin }) => (
   <div className="access-wall">
     <div className="access-wall-card scale-in">
       <div className="elite-kicker">ACESSO PRIVADO</div>
-      <h1 style={{ fontSize: "clamp(30px,5vw,52px)", lineHeight: 1, color: "#fff", fontFamily: "'Syne',sans-serif", margin: "10px 0 12px" }}>Workspace interno do {APP_NAME}.</h1>
+      <h1 style={{ fontSize: "clamp(30px,5vw,52px)", lineHeight: 1, color: "#fff", fontFamily: "var(--font-display)", margin: "10px 0 12px" }}>Workspace interno do {APP_NAME}.</h1>
       <p style={{ fontSize: 15, color: "#cfcfcf", lineHeight: 1.65, maxWidth: 640, margin: "0 0 20px" }}>O {APP_NAME} guarda clientes, propostas, produção, documentos, financeiro e Video Review. A entrada é restrita ao admin autorizado.</p>
       <div className="access-steps">
         {[["1", "Login", "Entre com GitHub."], ["2", "Admin", "O email precisa estar autorizado."], ["3", "Operação", `Abra o workspace ${APP_NAME}.`]].map(([n, t, d]) => (

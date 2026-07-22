@@ -45,7 +45,7 @@ export const OnboardingGuide = ({session,state,setTab,onDone})=>{
       <div className="onboarding-head">
         <div>
           <div style={{fontSize:10,color:"#3b82f6",fontWeight:900,letterSpacing:".14em",textTransform:"uppercase",marginBottom:5}}>Primeiros passos</div>
-          <div style={{fontSize:15,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif"}}>{doneCount}/{steps.length} configurado</div>
+          <div style={{fontSize:15,color:"#fff",fontWeight:900,fontFamily:"var(--font-display)"}}>{doneCount}/{steps.length} configurado</div>
         </div>
         <button onClick={onDone} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>
       </div>

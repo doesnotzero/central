@@ -92,7 +92,7 @@ const Modal = ({ open, onClose, title, children, wide }) => {
       <div className="modal-backdrop" onClick={onClose} />
       <div className={`scale-in modal-panel ${wide ? "wide" : ""}`} role="dialog" aria-modal="true" aria-label={title || "Janela"}>
         <div className="modal-head">
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "'Syne',sans-serif" }}>{title}</h3>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "var(--font-display)" }}>{title}</h3>
           <button type="button" onClick={onClose} aria-label="Fechar janela" style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 20, lineHeight: 1 }}>x</button>
         </div>
         <div className="modal-scroll modal-body">{children}</div>
@@ -104,7 +104,7 @@ const Modal = ({ open, onClose, title, children, wide }) => {
 const PremiumEmpty = ({ icon, title, text, action }) => (
   <Card style={{ textAlign: "center", padding: "34px 24px" }}>
     <div style={{ fontSize: 32, color: C.orange, marginBottom: 10 }}>{icon}</div>
-    <div style={{ fontSize: 20, color: "#fff", fontWeight: 900, fontFamily: "'Syne',sans-serif" }}>{title}</div>
+    <div style={{ fontSize: 20, color: "#fff", fontWeight: 900, fontFamily: "var(--font-display)" }}>{title}</div>
     <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.55, maxWidth: 520, margin: "8px auto 16px" }}>{text}</p>
     {action}
   </Card>

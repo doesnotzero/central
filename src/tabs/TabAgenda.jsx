@@ -59,7 +59,7 @@ const TabAgenda = ({state,dispatch,setTab})=>{
           return (
             <div key={b.id} className="card-hover" style={{display:"flex",gap:12,padding:"12px 16px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,borderLeft:`4px solid ${b.color||C.orange}`,transition:"all .2s"}}>
               <div style={{minWidth:80}}>
-                <div style={{fontSize:13,fontWeight:800,color:b.color||C.orange,fontFamily:"'Syne',sans-serif"}}>{b.start}</div>
+                <div style={{fontSize:13,fontWeight:800,color:b.color||C.orange,fontFamily:"var(--font-display)"}}>{b.start}</div>
                 <div style={{fontSize:11,color:C.muted}}>{b.end} · {dur>0?`${Math.round(dur/60*10)/10}h`:"—"}</div>
               </div>
               <div style={{flex:1}}>

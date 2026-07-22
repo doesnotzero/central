@@ -67,7 +67,13 @@ export default function TabStudioDocs({state,dispatch,shared}){
   const selectedClient=clients.find(c=>String(c.id)===String(form.clientId));
   const selectedProject=projects.find(p=>p.key===form.projectKey);
   const selectedPreset=presetById(form.presetId);
-  const html=studioDocTemplates({form,business,client:selectedClient,project:selectedProject});
+  let html="";
+  try{
+    html=studioDocTemplates({form,business,client:selectedClient,project:selectedProject});
+  }catch(err){
+    console.error("Falha ao gerar o documento:",err);
+    html=`<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="font-family:sans-serif;padding:32px;color:#333;background:#f7f4ee"><h2 style="color:#c00">Não foi possível montar a pré-visualização</h2><p>Ajuste os campos do documento e tente novamente. Se persistir, avise o suporte.</p></body></html>`;
+  }
   const update=(key,value)=>setForm(f=>({...f,[key]:value}));
   const applyDocType=d=>setForm(f=>({...f,docType:d.id,title:f.title==="Documento de produção"?`${d.label} · ${presetById(f.presetId).title}`:f.title}));
   const applyPreset=p=>{
@@ -228,7 +234,7 @@ export default function TabStudioDocs({state,dispatch,shared}){
             <div className="scale-in modal-panel wide" role="dialog" aria-modal="true" aria-label="Configurar documento">
               <div className="modal-head">
                 <div>
-                  <h3 style={{margin:0,fontSize:16,fontWeight:900,color:"#fff",fontFamily:"'Syne',sans-serif"}}>Configurar documento</h3>
+                  <h3 style={{margin:0,fontSize:16,fontWeight:900,color:"#fff",fontFamily:"var(--font-display)"}}>Configurar documento</h3>
                   <div style={{fontSize:10,color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",marginTop:4}}>{selectedDoc.label} · {selectedPreset.label}</div>
                 </div>
                 <button type="button" onClick={()=>setShowComposer(false)} aria-label="Fechar janela" style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:20,lineHeight:1}}>x</button>
