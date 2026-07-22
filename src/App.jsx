@@ -177,6 +177,7 @@ const PRODUCTION_PIPELINE = [
   {key:"checklist",label:"Checklist",docType:"checklist",color:"#06b6d4"},
   {key:"entrega",label:"Entrega",docType:"entrega",color:"#10b981"},
 ];
+const studioEsc = v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const studioDate = v=>v?new Date(v+"T00:00").toLocaleDateString("pt-BR"):"A definir";
 const studioLines = v=>String(v||"").split(/\n|,/).map(x=>x.trim()).filter(Boolean);
 const studioDocById = id=>STUDIO_DOCUMENTS.find(d=>d.id===id)||STUDIO_DOCUMENTS[0];
