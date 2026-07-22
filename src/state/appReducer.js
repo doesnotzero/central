@@ -51,6 +51,7 @@ export function reducer(s, a) {
     case "UPDATE_REVIEW_DELIVERABLE": return { ...s, reviewDeliverables: (s.reviewDeliverables || []).map((d) => (d.id === a.id ? { ...d, ...a.data, updatedAt: new Date().toISOString() } : d)) };
     case "REMOVE_REVIEW_DELIVERABLE": return { ...s, reviewDeliverables: (s.reviewDeliverables || []).filter((d) => d.id !== a.id) };
     case "ADD_REVIEW_COMMENT": return { ...s, reviewDeliverables: (s.reviewDeliverables || []).map((d) => (d.id === a.deliverableId ? { ...d, comments: [...(d.comments || []), { id: Date.now(), createdAt: new Date().toISOString(), resolved: false, ...a.comment }] } : d)) };
+    case "TOGGLE_REVIEW_COMMENT_RESOLVED": return { ...s, reviewDeliverables: (s.reviewDeliverables || []).map((d) => (d.id === a.deliverableId ? { ...d, comments: (d.comments || []).map((c) => (c.id === a.commentId ? { ...c, resolved: !c.resolved, resolved_at: !c.resolved ? new Date().toISOString() : null } : c)) } : d)) };
     case "ADD_CLIENT": return { ...s, clients: [...(s.clients || []), { id: Date.now(), interactions: [], videos: [], createdAt: new Date().toLocaleDateString("pt-BR"), ...a.client }] };
     case "UPDATE_CLIENT": return { ...s, clients: s.clients.map((c) => (c.id === a.id ? { ...c, ...a.data } : c)) };
     case "REMOVE_CLIENT": return { ...s, clients: s.clients.filter((c) => c.id !== a.id) };

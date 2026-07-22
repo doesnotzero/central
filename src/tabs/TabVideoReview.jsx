@@ -5,6 +5,7 @@ import {
   createVideoComment,
   getCommentsByDeliverable,
   getDeliverableByToken,
+  resolveVideoComment,
   updateDeliverableStatus
 } from "../services/reviewService.js";
 import { C as THEME_C } from "../theme.config.js";
@@ -130,6 +131,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
   }))), [state.clients]);
   const current = publicItem || (selected && items.find(i => i.id === selected));
   const comments = useMemo(() => [...(current?.comments || [])].sort((a, b) => Number(a.timestamp_seconds ?? 999999) - Number(b.timestamp_seconds ?? 999999)), [current?.comments]);
+  const pendingComments = useMemo(() => comments.filter(c => !c.resolved).length, [comments]);
   const hlsReady = current?.video_url && String(current.video_url).toLowerCase().includes(".m3u8");
   const statusMeta = {
     waiting_review: { label: "Aguardando", short: "Aguardando", color: "#eab308", desc: "Cliente recebeu o link e ainda não decidiu." },
@@ -272,9 +274,29 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
     if (current.supabaseId) {
       const { error } = await updateDeliverableStatus(current.supabaseId, status);
       if (!error) setPublicItem(p => p ? { ...p, status } : p);
-      return;
+    } else {
+      dispatch({ type: "UPDATE_REVIEW_DELIVERABLE", id: current.id, data: { status } });
     }
-    dispatch({ type: "UPDATE_REVIEW_DELIVERABLE", id: current.id, data: { status } });
+    // Fecha o ciclo: aprovar o review marca o vídeo do projeto vinculado como entregue.
+    if (status === "approved" && !isPublic && current.project_key) {
+      const [clientId, videoId] = String(current.project_key).split(":");
+      const client = (state.clients || []).find(c => String(c.id) === String(clientId));
+      const vid = client && (client.videos || []).find(v => String(v.id) === String(videoId));
+      if (vid && vid.status !== "entregue") {
+        dispatch({ type: "UPDATE_CLIENT_VIDEO", clientId: client.id, videoId: vid.id, data: { status: "entregue" } });
+      }
+    }
+  };
+
+  const toggleResolved = async c => {
+    if (!current) return;
+    const next = !c.resolved;
+    if (current.supabaseId) {
+      const { error } = await resolveVideoComment(c.id, next);
+      if (!error) setPublicItem(p => p ? { ...p, comments: (p.comments || []).map(x => x.id === c.id ? { ...x, resolved: next, resolved_at: next ? new Date().toISOString() : null } : x) } : p);
+    } else {
+      dispatch({ type: "TOGGLE_REVIEW_COMMENT_RESOLVED", deliverableId: current.id, commentId: c.id, silent: true });
+    }
   };
 
   const saveComment = async () => {
@@ -319,6 +341,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
                 <Tag color={meta.color}>{meta.label}</Tag>
                 <Tag color="#3b82f6">{current.video_source === "drive" ? "Google Drive" : hlsReady ? "HLS/CDN" : "Link direto"}</Tag>
                 <Tag color="#06b6d4">{comments.length} comentário{comments.length === 1 ? "" : "s"}</Tag>
+                {comments.length > 0 && <Tag color={pendingComments ? C.orange : "#10b981"}>{pendingComments ? `${pendingComments} pendente${pendingComments === 1 ? "" : "s"}` : "Tudo resolvido"}</Tag>}
               </div>
             </div>
             <div className="review-status-actions">
@@ -351,12 +374,17 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
           </Card>
           <aside className="side-panel">
             <Card>
-              <SectionTitle>COMENTÁRIOS POR TIMECODE</SectionTitle>
+              <SectionTitle>{pendingComments ? `COMENTÁRIOS · ${pendingComments} PENDENTE${pendingComments === 1 ? "" : "S"}` : "COMENTÁRIOS POR TIMECODE"}</SectionTitle>
               {comments.length === 0 && <div style={{ fontSize: 13, color: C.muted, marginBottom: 12 }}>Nenhum comentário ainda.</div>}
-              {comments.map(c => <button key={c.id} onClick={() => seekTo(c.timestamp_seconds)} style={{ width: "100%", display: "block", textAlign: "left", padding: "10px 0", border: "none", borderBottom: `1px solid ${C.border}`, background: "transparent", fontFamily: "inherit", cursor: c.timestamp_seconds != null ? "pointer" : "default" }}>
-                <div style={{ fontSize: 11, color: C.orange, fontWeight: 900 }}>{c.timecode || fmtTimecode(c.timestamp_seconds)} · {c.author_name}</div>
-                <div style={{ fontSize: 13, color: "#ddd", lineHeight: 1.45, marginTop: 4 }}>{c.content}</div>
-              </button>)}
+              {comments.map(c => (
+                <div key={c.id} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, padding: "10px 0", borderBottom: `1px solid ${C.border}`, opacity: c.resolved ? .55 : 1 }}>
+                  <button onClick={() => seekTo(c.timestamp_seconds)} style={{ flex: 1, minWidth: 0, textAlign: "left", background: "transparent", border: "none", padding: 0, fontFamily: "inherit", cursor: c.timestamp_seconds != null ? "pointer" : "default" }}>
+                    <div style={{ fontSize: 11, color: c.resolved ? "#10b981" : C.orange, fontWeight: 900 }}>{c.resolved ? "✓ " : ""}{c.timecode || fmtTimecode(c.timestamp_seconds)} · {c.author_name}</div>
+                    <div style={{ fontSize: 13, color: "#ddd", lineHeight: 1.45, marginTop: 4, textDecoration: c.resolved ? "line-through" : "none" }}>{c.content}</div>
+                  </button>
+                  {!isPublic && <button onClick={() => toggleResolved(c)} title={c.resolved ? "Reabrir comentário" : "Marcar como resolvido"} style={{ flexShrink: 0, background: c.resolved ? "rgba(16,185,129,.15)" : "rgba(255,255,255,.05)", border: `1px solid ${c.resolved ? "rgba(16,185,129,.35)" : C.border}`, color: c.resolved ? "#10b981" : C.muted, borderRadius: 8, padding: "4px 8px", fontSize: 10, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{c.resolved ? "Reabrir" : "Resolver"}</button>}
+                </div>
+              ))}
               <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
                 <div style={{ fontSize: 12, color: "#ddd", fontWeight: 900 }}>Comentar neste momento: <span style={{ color: C.orange }}>{fmtTimecode(commentForm.timestamp !== "" ? commentForm.timestamp : playerTime)}</span></div>
                 <input value={commentForm.name} onChange={e => setCommentForm(f => ({ ...f, name: e.target.value }))} placeholder={isPublic ? "Seu nome" : "Autor"} style={{ height: 36, borderRadius: 10, border: `1px solid ${C.border}`, background: "rgba(255,255,255,.045)", color: "#fff", padding: "0 10px", fontFamily: "inherit", outline: "none" }} />
@@ -404,7 +432,7 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
             <div className="review-card-top"><Tag color={meta.color}>{meta.short}</Tag><span>{item.video_source === "drive" ? "Drive" : item.video_source === "hls" ? "HLS" : "MP4/link"}</span></div>
             <strong>{item.title}</strong>
             <p>{item.project_title || "Projeto sem nome"} {item.client_name ? `· ${item.client_name}` : ""}</p>
-            <div className="review-card-meta"><span>{(item.comments || []).length} comentário{(item.comments || []).length === 1 ? "" : "s"}</span><span>v{item.version || 1}</span></div>
+            <div className="review-card-meta"><span>{(() => { const pend = (item.comments || []).filter(c => !c.resolved).length; return pend ? `${pend} pendente${pend === 1 ? "" : "s"}` : `${(item.comments || []).length} comentário${(item.comments || []).length === 1 ? "" : "s"}`; })()}</span><span>v{item.version || 1}</span></div>
             <div className="review-card-action">Abrir revisão</div>
           </button>;
         })}

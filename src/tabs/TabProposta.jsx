@@ -18,6 +18,7 @@ const TabProposta = ({state,dispatch})=>{
   const [notes,setNotes]=useState("");
   const [validity,setValidity]=useState("15");
   const [proposalStatus,setProposalStatus]=useState("rascunho");
+  const [autoProjectDone,setAutoProjectDone]=useState(false);
   const [generating,setGenerating]=useState(false);
   const business=normalizeBusiness(state?.business);
   const savedClients=state?.clients||[];
@@ -43,7 +44,7 @@ const TabProposta = ({state,dispatch})=>{
     setSelected(prev=>[...prev,{id:`custom_${Date.now()}`,name:customService.name,desc:"Serviço personalizado",price:Number(customService.price),qty:1,customPrice:Number(customService.price)}]);
     setCustomService({name:"",price:""});setShowCustom(false);
   };
-  const loadClient=c=>{setLoadedClientId(c.id);setLoadedProjectId("");setClient({name:c.name||"",company:c.name||"",email:c.email||"",phone:c.phone||"",city:business.proposalCity||"",cnpj:""});};
+  const loadClient=c=>{setLoadedClientId(c.id);setLoadedProjectId("");setAutoProjectDone(false);setClient({name:c.name||"",company:c.name||"",email:c.email||"",phone:c.phone||"",city:business.proposalCity||"",cnpj:""});};
   const loadProject=p=>{
     loadClient(p.client);
     setLoadedProjectId(p.video.id);
@@ -71,6 +72,23 @@ const TabProposta = ({state,dispatch})=>{
     };
     dispatch({type:"ADD_CLIENT_PROPOSAL",clientId:loadedClientId,proposal});
     dispatch({type:"ADD_CLIENT_INTERACTION",id:loadedClientId,interaction:{type:"proposta",note:`Proposta ${proposalStatus} salva: ${fmtCurrency(finalTotal)}`}});
+    // Fecha o ciclo: proposta aceita vira projeto de produção automaticamente.
+    if(proposalStatus==="aceita" && !loadedProjectId && !autoProjectDone){
+      const preset=presetById(selected[0]?.id?.replace?.("project_","")||"institucional");
+      dispatch({type:"ADD_CLIENT_VIDEO",id:loadedClientId,video:{
+        title:selected[0]?.name||"Projeto aprovado",
+        type:preset?.type||"gravação",
+        presetId:preset?.id||"institucional",
+        status:"pendente",
+        value:finalTotal,
+        deadline:deadline||"",
+        deliverables:selected.map(s=>({text:s.name,done:false})),
+        fromProposal:true
+      }});
+      dispatch({type:"UPDATE_CLIENT",id:loadedClientId,data:{status:"em_producao",value:finalTotal}});
+      dispatch({type:"ADD_CLIENT_INTERACTION",id:loadedClientId,interaction:{type:"projeto",note:`Projeto criado automaticamente a partir da proposta aceita: ${selected[0]?.name||"Projeto"}`}});
+      setAutoProjectDone(true);
+    }
   };
 
   const generatePDF=()=>{
@@ -282,6 +300,7 @@ const TabProposta = ({state,dispatch})=>{
           <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
             {["rascunho","enviada","aceita","recusada"].map(s=><button key={s} onClick={()=>setProposalStatus(s)} style={{padding:"6px 12px",borderRadius:9,border:"1px solid",borderColor:proposalStatus===s?C.orange:C.border,background:proposalStatus===s?`${C.orange}15`:"transparent",color:proposalStatus===s?C.orange:C.muted,fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>{s}</button>)}
           </div>
+          {proposalStatus==="aceita"&&!loadedProjectId&&<div style={{marginTop:9,fontSize:11,color:"#10b981",lineHeight:1.5,display:"flex",gap:7,alignItems:"flex-start"}}><span>✓</span><span>Ao salvar no CRM, um <strong>projeto de produção</strong> será criado automaticamente e o cliente vai pra <strong>Em produção</strong>.</span></div>}
         </div>
       </Card>
 

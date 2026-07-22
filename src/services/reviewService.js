@@ -94,6 +94,20 @@ export const createVideoComment = async payload => {
   return { data, error };
 };
 
+export const resolveVideoComment = async (commentId, resolved) => {
+  const supabase = getSupabase();
+  if (!supabase) return { data: null, error: new Error("Supabase indisponível") };
+
+  const { data, error } = await supabase
+    .from("video_comments")
+    .update({ resolved, resolved_at: resolved ? new Date().toISOString() : null })
+    .eq("id", commentId)
+    .select(COMMENT_COLUMNS)
+    .single();
+
+  return { data, error };
+};
+
 export const updateDeliverableStatus = async (deliverableId, status) => {
   const supabase = getSupabase();
   if (!supabase) return { data: null, error: new Error("Supabase indisponível") };
