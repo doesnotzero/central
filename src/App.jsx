@@ -918,8 +918,10 @@ function App(){
     window.dispatchEvent(new PopStateEvent("popstate"));
   },[]);
   useEffect(()=>{
-    if(route!=="/app"&&canUseWorkspace)navigateTo("/app");
-  },[route,canUseWorkspace,navigateTo]);
+    // Não redireciona para /app se for um link público de review, senão o admin
+    // logado é chutado de volta pro sistema ao abrir /review/<token>.
+    if(route!=="/app"&&canUseWorkspace&&!publicReviewToken)navigateTo("/app");
+  },[route,canUseWorkspace,navigateTo,publicReviewToken]);
   useEffect(()=>{
     const onRoute=()=>setRoute(window.location.pathname || "/");
     window.addEventListener("popstate",onRoute);
