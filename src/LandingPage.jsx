@@ -832,17 +832,17 @@ const LandingPage = ({ onLogin }) => {
           <div className="prob-left">
             <div className="label">O problema</div>
             <h2 className="prob-title">
-              SEU<br />
-              PROJETO<br />
-              <span className="dim">MERECE</span><br />
-              MAIS.
+              O MOMENTO<br />
+              FOI FORTE.<br />
+              <span className="dim">O VÍDEO</span><br />
+              NÃO FOI.
             </h2>
           </div>
           <div className="prob-right">
-            <p>Você tem uma sessão incrível filmada. Uma prancha que levou semanas pra shape. Uma marca que representa algo de verdade.</p>
-            <p><strong>Mas o vídeo não entrega o que foi vivido.</strong></p>
-            <p>Câmera lenta genérica. Música aleatória. Cortes sem intenção. O resultado chega e a sensação do momento ficou pra trás.</p>
-            <p>A DNZ existe pra resolver isso: cada frame com propósito, cada corte com intenção. Vídeo que faz quem assiste <strong>sentir o que você viveu.</strong></p>
+            <p>Você treinou meses pra uma luta de 3 rounds. Pegou a sessão da vida no dia certo. Uma prancha que levou semanas pra shape. Uma marca que representa algo de verdade.</p>
+            <p><strong>E o vídeo que sobrou não chega perto do que foi viver aquilo.</strong></p>
+            <p>Câmera tremida. Corte no meio da ação. Áudio ruim, ritmo errado, música que não bate com a cena. O momento foi brutal — o vídeo ficou morno.</p>
+            <p>A DNZ existe pra isso não acontecer de novo: direção no set, corte com intenção, cor e som fechando a cena. <strong>Pra quem assiste sentir o impacto que você sentiu.</strong></p>
             <a href="#solucao" className="arrow-down" onClick={e => scrollTo(e, "#solucao")}>Ver como trabalhamos ↓</a>
           </div>
         </section>

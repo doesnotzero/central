@@ -8,7 +8,9 @@ import { CurrencyInput } from './components/form-fields/CurrencyInput.jsx';
 import { MaskedInput } from './components/form-fields/MaskedInput.jsx';
 import { OptionCards } from './components/form-fields/OptionCards.jsx';
 import { LandingPage, LoginPage } from './LandingPage.jsx';
-import { BRANDING, DEFAULT_BUSINESS_CONFIG } from './config/branding';
+import { BRANDING } from './config/branding';
+import { INIT, reducer, DEFAULT_SUBSCRIPTION, DEFAULT_BUSINESS, normalizeBusiness, normalizeGsdAgent } from './state/appReducer.js';
+import { softNotifySound } from './utils/crypto.js';
 import ModularTabAgenda from './tabs/TabAgenda.jsx';
 import ModularTabBusinessSettings, { OnboardingGuide as ModularOnboardingGuide, SecurityPanel as ModularSecurityPanel } from './tabs/TabBusinessSettings.jsx';
 import ModularTabClients from './tabs/TabClients.jsx';
@@ -32,25 +34,8 @@ const APP_NAME = BRANDING.appName;
 const APP_SUBTITLE = BRANDING.appSubtitle;
 const SALES_EMAIL = BRANDING.salesEmail;
 const SALES_WHATSAPP = BRANDING.salesWhatsapp;
-const DEFAULT_SUBSCRIPTION = {
-  plan:"admin",
-  status:"active",
-  source:"admin",
-  startedAt:new Date().toISOString(),
-  expiresAt:null,
-  updatedAt:new Date().toISOString()
-};
-const DEFAULT_BUSINESS = {
-  ...DEFAULT_BUSINESS_CONFIG
-};
 const persist = (s) => { try { localStorage.setItem(SK, JSON.stringify(s)); } catch {} };
 const hydrate = () => { try { const r = localStorage.getItem(SK); return r ? JSON.parse(r) : null; } catch { return null; } };
-const normalizeBusiness = b => {
-  const next={...DEFAULT_BUSINESS,...(b||{})};
-  const legacyBrands=["central"+"is","ne"+"xo","ne"+"xo studio"];
-  if(legacyBrands.includes(String(next.brandName||"").toLowerCase()))next.brandName=BRANDING.brandName;
-  return next;
-};
 
 // ── CONSTANTS ──────────────────────────────────────────────────────────
 const QUOTES = [
@@ -412,93 +397,6 @@ const studioDocTemplates = ({form,business,client,project})=>{
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${studioEsc(doc.label)} - ${studioEsc(form.title||preset.title)}</title><style>*{box-sizing:border-box}body{margin:0;background:#f7f4ee;color:#141414;font-family:Arial,sans-serif}.doc-page{max-width:860px;margin:0 auto;background:#f7f4ee;min-height:100vh;padding:48px}.doc-kicker{font-size:10px;color:${doc.color};font-weight:900;letter-spacing:.18em;text-transform:uppercase}.doc-title{font-size:42px;line-height:.95;font-weight:900;margin:10px 0 12px;color:#111}.doc-muted{color:#666;line-height:1.45}.doc-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;padding-bottom:22px;border-bottom:3px solid ${doc.color}}.doc-brand{text-align:right;font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.12em;font-weight:900}.doc-section{margin-top:26px;padding-top:15px;border-top:1px solid #d9d3ca}.doc-section h2{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:${doc.color};margin:0 0 10px}.doc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:22px}.doc-field{border:1px solid #ded7cc;background:#fffdf8;padding:11px}.doc-field-label{font-size:9px;color:#888;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}.doc-field-value{font-size:12px;color:#1a1a1a;font-weight:700;line-height:1.45}.doc-list{display:grid;gap:7px}.doc-item{font-size:12px;line-height:1.48;padding:9px 11px;border-left:3px solid ${doc.color};background:#fffdf8}.doc-table{width:100%;border-collapse:collapse;background:#fffdf8;font-size:12px}.doc-table th{text-align:left;color:${doc.color};font-size:9px;text-transform:uppercase;letter-spacing:.1em;border:1px solid #ded7cc;padding:8px}.doc-table td{border:1px solid #ded7cc;padding:9px;vertical-align:top;line-height:1.4}.doc-footer{margin-top:42px;padding-top:18px;border-top:1px solid #d9d3ca;display:flex;justify-content:space-between;gap:24px;color:#777;font-size:11px}@media print{body{background:#fff}.doc-page{padding:32px;max-width:none}.doc-section{break-inside:avoid}.doc-grid{grid-template-columns:1fr 1fr}}</style></head><body><main class="doc-page"><header class="doc-header"><div><div class="doc-kicker">${studioEsc(APP_NAME)} Studio · ${studioEsc(doc.label)}</div><h1 class="doc-title">${studioEsc(form.title||project?.video?.title||preset.title)}</h1><div class="doc-muted">${studioEsc(config.tone||doc.desc)}</div></div><div class="doc-brand">${studioEsc(business.brandName||APP_NAME)}<br>${studioEsc(business.proposalEmail||SALES_EMAIL)}<br>${new Date().toLocaleDateString("pt-BR")}</div></header>${fieldGrid}${content}${form.notes?section("Notas Adicionais",studioLines(form.notes)): ""}<footer class="doc-footer"><div>${studioEsc(business.brandName||APP_NAME)} · Documento operacional</div><div>Gerado em ${new Date().toLocaleString("pt-BR")}</div></footer></main></body></html>`;
 };
 
-const DEFAULT_GSD_AGENT = {
-  enabled:true,
-  name:"GSD",
-  label:"Get Shit Done",
-  mode:"execution",
-  mission:"Guardar contexto operacional e transformar decisão solta em próxima ação clara.",
-  currentFocus:"",
-  operatingRules:[
-    "Capturar contexto antes que ele se perca",
-    "Separar fato, decisão e próxima ação",
-    "Puxar o usuário de volta para execução quando houver dispersão"
-  ],
-  memory:[],
-  lastActivatedAt:new Date().toISOString(),
-  updatedAt:new Date().toISOString()
-};
-const normalizeGsdAgent = agent => ({
-  ...DEFAULT_GSD_AGENT,
-  ...(agent||{}),
-  memory:Array.isArray(agent?.memory)?agent.memory:[]
-});
-
-const INIT = {
-  tasks:[], notes:[], clients:[], financeEntries:[], studioDocs:[], reviews:{}, reviewDeliverables:[],
-  business:DEFAULT_BUSINESS,
-  subscription:DEFAULT_SUBSCRIPTION,
-  scheduleBlocks:{},
-  gsdAgent:DEFAULT_GSD_AGENT,
-};
-
-// ── REDUCER ────────────────────────────────────────────────────────────
-function reducer(s, a) {
-  switch(a.type) {
-    case "HYDRATE": return {...INIT,...a.p,business:normalizeBusiness(a.p?.business),subscription:{...DEFAULT_SUBSCRIPTION,...(a.p?.subscription||{})},gsdAgent:normalizeGsdAgent(a.p?.gsdAgent)};
-    case "UPDATE_BUSINESS": return {...s,business:normalizeBusiness({...s.business,...a.data})};
-    case "SET_SUBSCRIPTION": return {...s,subscription:{...DEFAULT_SUBSCRIPTION,...(s.subscription||{}),...a.data,updatedAt:new Date().toISOString()}};
-    case "UPDATE_GSD_AGENT": return {...s,gsdAgent:normalizeGsdAgent({...s.gsdAgent,...a.data,updatedAt:new Date().toISOString()})};
-    case "ADD_GSD_CONTEXT": {
-      const entry={id:Date.now(),type:"context",text:"",tags:[],createdAt:new Date().toISOString(),...a.entry};
-      return {...s,gsdAgent:normalizeGsdAgent({...s.gsdAgent,memory:[entry,...(s.gsdAgent?.memory||[])],updatedAt:new Date().toISOString()})};
-    }
-    case "REMOVE_GSD_CONTEXT":
-      return {...s,gsdAgent:normalizeGsdAgent({...s.gsdAgent,memory:(s.gsdAgent?.memory||[]).filter(m=>m.id!==a.id),updatedAt:new Date().toISOString()})};
-    case "CLEAR_GSD_CONTEXT":
-      return {...s,gsdAgent:normalizeGsdAgent({...s.gsdAgent,memory:[],updatedAt:new Date().toISOString()})};
-    case "ADD_TASK": return {...s,tasks:[...s.tasks,{id:Date.now(),completed:false,priority:"medium",createdAt:new Date().toLocaleDateString("pt-BR"),...a.task}]};
-    case "TOGGLE_TASK":
-      return {...s,tasks:s.tasks.map(t=>t.id===a.id?{...t,completed:!t.completed,completedAt:!t.completed?new Date().toLocaleDateString("pt-BR"):null}:t)};
-    case "REMOVE_TASK": return {...s,tasks:s.tasks.filter(t=>t.id!==a.id)};
-    case "ADD_NOTE": return {...s,notes:[{id:Date.now(),createdAt:new Date().toLocaleDateString("pt-BR"),...a.note},...s.notes]};
-    case "REMOVE_NOTE": return {...s,notes:s.notes.filter(n=>n.id!==a.id)};
-    case "EDIT_NOTE": return {...s,notes:s.notes.map(n=>n.id===a.id?{...n,...a.data}:n)};
-    case "ADD_STUDIO_DOC": return {...s,studioDocs:[{id:Date.now(),createdAt:new Date().toISOString(),...a.doc},...(s.studioDocs||[])]};
-    case "REMOVE_STUDIO_DOC": return {...s,studioDocs:(s.studioDocs||[]).filter(d=>d.id!==a.id)};
-    case "UPDATE_REVIEW": return {...s,reviews:{...s.reviews,[a.weekKey]:{...(s.reviews[a.weekKey]||{}),[a.field]:a.value}}};
-    case "ADD_REVIEW_DELIVERABLE": return {...s,reviewDeliverables:[{id:Date.now(),version:1,status:"waiting_review",revision_round:1,createdAt:new Date().toISOString(),comments:[],...a.deliverable},...(s.reviewDeliverables||[])]};
-    case "UPDATE_REVIEW_DELIVERABLE": return {...s,reviewDeliverables:(s.reviewDeliverables||[]).map(d=>d.id===a.id?{...d,...a.data,updatedAt:new Date().toISOString()}:d)};
-    case "REMOVE_REVIEW_DELIVERABLE": return {...s,reviewDeliverables:(s.reviewDeliverables||[]).filter(d=>d.id!==a.id)};
-    case "ADD_REVIEW_COMMENT": return {...s,reviewDeliverables:(s.reviewDeliverables||[]).map(d=>d.id===a.deliverableId?{...d,comments:[...(d.comments||[]),{id:Date.now(),createdAt:new Date().toISOString(),resolved:false,...a.comment}]}:d)};
-    case "ADD_CLIENT": return {...s,clients:[...(s.clients||[]),{id:Date.now(),interactions:[],videos:[],createdAt:new Date().toLocaleDateString("pt-BR"),...a.client}]};
-    case "UPDATE_CLIENT": return {...s,clients:s.clients.map(c=>c.id===a.id?{...c,...a.data}:c)};
-    case "REMOVE_CLIENT": return {...s,clients:s.clients.filter(c=>c.id!==a.id)};
-    case "ADD_CLIENT_PROPOSAL": return {...s,clients:s.clients.map(c=>c.id===a.clientId?{...c,proposals:[...(c.proposals||[]),{id:Date.now(),createdAt:new Date().toLocaleDateString("pt-BR"),status:"rascunho",...a.proposal}]}:c)};
-    case "UPDATE_CLIENT_PROPOSAL": return {...s,clients:s.clients.map(c=>c.id===a.clientId?{...c,proposals:(c.proposals||[]).map(p=>p.id===a.proposalId?{...p,...a.data}:p)}:c)};
-    case "REMOVE_CLIENT_PROPOSAL": return {...s,clients:s.clients.map(c=>c.id===a.clientId?{...c,proposals:(c.proposals||[]).filter(p=>p.id!==a.proposalId)}:c)};
-    case "ADD_CLIENT_INTERACTION": return {...s,clients:s.clients.map(c=>c.id===a.id?{...c,interactions:[...(c.interactions||[]),{id:Date.now(),date:new Date().toLocaleDateString("pt-BR"),...a.interaction}]}:c)};
-    case "REMOVE_CLIENT_INTERACTION": return {...s,clients:s.clients.map(c=>c.id===a.clientId?{...c,interactions:c.interactions.filter(i=>i.id!==a.intId)}:c)};
-    case "ADD_CLIENT_VIDEO": return {...s,clients:s.clients.map(c=>c.id===a.id?{...c,videos:[...(c.videos||[]),{id:Date.now(),status:"pendente",...a.video}]}:c)};
-    case "UPDATE_CLIENT_VIDEO": return {...s,clients:s.clients.map(c=>c.id===a.clientId?{...c,videos:c.videos.map(v=>v.id===a.videoId?{...v,...a.data}:v)}:c)};
-    case "REMOVE_CLIENT_VIDEO": return {...s,clients:s.clients.map(c=>c.id===a.clientId?{...c,videos:c.videos.filter(v=>v.id!==a.videoId)}:c)};
-    case "ADD_FINANCE_ENTRY": return {...s,financeEntries:[{id:Date.now(),createdAt:new Date().toISOString(),...a.entry},...(s.financeEntries||[])]};
-    case "UPDATE_FINANCE_ENTRY": return {...s,financeEntries:(s.financeEntries||[]).map(e=>e.id===a.id?{...e,...a.data}:e)};
-    case "REMOVE_FINANCE_ENTRY": return {...s,financeEntries:(s.financeEntries||[]).filter(e=>e.id!==a.id)};
-    case "ADD_SCHEDULE_BLOCK": {
-      const prev=s.scheduleBlocks[a.day]||[];
-      return {...s,scheduleBlocks:{...s.scheduleBlocks,[a.day]:[...prev,{id:Date.now(),...a.block}]}};
-    }
-    case "REMOVE_SCHEDULE_BLOCK": {
-      const prev=s.scheduleBlocks[a.day]||[];
-      return {...s,scheduleBlocks:{...s.scheduleBlocks,[a.day]:prev.filter(b=>b.id!==a.id)}};
-    }
-    case "RESTORE": return {...INIT,...a.p,business:normalizeBusiness(a.p?.business),subscription:{...DEFAULT_SUBSCRIPTION,...(a.p?.subscription||{})},gsdAgent:normalizeGsdAgent(a.p?.gsdAgent)};
-    case "CLEAR_DATA": return INIT;
-    default: return s;
-  }
-}
-
 // ── UTILS ──────────────────────────────────────────────────────────────
 const getSubscription = state => ({...DEFAULT_SUBSCRIPTION,...(state.subscription||{})});
 const hasAdminAccess = (_state,_required="admin",isAdmin=false) => !!isAdmin;
@@ -538,54 +436,6 @@ const formatTimer = ms=>{
   const total=Math.max(0,Math.ceil(ms/1000)),m=String(Math.floor(total/60)).padStart(2,"0"),s=String(total%60).padStart(2,"0");
   return `${m}:${s}`;
 };
-const bytesToBase64 = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes)));
-const base64ToBytes = b64 => Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
-const getWebCrypto = ()=>{
-  const wc=window.crypto||window.msCrypto;
-  if(!wc?.subtle)throw new Error("Criptografia indisponível. Abra o app em HTTPS, localhost ou 127.0.0.1 em um navegador moderno.");
-  return wc;
-};
-const deriveBackupKey = async (password,salt)=>{
-  const wc=getWebCrypto();
-  const material=await wc.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveKey"]);
-  return wc.subtle.deriveKey({name:"PBKDF2",salt,iterations:210000,hash:"SHA-256"},material,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
-};
-const encryptBackupPayload = async (payload,password)=>{
-  const wc=getWebCrypto();
-  const salt=wc.getRandomValues(new Uint8Array(16));
-  const iv=wc.getRandomValues(new Uint8Array(12));
-  const key=await deriveBackupKey(password,salt);
-  const data=await wc.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(payload)));
-  return {
-    _dnzEncryptedBackup:true,
-    version:1,
-    app:APP_NAME,
-    alg:"AES-GCM-256",
-    kdf:"PBKDF2-SHA256",
-    iterations:210000,
-    exportedAt:new Date().toISOString(),
-    salt:bytesToBase64(salt),
-    iv:bytesToBase64(iv),
-    data:bytesToBase64(data)
-  };
-};
-const decryptBackupPayload = async (backup,password)=>{
-  if(!backup?._dnzEncryptedBackup)throw new Error("not-encrypted");
-  const salt=base64ToBytes(backup.salt),iv=base64ToBytes(backup.iv),data=base64ToBytes(backup.data);
-  const key=await deriveBackupKey(password,salt);
-  const plain=await getWebCrypto().subtle.decrypt({name:"AES-GCM",iv},key,data);
-  return JSON.parse(new TextDecoder().decode(plain));
-};
-const softNotifySound = ()=>{
-  try{
-    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
-    const ctx=new AC(),osc=ctx.createOscillator(),gain=ctx.createGain();
-    osc.type="sine";osc.frequency.setValueAtTime(660,ctx.currentTime);osc.frequency.exponentialRampToValueAtTime(880,ctx.currentTime+.12);
-    gain.gain.setValueAtTime(.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(.045,ctx.currentTime+.02);gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.22);
-    osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+.24);
-  }catch{}
-};
-
 // ── MICRO COMPONENTS ───────────────────────────────────────────────────
 const Bar = ({v,color=C.orange,h=6})=>(
   <div style={{background:"rgba(255,255,255,0.06)",borderRadius:99,height:h,overflow:"hidden"}}>
