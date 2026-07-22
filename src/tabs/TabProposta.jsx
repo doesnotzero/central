@@ -85,21 +85,21 @@ const TabProposta = ({state,dispatch})=>{
         </td>
         <td style="padding:12px 16px;border-bottom:1px solid #1e1e1e;text-align:center;color:#aaa;font-size:13px">${s.qty}x</td>
         <td style="padding:12px 16px;border-bottom:1px solid #1e1e1e;text-align:right;color:#e2e2e2;font-size:13px;font-weight:600">${fmtCurrency(s.price)}</td>
-        <td style="padding:12px 16px;border-bottom:1px solid #1e1e1e;text-align:right;color:#f97316;font-size:14px;font-weight:800">${fmtCurrency(s.price*s.qty)}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #1e1e1e;text-align:right;color:#ff2400;font-size:14px;font-weight:800">${fmtCurrency(s.price*s.qty)}</td>
       </tr>
     `).join("");
     const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Proposta — ${client.name||"Cliente"}</title>
     <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:#0d0d0d;color:#e8e8e8;font-family:'Segoe UI',Arial,sans-serif;padding:50px;max-width:880px;margin:0 auto}
-    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:50px;padding-bottom:30px;border-bottom:2px solid #f97316}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:50px;padding-bottom:30px;border-bottom:2px solid #ff2400}
     .brand-name{font-size:30px;font-weight:900;color:#fff;letter-spacing:.05em}
-    .brand-sub{font-size:11px;color:#f97316;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-top:4px}
+    .brand-sub{font-size:11px;color:#ff2400;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-top:4px}
     .doc-label{font-size:10px;color:#444;font-weight:700;text-transform:uppercase;letter-spacing:.1em;text-align:right}
-    .doc-num{font-size:22px;font-weight:900;color:#f97316;text-align:right;margin-top:4px}
+    .doc-num{font-size:22px;font-weight:900;color:#ff2400;text-align:right;margin-top:4px}
     .doc-date{font-size:11px;color:#333;text-align:right;margin-top:4px}
     .section{margin-bottom:40px}
-    .section-title{font-size:11px;font-weight:800;color:#f97316;text-transform:uppercase;letter-spacing:.15em;margin-bottom:18px;padding-bottom:8px;border-bottom:1px solid #1a1a1a}
+    .section-title{font-size:11px;font-weight:800;color:#ff2400;text-transform:uppercase;letter-spacing:.15em;margin-bottom:18px;padding-bottom:8px;border-bottom:1px solid #1a1a1a}
     .client-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .field{background:#141414;border:1px solid #1e1e1e;border-radius:10px;padding:12px 16px}
     .field-label{font-size:10px;color:#444;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
@@ -110,7 +110,7 @@ const TabProposta = ({state,dispatch})=>{
     th:nth-child(2){text-align:center}th:nth-child(3){text-align:right}th:nth-child(4){text-align:right}
     .totals{background:#141414;border:1px solid #1e1e1e;border-radius:12px;overflow:hidden;margin-top:12px}
     .total-row{display:flex;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #1e1e1e}
-    .total-final{background:linear-gradient(135deg,rgba(249,115,22,.15),rgba(0,0,0,0));border:1px solid rgba(249,115,22,.3);border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    .total-final{background:linear-gradient(135deg,rgba(255,36,0,.15),rgba(0,0,0,0));border:1px solid rgba(255,36,0,.3);border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
     .terms-box{background:#111;border-radius:12px;padding:22px 24px}
     .terms-title{font-size:11px;color:#333;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
     .terms-text{font-size:12px;color:#3a3a3a;line-height:1.8}
@@ -147,7 +147,7 @@ const TabProposta = ({state,dispatch})=>{
         ${discount>0?`<div class="total-row"><span style="font-size:13px;color:#666">Desconto (${discount}%)</span><span style="font-size:13px;color:#10b981;font-weight:600">-${fmtCurrency(discountVal)}</span></div>`:""}
       </div>
       <div class="total-final">
-        <div><div style="font-size:12px;color:#f97316;font-weight:700;text-transform:uppercase;letter-spacing:.1em">Valor Total do Projeto</div>${notes?`<div style="font-size:12px;color:#555;margin-top:6px;max-width:380px">${notes}</div>`:""}</div>
+        <div><div style="font-size:12px;color:#ff2400;font-weight:700;text-transform:uppercase;letter-spacing:.1em">Valor Total do Projeto</div>${notes?`<div style="font-size:12px;color:#555;margin-top:6px;max-width:380px">${notes}</div>`:""}</div>
         <div style="font-size:38px;font-weight:900;color:#fff">${fmtCurrency(finalTotal)}</div>
       </div>
     </div>`:""} 

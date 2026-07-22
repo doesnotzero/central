@@ -24,52 +24,19 @@ export const normalizeBusiness = (b) => {
   return next;
 };
 
-export const DEFAULT_GSD_AGENT = {
-  enabled: true,
-  name: "GSD",
-  label: "Get Shit Done",
-  mode: "execution",
-  mission: "Guardar contexto operacional e transformar decisão solta em próxima ação clara.",
-  currentFocus: "",
-  operatingRules: [
-    "Capturar contexto antes que ele se perca",
-    "Separar fato, decisão e próxima ação",
-    "Puxar o usuário de volta para execução quando houver dispersão",
-  ],
-  memory: [],
-  lastActivatedAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-export const normalizeGsdAgent = (agent) => ({
-  ...DEFAULT_GSD_AGENT,
-  ...(agent || {}),
-  memory: Array.isArray(agent?.memory) ? agent.memory : [],
-});
-
 export const INIT = {
   tasks: [], notes: [], clients: [], financeEntries: [], studioDocs: [], reviews: {}, reviewDeliverables: [],
   business: DEFAULT_BUSINESS,
   subscription: DEFAULT_SUBSCRIPTION,
   scheduleBlocks: {},
-  gsdAgent: DEFAULT_GSD_AGENT,
 };
 
 // ── REDUCER ────────────────────────────────────────────────────────────
 export function reducer(s, a) {
   switch (a.type) {
-    case "HYDRATE": return { ...INIT, ...a.p, business: normalizeBusiness(a.p?.business), subscription: { ...DEFAULT_SUBSCRIPTION, ...(a.p?.subscription || {}) }, gsdAgent: normalizeGsdAgent(a.p?.gsdAgent) };
+    case "HYDRATE": return { ...INIT, ...a.p, business: normalizeBusiness(a.p?.business), subscription: { ...DEFAULT_SUBSCRIPTION, ...(a.p?.subscription || {}) } };
     case "UPDATE_BUSINESS": return { ...s, business: normalizeBusiness({ ...s.business, ...a.data }) };
     case "SET_SUBSCRIPTION": return { ...s, subscription: { ...DEFAULT_SUBSCRIPTION, ...(s.subscription || {}), ...a.data, updatedAt: new Date().toISOString() } };
-    case "UPDATE_GSD_AGENT": return { ...s, gsdAgent: normalizeGsdAgent({ ...s.gsdAgent, ...a.data, updatedAt: new Date().toISOString() }) };
-    case "ADD_GSD_CONTEXT": {
-      const entry = { id: Date.now(), type: "context", text: "", tags: [], createdAt: new Date().toISOString(), ...a.entry };
-      return { ...s, gsdAgent: normalizeGsdAgent({ ...s.gsdAgent, memory: [entry, ...(s.gsdAgent?.memory || [])], updatedAt: new Date().toISOString() }) };
-    }
-    case "REMOVE_GSD_CONTEXT":
-      return { ...s, gsdAgent: normalizeGsdAgent({ ...s.gsdAgent, memory: (s.gsdAgent?.memory || []).filter((m) => m.id !== a.id), updatedAt: new Date().toISOString() }) };
-    case "CLEAR_GSD_CONTEXT":
-      return { ...s, gsdAgent: normalizeGsdAgent({ ...s.gsdAgent, memory: [], updatedAt: new Date().toISOString() }) };
     case "ADD_TASK": return { ...s, tasks: [...s.tasks, { id: Date.now(), completed: false, priority: "medium", createdAt: new Date().toLocaleDateString("pt-BR"), ...a.task }] };
     case "TOGGLE_TASK":
       return { ...s, tasks: s.tasks.map((t) => (t.id === a.id ? { ...t, completed: !t.completed, completedAt: !t.completed ? new Date().toLocaleDateString("pt-BR") : null } : t)) };
@@ -106,7 +73,7 @@ export function reducer(s, a) {
       const prev = s.scheduleBlocks[a.day] || [];
       return { ...s, scheduleBlocks: { ...s.scheduleBlocks, [a.day]: prev.filter((b) => b.id !== a.id) } };
     }
-    case "RESTORE": return { ...INIT, ...a.p, business: normalizeBusiness(a.p?.business), subscription: { ...DEFAULT_SUBSCRIPTION, ...(a.p?.subscription || {}) }, gsdAgent: normalizeGsdAgent(a.p?.gsdAgent) };
+    case "RESTORE": return { ...INIT, ...a.p, business: normalizeBusiness(a.p?.business), subscription: { ...DEFAULT_SUBSCRIPTION, ...(a.p?.subscription || {}) } };
     case "CLEAR_DATA": return INIT;
     default: return s;
   }

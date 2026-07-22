@@ -72,7 +72,7 @@ export const clientStageLabel = (c) =>
   CLIENT_PIPELINE.find((stage) => stage.key === normalizeClientStatus(c))?.label || "Lead";
 
 export const STATUS_COLORS = Object.fromEntries(CLIENT_PIPELINE.map((s) => [s.key, s.color]));
-export const PAG_COLORS = { pago: "#10b981", pendente: "#eab308", atrasado: "#ef4444", parcial: "#f97316" };
+export const PAG_COLORS = { pago: "#10b981", pendente: "#eab308", atrasado: "#ef4444", parcial: "#ff2400" };
 export const VIDEO_STATUS = ["pendente", "gravando", "editando", "revisão", "entregue"];
 export const VIDEO_COLORS = { pendente: C.muted, gravando: "#3b82f6", editando: "#8b5cf6", "revisão": "#eab308", entregue: "#10b981" };
 export const TEMP_COLORS = { frio: "#3b82f6", morno: "#eab308", quente: "#ef4444" };
@@ -130,7 +130,7 @@ export const NICHE_PLAYBOOKS = [
   {
     id: "restaurante", niche: "Restaurantes e gastronomia",
     promise: "Aumentar desejo, frequência e ticket com conteúdo sensorial.",
-    color: "#f97316", presetId: "stories", service: "Pack de Stories", value: 1800,
+    color: "#ff2400", presetId: "stories", service: "Pack de Stories", value: 1800,
     leadSource: "Prospecção local",
     nextAction: "Marcar visita para captar pratos campeões e bastidores",
     tasks: ["Escolher pratos com maior margem", "Criar lista de takes sensoriais", "Definir promoções da semana", "Captar bastidores e equipe", "Programar sequência de stories"],
@@ -153,7 +153,7 @@ export const NICHE_PLAYBOOKS = [
 export const STUDIO_DOCUMENTS = [
   { id: "briefing", label: "Briefing", color: "#3b82f6", desc: "Objetivo, público, narrativa, formato, referências e critérios de aprovação." },
   { id: "roteiro", label: "Roteiro", color: "#fb923c", desc: "Estrutura narrativa, cenas, mensagem-chave, falas, CTA e direção de ritmo." },
-  { id: "callsheet", label: "Callsheet", color: "#f97316", desc: "Ordem do dia, equipe, locação, horários, contatos, segurança e necessidades técnicas." },
+  { id: "callsheet", label: "Callsheet", color: "#ff2400", desc: "Ordem do dia, equipe, locação, horários, contatos, segurança e necessidades técnicas." },
   { id: "decupagem", label: "Decupagem", color: "#8b5cf6", desc: "Sequência de planos, intenção de câmera, lentes, áudio, movimento e cobertura." },
   { id: "orcamento", label: "Orçamento", color: "#10b981", desc: "Categorias de produção, equipe, equipamento, pós, taxas, reservas e condições." },
   { id: "cronograma", label: "Cronograma", color: "#eab308", desc: "Pré-produção, captação, pós-produção, revisão, aprovações e entrega final." },
@@ -218,7 +218,7 @@ export const PRODUCTION_PIPELINE = [
   { key: "briefing", label: "Briefing", docType: "briefing", color: "#3b82f6" },
   { key: "roteiro", label: "Roteiro", docType: "roteiro", color: "#fb923c" },
   { key: "decupagem", label: "Decupagem", docType: "decupagem", color: "#8b5cf6" },
-  { key: "callsheet", label: "Callsheet", docType: "callsheet", color: "#f97316" },
+  { key: "callsheet", label: "Callsheet", docType: "callsheet", color: "#ff2400" },
   { key: "checklist", label: "Checklist", docType: "checklist", color: "#06b6d4" },
   { key: "entrega", label: "Entrega", docType: "entrega", color: "#10b981" },
 ];
@@ -378,7 +378,6 @@ export const RELATIONSHIP_TYPES = [
 // ── NAVIGATION ──
 export const TABS = [
   { id: "dashboard", label: "Hoje", icon: "⊞" },
-  { id: "gsd", label: "GSD", icon: "G" },
   { id: "tasks", label: "Atividades", icon: "✓" },
   { id: "agenda", label: "Agenda", icon: "□" },
   { id: "clients", label: "Clientes", icon: "◈" },
@@ -394,12 +393,12 @@ export const TABS = [
 
 export const NAV_GROUPS = [
   { label: "Produto principal", items: ["videoReview"] },
-  { label: "Operação", items: ["dashboard", "gsd", "tasks", "agenda", "projects", "studio", "brandbook"] },
+  { label: "Operação", items: ["dashboard", "tasks", "agenda", "projects", "studio", "brandbook"] },
   { label: "Comercial", items: ["clients", "proposta", "finance"] },
   { label: "Sistema", items: ["business", "export"] },
 ];
 
-export const BEGINNER_TABS = ["dashboard", "gsd", "videoReview", "clients", "proposta", "projects", "studio", "brandbook", "finance", "tasks", "business", "export"];
+export const BEGINNER_TABS = ["dashboard", "videoReview", "clients", "proposta", "projects", "studio", "brandbook", "finance", "tasks", "business", "export"];
 export const WORKSPACE_TAB_IDS = new Set(BEGINNER_TABS);
 
 export const PROFILE_PRESETS = [

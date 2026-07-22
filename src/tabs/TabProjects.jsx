@@ -196,7 +196,7 @@ const TabProjects = ({state,dispatch})=>{
             {suggested!==current.video.status&&<button onClick={()=>update(current,{status:suggested})} style={{width:"100%",marginBottom:14,padding:"10px 12px",borderRadius:12,border:`1px solid ${(VIDEO_COLORS[suggested]||C.orange)}35`,background:`${VIDEO_COLORS[suggested]||C.orange}10`,color:VIDEO_COLORS[suggested]||C.orange,fontSize:12,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>Sugestão inteligente: mover para {suggested}</button>}
             </div>
 
-            <div className="modal-section" style={{background:"rgba(249,115,22,.04)",borderColor:"rgba(249,115,22,.18)"}}>
+            <div className="modal-section" style={{background:"rgba(255,36,0,.04)",borderColor:"rgba(255,36,0,.18)"}}>
               <SectionTitle>PIPELINE VISUAL</SectionTitle>
               <div className="project-flow">
                 {PRODUCTION_PIPELINE.map(step=>{

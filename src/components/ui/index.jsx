@@ -18,7 +18,7 @@ export const Tag = ({ children, color = C.orange }) => (
 
 // ── EyeToggle ──
 export const EyeToggle = ({ hidden, onClick, label }) => (
-  <button type="button" onClick={onClick} title={hidden ? "Mostrar valores" : "Ocultar valores"} aria-label={hidden ? "Mostrar valores" : "Ocultar valores"} style={{ height: 34, borderRadius: 12, border: `1px solid ${hidden ? C.border : C.orange}`, background: hidden ? "rgba(255,255,255,.045)" : "rgba(249,115,22,.14)", color: hidden ? C.muted : C.orange, fontFamily: "inherit", fontSize: 11, fontWeight: 900, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, padding: "0 11px", whiteSpace: "nowrap" }}>
+  <button type="button" onClick={onClick} title={hidden ? "Mostrar valores" : "Ocultar valores"} aria-label={hidden ? "Mostrar valores" : "Ocultar valores"} style={{ height: 34, borderRadius: 12, border: `1px solid ${hidden ? C.border : C.orange}`, background: hidden ? "rgba(255,255,255,.045)" : "rgba(255,36,0,.14)", color: hidden ? C.muted : C.orange, fontFamily: "inherit", fontSize: 11, fontWeight: 900, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7, padding: "0 11px", whiteSpace: "nowrap" }}>
     <span style={{ width: 16, height: 10, border: "1.8px solid currentColor", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
       <span style={{ width: 4, height: 4, borderRadius: "50%", background: "currentColor", display: "block" }} />
       {hidden && <span style={{ position: "absolute", width: 20, height: 2, background: "currentColor", transform: "rotate(-35deg)", borderRadius: 99 }} />}
@@ -72,7 +72,7 @@ export const Txt = ({ label, value, onChange, placeholder, rows = 3 }) => {
 // ── Btn ──
 export const Btn = ({ children, onClick, variant = "primary", size = "md", style = {}, disabled = false, className = "" }) => {
   const vs = {
-    primary: { background: `linear-gradient(135deg,${C.orange},${C.orangeD})`, color: "#fff", boxShadow: "0 4px 16px rgba(249,115,22,.3)", border: "none" },
+    primary: { background: `linear-gradient(135deg,${C.orange},${C.orangeD})`, color: "#fff", boxShadow: "0 4px 16px rgba(255,36,0,.3)", border: "none" },
     ghost: { background: "rgba(255,255,255,.06)", color: "#ccc", border: `1px solid ${C.border}` },
     danger: { background: "rgba(239,68,68,.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,.25)" },
     success: { background: "rgba(16,185,129,.15)", color: "#10b981", border: "1px solid rgba(16,185,129,.3)" },
@@ -119,7 +119,7 @@ export const SectionTitle = ({ children, action }) => (
 // ── PremiumEmpty ──
 export const PremiumEmpty = ({ title, text, action, icon = "+" }) => (
   <Card style={{ textAlign: "center", padding: "30px 22px", background: "linear-gradient(135deg,rgba(255,255,255,.045),rgba(0,0,0,0))" }}>
-    <div style={{ width: 42, height: 42, borderRadius: 14, margin: "0 auto 12px", display: "grid", placeItems: "center", background: "rgba(249,115,22,.12)", border: "1px solid rgba(249,115,22,.28)", color: C.orange, fontSize: 18, fontWeight: 900 }}>{icon}</div>
+    <div style={{ width: 42, height: 42, borderRadius: 14, margin: "0 auto 12px", display: "grid", placeItems: "center", background: "rgba(255,36,0,.12)", border: "1px solid rgba(255,36,0,.28)", color: C.orange, fontSize: 18, fontWeight: 900 }}>{icon}</div>
     <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", fontFamily: "'Syne',sans-serif", marginBottom: 6 }}>{title}</div>
     <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.5, margin: "0 auto 14px", maxWidth: 420 }}>{text}</p>
     {action}

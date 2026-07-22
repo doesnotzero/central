@@ -18,7 +18,7 @@ const RevenueOSScore = ({state,setTab,privacyMode,isAdmin,onToggleMoney})=>{
   const score=Math.round(checks.filter(c=>c.done).length/checks.length*100);
   const pipeline=clients.filter(c=>!["entregue","pago"].includes(normalizeClientStatus(c))).reduce((a,c)=>a+Number(c.value||0)*(Number(c.closeProbability||c.probability||50)/100),0);
   return (
-    <Card style={{padding:"18px",background:"linear-gradient(135deg,rgba(249,115,22,.08),rgba(255,255,255,.025))",borderColor:"rgba(249,115,22,.2)",overflow:"hidden"}}>
+    <Card style={{padding:"18px",background:"linear-gradient(135deg,rgba(255,36,0,.08),rgba(255,255,255,.025))",borderColor:"rgba(255,36,0,.2)",overflow:"hidden"}}>
       <div className="revenue-score-grid">
         <div style={{textAlign:"center"}}>
           <div style={{width:128,height:128,borderRadius:"50%",margin:"0 auto",display:"grid",placeItems:"center",background:`conic-gradient(${score>=70?"#10b981":score>=40?C.orange:"#eab308"} ${score*3.6}deg, rgba(255,255,255,.07) 0deg)`,boxShadow:"0 24px 70px rgba(0,0,0,.35)"}}>
@@ -99,7 +99,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
     overdueTasks.length&&{label:`${overdueTasks.length} tarefa${overdueTasks.length>1?"s":""} atrasada${overdueTasks.length>1?"s":""}`,tab:"tasks",color:"#ef4444"},
     todayTasks.length&&{label:`${todayTasks.length} tarefa${todayTasks.length>1?"s":""} para hoje`,tab:"tasks",color:"#10b981"},
     overduePayments.length&&{label:`${overduePayments.length} pagamento${overduePayments.length>1?"s":""} atrasado${overduePayments.length>1?"s":""}`,tab:"clients",color:"#ef4444"},
-    pendingFollowUps.length&&{label:`${pendingFollowUps.length} follow-up${pendingFollowUps.length>1?"s":""} pendente${pendingFollowUps.length>1?"s":""}`,tab:"clients",color:"#f97316"},
+    pendingFollowUps.length&&{label:`${pendingFollowUps.length} follow-up${pendingFollowUps.length>1?"s":""} pendente${pendingFollowUps.length>1?"s":""}`,tab:"clients",color:"#ff2400"},
     lateProjectSteps.length&&{label:`${lateProjectSteps.length} marco${lateProjectSteps.length>1?"s":""} de produção atrasado${lateProjectSteps.length>1?"s":""}`,tab:"projects",color:"#ef4444"},
     todayProjectSteps.length&&{label:`${todayProjectSteps.length} entrega${todayProjectSteps.length>1?"s":""} de produção hoje`,tab:"projects",color:"#8b5cf6"},
     upcomingMeetings.length&&{label:`${upcomingMeetings.length} ${upcomingMeetings.length>1?"reuniões":"reunião"} na semana`,tab:"clients",color:"#3b82f6"},
@@ -108,7 +108,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
   ].filter(Boolean);
   const dailyActions=[
     overdueTasks.length&&{title:"Resolver atividades atrasadas",text:`${overdueTasks.length} atividade${overdueTasks.length>1?"s":""} ficou para trás.`,tab:"tasks",color:"#ef4444"},
-    pendingFollowUps.length&&{title:"Responder clientes",text:`${pendingFollowUps.length} follow-up${pendingFollowUps.length>1?"s":""} pede retorno hoje.`,tab:"clients",color:"#f97316"},
+    pendingFollowUps.length&&{title:"Responder clientes",text:`${pendingFollowUps.length} follow-up${pendingFollowUps.length>1?"s":""} pede retorno hoje.`,tab:"clients",color:"#ff2400"},
     lateProjectSteps.length&&{title:"Destravar produção",text:`${lateProjectSteps.length} marco${lateProjectSteps.length>1?"s":""} de projeto em atraso.`,tab:"projects",color:"#8b5cf6"},
     overduePayments.length&&{title:"Cobrar pendências",text:`${overduePayments.length} pagamento${overduePayments.length>1?"s":""} em atraso.`,tab:"finance",color:"#eab308"},
     todayTasks.length&&{title:"Executar as atividades de hoje",text:`${todayTasks.length} atividade${todayTasks.length>1?"s":""} para finalizar hoje.`,tab:"tasks",color:"#10b981"},
@@ -169,7 +169,7 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
             </div>
             <div className="summary-strip" style={{marginTop:18}}>
               {[
-                {label:"Clientes para responder",value:pendingFollowUps.length,color:"#f97316",tab:"clients"},
+                {label:"Clientes para responder",value:pendingFollowUps.length,color:"#ff2400",tab:"clients"},
                 {label:"Projetos ativos",value:pendingVideos,color:"#8b5cf6",tab:"projects"},
                 {label:"Documentos salvos",value:(state.studioDocs||[]).length,color:"#06b6d4",tab:"studio"},
                 {label:"A receber",value:fmtDashboardMoney(totalReceivable,dashboardPrivacy),color:"#eab308",tab:"finance",money:true},

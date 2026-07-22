@@ -10,10 +10,10 @@ const TabAgenda = ({state,dispatch,setTab})=>{
   const todayDow=new Date().getDay()===0?6:new Date().getDay()-1;
   const [selDay,setSelDay]=useState(todayDow);
   const [showAdd,setShowAdd]=useState(false);
-  const [form,setForm]=useState({title:"",start:"08:00",end:"09:00",color:"#f97316",category:"trabalho"});
+  const [form,setForm]=useState({title:"",start:"08:00",end:"09:00",color:"#ff2400",category:"trabalho"});
   const blocks=(state.scheduleBlocks[selDay]||[]).slice().sort((a,b)=>timeToMins(a.start)-timeToMins(b.start));
   const categories=["trabalho","criação","reunião","pausa","pessoal","estudo"];
-  const catColors={trabalho:"#f97316",criação:"#8b5cf6",reunião:"#3b82f6",pausa:"#6b7280",pessoal:"#10b981",estudo:"#eab308"};
+  const catColors={trabalho:"#ff2400",criação:"#8b5cf6",reunião:"#3b82f6",pausa:"#6b7280",pessoal:"#10b981",estudo:"#eab308"};
   const clients=state.clients||[],projects=clients.flatMap(c=>(c.videos||[]).map(v=>({client:c,video:v})));
   const agendaItems=[
     ...state.tasks.filter(t=>!t.completed&&t.dueDate).map(t=>({tab:"tasks",kind:"Tarefa",title:t.title,date:t.dueDate,color:taskBucket(t)==="overdue"?"#ef4444":C.orange})),
@@ -26,7 +26,7 @@ const TabAgenda = ({state,dispatch,setTab})=>{
   const addBlock=()=>{
     if(!form.title)return;
     dispatch({type:"ADD_SCHEDULE_BLOCK",day:selDay,block:{...form,color:catColors[form.category]||form.color}});
-    setForm({title:"",start:"08:00",end:"09:00",color:"#f97316",category:"trabalho"});setShowAdd(false);
+    setForm({title:"",start:"08:00",end:"09:00",color:"#ff2400",category:"trabalho"});setShowAdd(false);
   };
   const totalMins=Object.values(state.scheduleBlocks).flat().reduce((a,b)=>{const dur=timeToMins(b.end||"09:00")-timeToMins(b.start||"08:00");return a+(dur>0?dur:0);},0);
   return (

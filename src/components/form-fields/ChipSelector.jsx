@@ -33,9 +33,9 @@ export const ChipSelector = ({
             style={{
               minHeight: size === "lg" ? 44 : size === "sm" ? 30 : 36,
               borderRadius: 12,
-              border: `1px solid ${active ? "rgba(249,115,22,.6)" : "rgba(255,255,255,.15)"}`,
-              background: active ? "rgba(249,115,22,.2)" : "rgba(255,255,255,.035)",
-              color: active ? "#f97316" : "rgba(255,255,255,.66)",
+              border: `1px solid ${active ? "rgba(255,36,0,.6)" : "rgba(255,255,255,.15)"}`,
+              background: active ? "rgba(255,36,0,.2)" : "rgba(255,255,255,.035)",
+              color: active ? "#ff2400" : "rgba(255,255,255,.66)",
               fontFamily: "inherit",
               fontSize: size === "sm" ? 11 : 12,
               fontWeight: 900,

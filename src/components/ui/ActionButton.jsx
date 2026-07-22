@@ -56,7 +56,7 @@ export const ActionButton = ({
         padding: "10px 16px",
         fontSize: 13,
         color: color || "#fff",
-        background: color ? `${color}20` : "linear-gradient(135deg,#f97316,#ea580c)",
+        background: color ? `${color}20` : "linear-gradient(135deg,#ff2400,#cc1d00)",
         border: color ? `1px solid ${color}55` : "none",
         opacity: disabled ? .55 : 1,
         ...style

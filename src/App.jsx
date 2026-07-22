@@ -9,7 +9,7 @@ import { MaskedInput } from './components/form-fields/MaskedInput.jsx';
 import { OptionCards } from './components/form-fields/OptionCards.jsx';
 import { LandingPage, LoginPage } from './LandingPage.jsx';
 import { BRANDING } from './config/branding';
-import { INIT, reducer, DEFAULT_SUBSCRIPTION, DEFAULT_BUSINESS, normalizeBusiness, normalizeGsdAgent } from './state/appReducer.js';
+import { INIT, reducer, DEFAULT_SUBSCRIPTION, DEFAULT_BUSINESS, normalizeBusiness } from './state/appReducer.js';
 import { softNotifySound } from './utils/crypto.js';
 import ModularTabAgenda from './tabs/TabAgenda.jsx';
 import ModularTabBusinessSettings, { OnboardingGuide as ModularOnboardingGuide, SecurityPanel as ModularSecurityPanel } from './tabs/TabBusinessSettings.jsx';
@@ -71,7 +71,7 @@ const normalizeClientStatus = c => {
   return "lead";
 };
 const STATUS_COLORS = Object.fromEntries(CLIENT_PIPELINE.map(s=>[s.key,s.color]));
-const PAG_COLORS    = { pago:"#10b981", pendente:"#eab308", atrasado:"#ef4444", parcial:"#f97316" };
+const PAG_COLORS    = { pago:"#10b981", pendente:"#eab308", atrasado:"#ef4444", parcial:"#ff2400" };
 const VIDEO_COLORS  = { pendente:C.muted, gravando:"#3b82f6", editando:"#8b5cf6", "revisão":"#eab308", entregue:"#10b981" };
 
 const AUDIOVISUAL_PRESETS = [
@@ -112,7 +112,7 @@ const presetBriefing = p => ({
 const STUDIO_DOCUMENTS = [
   {id:"briefing",label:"Briefing",color:"#3b82f6",desc:"Objetivo, público, narrativa, formato, referências e critérios de aprovação."},
   {id:"roteiro",label:"Roteiro",color:"#fb923c",desc:"Estrutura narrativa, cenas, mensagem-chave, falas, CTA e direção de ritmo."},
-  {id:"callsheet",label:"Callsheet",color:"#f97316",desc:"Ordem do dia, equipe, locação, horários, contatos, segurança e necessidades técnicas."},
+  {id:"callsheet",label:"Callsheet",color:"#ff2400",desc:"Ordem do dia, equipe, locação, horários, contatos, segurança e necessidades técnicas."},
   {id:"decupagem",label:"Decupagem",color:"#8b5cf6",desc:"Sequência de planos, intenção de câmera, lentes, áudio, movimento e cobertura."},
   {id:"orcamento",label:"Orçamento",color:"#10b981",desc:"Categorias de produção, equipe, equipamento, pós, taxas, reservas e condições."},
   {id:"cronograma",label:"Cronograma",color:"#eab308",desc:"Pré-produção, captação, pós-produção, revisão, aprovações e entrega final."},
@@ -173,7 +173,7 @@ const PRODUCTION_PIPELINE = [
   {key:"briefing",label:"Briefing",docType:"briefing",color:"#3b82f6"},
   {key:"roteiro",label:"Roteiro",docType:"roteiro",color:"#fb923c"},
   {key:"decupagem",label:"Decupagem",docType:"decupagem",color:"#8b5cf6"},
-  {key:"callsheet",label:"Callsheet",docType:"callsheet",color:"#f97316"},
+  {key:"callsheet",label:"Callsheet",docType:"callsheet",color:"#ff2400"},
   {key:"checklist",label:"Checklist",docType:"checklist",color:"#06b6d4"},
   {key:"entrega",label:"Entrega",docType:"entrega",color:"#10b981"},
 ];
@@ -446,7 +446,7 @@ const Tag = ({children,color=C.orange})=>(
   <span style={{fontSize:10,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",padding:"2px 8px",borderRadius:99,border:`1px solid ${color}40`,background:`${color}15`,color,whiteSpace:"nowrap"}}>{children}</span>
 );
 const EyeToggle = ({hidden,onClick,label})=>(
-  <button type="button" onClick={onClick} title={hidden?"Mostrar valores":"Ocultar valores"} aria-label={hidden?"Mostrar valores":"Ocultar valores"} style={{height:34,borderRadius:12,border:`1px solid ${hidden?C.border:C.orange}`,background:hidden?"rgba(255,255,255,.045)":"rgba(249,115,22,.14)",color:hidden?C.muted:C.orange,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:7,padding:"0 11px",whiteSpace:"nowrap"}}>
+  <button type="button" onClick={onClick} title={hidden?"Mostrar valores":"Ocultar valores"} aria-label={hidden?"Mostrar valores":"Ocultar valores"} style={{height:34,borderRadius:12,border:`1px solid ${hidden?C.border:C.orange}`,background:hidden?"rgba(255,255,255,.045)":"rgba(255,36,0,.14)",color:hidden?C.muted:C.orange,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:7,padding:"0 11px",whiteSpace:"nowrap"}}>
     <span style={{width:16,height:10,border:"1.8px solid currentColor",borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
       <span style={{width:4,height:4,borderRadius:"50%",background:"currentColor",display:"block"}}/>
       {hidden&&<span style={{position:"absolute",width:20,height:2,background:"currentColor",transform:"rotate(-35deg)",borderRadius:99}}/>}
@@ -566,7 +566,7 @@ const Txt = ({label,value,onChange,placeholder,rows=3})=>{
 };
 const Btn = ({children,onClick,variant="primary",size="md",style={},disabled=false,className=""})=>{
   const vs={
-    primary:{background:`linear-gradient(135deg,${C.orange},${C.orangeD})`,color:"#fff",boxShadow:"0 4px 16px rgba(249,115,22,.3)",border:"none"},
+    primary:{background:`linear-gradient(135deg,${C.orange},${C.orangeD})`,color:"#fff",boxShadow:"0 4px 16px rgba(255,36,0,.3)",border:"none"},
     ghost:{background:"rgba(255,255,255,.06)",color:"#ccc",border:`1px solid ${C.border}`},
     danger:{background:"rgba(239,68,68,.12)",color:"#ef4444",border:"1px solid rgba(239,68,68,.25)"},
     success:{background:"rgba(16,185,129,.15)",color:"#10b981",border:"1px solid rgba(16,185,129,.3)"},
@@ -602,7 +602,7 @@ const SectionTitle = ({children,action})=>(
 );
 const PremiumEmpty = ({title,text,action,icon="+"})=>(
   <Card style={{textAlign:"center",padding:"30px 22px",background:"linear-gradient(135deg,rgba(255,255,255,.045),rgba(0,0,0,0))"}}>
-    <div style={{width:42,height:42,borderRadius:14,margin:"0 auto 12px",display:"grid",placeItems:"center",background:"rgba(249,115,22,.12)",border:"1px solid rgba(249,115,22,.28)",color:C.orange,fontSize:18,fontWeight:900}}>{icon}</div>
+    <div style={{width:42,height:42,borderRadius:14,margin:"0 auto 12px",display:"grid",placeItems:"center",background:"rgba(255,36,0,.12)",border:"1px solid rgba(255,36,0,.28)",color:C.orange,fontSize:18,fontWeight:900}}>{icon}</div>
     <div style={{fontSize:16,fontWeight:900,color:"#fff",fontFamily:"'Syne',sans-serif",marginBottom:6}}>{title}</div>
     <p style={{fontSize:13,color:C.muted,lineHeight:1.5,margin:"0 auto 14px",maxWidth:420}}>{text}</p>
     {action}
@@ -848,157 +848,9 @@ const BusinessOnboarding = ({open,business,dispatch,onClose})=>{
   );
 };
 
-const TabGSD = ({state,dispatch,setTab})=>{
-  const agent=normalizeGsdAgent(state.gsdAgent);
-  const [entry,setEntry]=useState("");
-  const [entryType,setEntryType]=useState("context");
-  const [focus,setFocus]=useState(agent.currentFocus||"");
-  const clients=state.clients||[];
-  const openTasks=(state.tasks||[]).filter(t=>!t.completed);
-  const activeProjects=clients.flatMap(c=>(c.videos||[]).map(v=>({client:c,video:v}))).filter(p=>p.video.status!=="entregue");
-  const overdueTasks=openTasks.filter(t=>taskBucket(t)==="overdue");
-  const dueToday=openTasks.filter(t=>taskBucket(t)==="today");
-  const followUps=clients.filter(c=>c.followUpDate&&dayDiff(c.followUpDate)<=0&&!["entregue","pago"].includes(normalizeClientStatus(c)));
-  const saveEntry=()=>{
-    const text=entry.trim();
-    if(!text)return;
-    dispatch({type:"ADD_GSD_CONTEXT",entry:{type:entryType,text,tags:["gsd",entryType]}});
-    setEntry("");
-  };
-  const saveFocus=()=>{
-    dispatch({type:"UPDATE_GSD_AGENT",data:{enabled:true,currentFocus:focus,lastActivatedAt:new Date().toISOString()}});
-  };
-  const createTaskFromMemory=m=>{
-    dispatch({type:"ADD_TASK",task:{title:m.text.slice(0,96),priority:m.type==="decision"?"high":"medium",tag:"GSD",dueDate:inputDate()}});
-    setTab("tasks");
-  };
-  const captureSnapshot=()=>{
-    const lines=[
-      focus&&`Foco atual: ${focus}`,
-      overdueTasks.length&&`${overdueTasks.length} tarefa(s) atrasada(s)`,
-      dueToday.length&&`${dueToday.length} tarefa(s) para hoje`,
-      followUps.length&&`${followUps.length} follow-up(s) pendente(s)`,
-      activeProjects.length&&`${activeProjects.length} projeto(s) em produção`
-    ].filter(Boolean);
-    dispatch({type:"ADD_GSD_CONTEXT",entry:{type:"snapshot",text:lines.length?lines.join(" | "):"Operação sem pendências críticas no momento.",tags:["gsd","snapshot"]}});
-  };
-  const memory=agent.memory||[];
-  const typeMeta={
-    context:{label:"Contexto",color:"#3b82f6"},
-    decision:{label:"Decisão",color:"#10b981"},
-    blocker:{label:"Bloqueio",color:"#ef4444"},
-    next:{label:"Próxima ação",color:C.orange},
-    snapshot:{label:"Snapshot",color:"#8b5cf6"}
-  };
-  return (
-    <div className="page-stack">
-      <Card className="page-hero" style={{background:"linear-gradient(135deg,rgba(255,36,0,.12),rgba(255,255,255,.035))",borderColor:"rgba(255,36,0,.24)"}}>
-        <div className="page-hero-row">
-          <div>
-            <div className="page-eyebrow" style={{color:C.orange}}>GSD AGENT ATIVO</div>
-            <div className="page-title">Get Shit Done</div>
-            <p className="page-subtitle">Agente de contexto da operação: captura memória, decisões e próximas ações para nada importante sumir no meio do dia.</p>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>
-              <Tag color={agent.enabled?"#10b981":"#eab308"}>{agent.enabled?"ativo":"pausado"}</Tag>
-              <Tag color="#8b5cf6">{memory.length} memórias</Tag>
-              <Tag color={C.orange}>{agent.mode}</Tag>
-            </div>
-          </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
-            <Btn onClick={()=>dispatch({type:"UPDATE_GSD_AGENT",data:{enabled:!agent.enabled,lastActivatedAt:new Date().toISOString()}})} variant={agent.enabled?"ghost":"success"}>{agent.enabled?"Pausar":"Ativar"}</Btn>
-            <Btn onClick={captureSnapshot} variant="ghost">Capturar agora</Btn>
-          </div>
-        </div>
-      </Card>
-
-      <div className="split-layout">
-        <div className="dense-list">
-          <Card>
-            <SectionTitle>FOCO DO AGENTE</SectionTitle>
-            <Txt label="Foco atual" value={focus} onChange={setFocus} rows={3} placeholder="Ex: fechar proposta X, destravar edição Y, preparar reunião com cliente Z"/>
-            <Btn onClick={saveFocus}>Salvar foco GSD</Btn>
-          </Card>
-
-          <Card>
-            <SectionTitle action={<Tag color={typeMeta[entryType]?.color}>{typeMeta[entryType]?.label}</Tag>}>NOVA MEMÓRIA</SectionTitle>
-            <div style={{display:"flex",gap:7,flexWrap:"wrap",marginBottom:14}}>
-              {Object.entries(typeMeta).filter(([id])=>id!=="snapshot").map(([id,meta])=>(
-                <button key={id} onClick={()=>setEntryType(id)} style={{height:32,borderRadius:10,border:`1px solid ${entryType===id?meta.color:C.border}`,background:entryType===id?`${meta.color}18`:"rgba(255,255,255,.04)",color:entryType===id?meta.color:C.muted,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer",padding:"0 10px"}}>{meta.label}</button>
-              ))}
-            </div>
-            <Txt label="Contexto" value={entry} onChange={setEntry} rows={5} placeholder="Cole aqui o que precisa ser lembrado pelo GSD."/>
-            <Btn onClick={saveEntry}>Guardar contexto</Btn>
-          </Card>
-
-          <Card>
-            <SectionTitle>MEMÓRIA GSD</SectionTitle>
-            {memory.length===0&&<div style={{fontSize:13,color:C.muted,lineHeight:1.5}}>Sem contexto salvo ainda. Guarde decisões, bloqueios e próximos passos para o agente carregar a operação com você.</div>}
-            <div style={{display:"grid",gap:10}}>
-              {memory.map(m=>{
-                const meta=typeMeta[m.type]||typeMeta.context;
-                return (
-                  <div key={m.id} style={{padding:"13px 14px",borderRadius:14,border:`1px solid ${meta.color}30`,background:`${meta.color}10`}}>
-                    <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start",marginBottom:7}}>
-                      <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
-                        <Tag color={meta.color}>{meta.label}</Tag>
-                        <span style={{fontSize:10,color:C.muted,fontWeight:800}}>{new Date(m.createdAt).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}</span>
-                      </div>
-                      <button onClick={()=>dispatch({type:"REMOVE_GSD_CONTEXT",id:m.id})} aria-label="Remover memória GSD" style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
-                    </div>
-                    <div style={{fontSize:13,color:"#ddd",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{m.text}</div>
-                    <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}>
-                      <Btn onClick={()=>createTaskFromMemory(m)} variant="ghost" size="sm">Virar tarefa hoje</Btn>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        </div>
-
-        <aside className="dashboard-rail">
-          <Card style={{padding:"18px",background:"rgba(16,185,129,.06)",borderColor:"rgba(16,185,129,.2)"}}>
-            <SectionTitle>LEITURA OPERACIONAL</SectionTitle>
-            {[
-              {label:"Atrasadas",value:overdueTasks.length,color:"#ef4444",tab:"tasks"},
-              {label:"Hoje",value:dueToday.length,color:"#10b981",tab:"tasks"},
-              {label:"Follow-ups",value:followUps.length,color:"#3b82f6",tab:"clients"},
-              {label:"Projetos ativos",value:activeProjects.length,color:"#8b5cf6",tab:"projects"}
-            ].map(item=>(
-              <button key={item.label} onClick={()=>setTab(item.tab)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,padding:"10px 0",border:"none",borderBottom:`1px solid ${C.border}`,background:"transparent",color:"#ddd",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
-                <span style={{fontSize:13,fontWeight:900}}>{item.label}</span>
-                <Tag color={item.color}>{item.value}</Tag>
-              </button>
-            ))}
-          </Card>
-
-          <Card>
-            <SectionTitle>REGRAS GSD</SectionTitle>
-            <div style={{display:"grid",gap:8}}>
-              {(agent.operatingRules||[]).map(rule=>(
-                <div key={rule} style={{fontSize:12,color:"#ccc",lineHeight:1.45,padding:"9px 10px",borderRadius:12,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.035)"}}>{rule}</div>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <SectionTitle>ATALHOS</SectionTitle>
-            <div style={{display:"grid",gap:8}}>
-              <Btn onClick={()=>setTab("tasks")} variant="ghost" style={{justifyContent:"center"}}>Abrir atividades</Btn>
-              <Btn onClick={()=>setTab("clients")} variant="ghost" style={{justifyContent:"center"}}>Abrir CRM</Btn>
-              <Btn onClick={()=>setTab("projects")} variant="ghost" style={{justifyContent:"center"}}>Abrir projetos</Btn>
-            </div>
-          </Card>
-        </aside>
-      </div>
-    </div>
-  );
-};
-
 // ── MAIN APP ───────────────────────────────────────────────────────────
 const TABS=[
   {id:"dashboard", label:"Hoje", icon:"⊞"},
-  {id:"gsd",       label:"GSD", icon:"G"},
   {id:"tasks",     label:"Atividades",   icon:"✓"},
   {id:"agenda",    label:"Agenda",    icon:"□"},
   {id:"clients",   label:"Clientes",  icon:"◈"},
@@ -1013,11 +865,11 @@ const TABS=[
 ];
 const NAV_GROUPS=[
   {label:"Produto principal",items:["videoReview"]},
-  {label:"Operação",items:["dashboard","gsd","tasks","agenda","projects","studio","brandbook"]},
+  {label:"Operação",items:["dashboard","tasks","agenda","projects","studio","brandbook"]},
   {label:"Comercial",items:["clients","proposta","finance"]},
   {label:"Sistema",items:["business","export"]},
 ];
-const BEGINNER_TABS = ["dashboard","gsd","videoReview","clients","proposta","projects","studio","brandbook","finance","tasks","business","export"];
+const BEGINNER_TABS = ["dashboard","videoReview","clients","proposta","projects","studio","brandbook","finance","tasks","business","export"];
 const WORKSPACE_TAB_IDS = new Set(BEGINNER_TABS);
 const PROFILE_PRESETS = [
   {id:"filmmaker",label:"Filmmaker",type:"Filmmaker / produtor audiovisual",services:["Vídeo Institucional","Reels","Eventos","Drone"],ticket:2500,first:"Cadastrar cliente e criar projeto de captação."},
@@ -1110,8 +962,7 @@ function App(){
         RESTORE:"Backup importado",CLEAR_DATA:"Dados apagados",ADD_CLIENT_VIDEO:"Vídeo adicionado",ADD_CLIENT_INTERACTION:"Interação registrada",
         UPDATE_BUSINESS:"Negócio atualizado",ADD_CLIENT_PROPOSAL:"Proposta salva no CRM",UPDATE_CLIENT_PROPOSAL:"Proposta atualizada",
         ADD_FINANCE_ENTRY:"Lançamento salvo",REMOVE_FINANCE_ENTRY:"Lançamento removido",ADD_STUDIO_DOC:"Documento salvo",REMOVE_STUDIO_DOC:"Documento removido",SET_SUBSCRIPTION:"Acesso atualizado",
-        ADD_REVIEW_DELIVERABLE:"Review criado",UPDATE_REVIEW_DELIVERABLE:"Review atualizado",ADD_REVIEW_COMMENT:"Comentário salvo",REMOVE_REVIEW_DELIVERABLE:"Review removido",
-        UPDATE_GSD_AGENT:"GSD atualizado",ADD_GSD_CONTEXT:"Contexto guardado",REMOVE_GSD_CONTEXT:"Memória removida",CLEAR_GSD_CONTEXT:"Memória limpa"
+        ADD_REVIEW_DELIVERABLE:"Review criado",UPDATE_REVIEW_DELIVERABLE:"Review atualizado",ADD_REVIEW_COMMENT:"Comentário salvo",REMOVE_REVIEW_DELIVERABLE:"Review removido"
       }[action.type]||"Atualizado";
       notify(msg,"success");
     }
@@ -1298,7 +1149,7 @@ function App(){
   }
   return (
     <div className={`app-shell ${!canUseWorkspace?"public-shell":""} ${compactMode?"compact":""} ${privacyMode?"privacy":""} ${sidebarCollapsed?"sidebar-collapsed":""}`}>
-      <div style={{position:"fixed",top:-160,right:-80,width:600,height:600,background:"radial-gradient(circle,rgba(249,115,22,.04) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
+      <div style={{position:"fixed",top:-160,right:-80,width:600,height:600,background:"radial-gradient(circle,rgba(255,36,0,.04) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
       <aside className="desktop-sidebar">
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,marginBottom:14}}>
           <Brand/>
@@ -1308,7 +1159,7 @@ function App(){
           <div style={{fontSize:10,color:C.muted,fontWeight:800,textTransform:"uppercase",letterSpacing:".1em",marginBottom:5}}>Visão atual</div>
           <div style={{display:"flex",alignItems:"center",gap:8,color:"#fff",fontSize:14,fontWeight:900,fontFamily:"'Syne',sans-serif"}}><span style={{color:C.orange}}>{activeTab.icon}</span>{activeTab.label}</div>
         </div>
-        <div className="sidebar-card" style={{marginBottom:8,padding:"8px 10px",borderRadius:13,background:isAdmin?"rgba(249,115,22,.08)":session?"rgba(16,185,129,.07)":"rgba(255,255,255,.03)",border:`1px solid ${isAdmin?"rgba(249,115,22,.28)":session?"rgba(16,185,129,.2)":C.border}`}}>
+        <div className="sidebar-card" style={{marginBottom:8,padding:"8px 10px",borderRadius:13,background:isAdmin?"rgba(255,36,0,.08)":session?"rgba(16,185,129,.07)":"rgba(255,255,255,.03)",border:`1px solid ${isAdmin?"rgba(255,36,0,.28)":session?"rgba(16,185,129,.2)":C.border}`}}>
           <button onClick={()=>setAccountOpen(v=>!v)} style={{width:"100%",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,background:"transparent",border:"none",padding:0,color:"#ddd",cursor:"pointer",fontFamily:"inherit",textAlign:"left"}}>
             <span>
               <span style={{display:"block",fontSize:10,color:isAdmin?C.orange:session?"#10b981":C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase"}}>{isAdmin?`Admin ${APP_NAME}`:session?"GitHub conectado":"Conta"}</span>
@@ -1325,7 +1176,7 @@ function App(){
         {canUseWorkspace&&<div className="sidebar-card" style={{marginBottom:10,padding:"8px",borderRadius:13,background:"rgba(255,255,255,.025)",border:`1px solid ${C.border}`}}>
           <div style={{fontSize:10,color:C.muted,fontWeight:900,letterSpacing:".12em",textTransform:"uppercase",margin:"0 2px 7px"}}>Modo</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-            {[["beginner","Simples"],["advanced","Completo"]].map(([id,label])=><button key={id} onClick={()=>setNavMode(id)} style={{height:30,borderRadius:10,border:`1px solid ${navMode===id?C.orange:C.border}`,background:navMode===id?"rgba(249,115,22,.14)":"rgba(255,255,255,.035)",color:navMode===id?C.orange:C.muted,fontFamily:"inherit",fontSize:10,fontWeight:900,cursor:"pointer"}}>{label}</button>)}
+            {[["beginner","Simples"],["advanced","Completo"]].map(([id,label])=><button key={id} onClick={()=>setNavMode(id)} style={{height:30,borderRadius:10,border:`1px solid ${navMode===id?C.orange:C.border}`,background:navMode===id?"rgba(255,36,0,.14)":"rgba(255,255,255,.035)",color:navMode===id?C.orange:C.muted,fontFamily:"inherit",fontSize:10,fontWeight:900,cursor:"pointer"}}>{label}</button>)}
           </div>
         </div>}
         <NavList/>
@@ -1342,8 +1193,8 @@ function App(){
             <div style={{fontSize:15,color:"#fff",fontWeight:900,fontFamily:"'Syne',sans-serif",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{activeTab.label}</div>
           </div>
           {canUseWorkspace&&<button onClick={()=>setSearchOpen(true)} title="Busca global" style={{width:38,height:38,borderRadius:11,border:`1px solid ${C.border}`,background:"rgba(255,255,255,.055)",color:C.muted,cursor:"pointer",fontSize:16}}>⌕</button>}
-          {canUseWorkspace&&<button onClick={()=>setCompactMode(m=>!m)} title="Modo compacto" style={{width:38,height:38,borderRadius:11,border:`1px solid ${compactMode?C.orange:C.border}`,background:compactMode?"rgba(249,115,22,.13)":"rgba(255,255,255,.055)",color:compactMode?C.orange:C.muted,cursor:"pointer",fontSize:12,fontWeight:900}}>Cx</button>}
-          {canUseWorkspace&&<button onClick={()=>setPrivacyMode(m=>!m)} title={privacyMode?"Mostrar valores":"Ocultar valores"} style={{width:38,height:38,borderRadius:11,border:`1px solid ${privacyMode?C.orange:C.border}`,background:privacyMode?"rgba(249,115,22,.13)":"rgba(255,255,255,.055)",color:privacyMode?C.orange:C.muted,cursor:"pointer",fontSize:12,fontWeight:900}}>{privacyMode?"••":"R$"}</button>}
+          {canUseWorkspace&&<button onClick={()=>setCompactMode(m=>!m)} title="Modo compacto" style={{width:38,height:38,borderRadius:11,border:`1px solid ${compactMode?C.orange:C.border}`,background:compactMode?"rgba(255,36,0,.13)":"rgba(255,255,255,.055)",color:compactMode?C.orange:C.muted,cursor:"pointer",fontSize:12,fontWeight:900}}>Cx</button>}
+          {canUseWorkspace&&<button onClick={()=>setPrivacyMode(m=>!m)} title={privacyMode?"Mostrar valores":"Ocultar valores"} style={{width:38,height:38,borderRadius:11,border:`1px solid ${privacyMode?C.orange:C.border}`,background:privacyMode?"rgba(255,36,0,.13)":"rgba(255,255,255,.055)",color:privacyMode?C.orange:C.muted,cursor:"pointer",fontSize:12,fontWeight:900}}>{privacyMode?"••":"R$"}</button>}
         </div>
       </div>
       {navOpen&&<div className="nav-overlay" onClick={()=>setNavOpen(false)}/>}
@@ -1356,7 +1207,7 @@ function App(){
           {session?<span className="private-data">{`${isAdmin?"Admin":"GitHub"}: ${session.user.email||session.user.user_metadata?.user_name||"conectado"}`}</span>:"Entrar com GitHub"}
         </button>
         {canUseWorkspace&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12}}>
-          {[["beginner","Simples"],["advanced","Completo"]].map(([id,label])=><button key={id} onClick={()=>setNavMode(id)} style={{height:34,borderRadius:10,border:`1px solid ${navMode===id?C.orange:C.border}`,background:navMode===id?"rgba(249,115,22,.14)":"rgba(255,255,255,.035)",color:navMode===id?C.orange:C.muted,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer"}}>{label}</button>)}
+          {[["beginner","Simples"],["advanced","Completo"]].map(([id,label])=><button key={id} onClick={()=>setNavMode(id)} style={{height:34,borderRadius:10,border:`1px solid ${navMode===id?C.orange:C.border}`,background:navMode===id?"rgba(255,36,0,.14)":"rgba(255,255,255,.035)",color:navMode===id?C.orange:C.muted,fontFamily:"inherit",fontSize:11,fontWeight:900,cursor:"pointer"}}>{label}</button>)}
         </div>}
         <NavList/>
       </aside>
@@ -1417,7 +1268,6 @@ function App(){
           {!canUseWorkspace&&!publicTabs.includes(tab)&&<AccessWall onLogin={signInGitHub}/>}
           {(canUseWorkspace||publicTabs.includes(tab))&&<>
           {tab==="dashboard" &&<ModularTabDashboard  state={state} dispatch={dispatch} quoteIdx={quoteIdx} setTab={goTab} privacyMode={privacyMode} setPrivacyMode={setPrivacyMode} userName={userName} isAdmin={isAdmin}/>}
-          {tab==="gsd"       &&<TabGSD        state={state} dispatch={dispatch} setTab={goTab}/>}
           {tab==="tasks"     &&<ModularTabTasks      state={state} dispatch={dispatch}/>}
           {tab==="agenda"    &&<ModularTabAgenda     state={state} dispatch={dispatch} setTab={goTab}/>}
           {tab==="clients"   &&<ModularTabClients    state={state} dispatch={dispatch} privacyMode={privacyMode}/>}

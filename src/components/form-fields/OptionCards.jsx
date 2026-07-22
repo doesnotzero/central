@@ -14,15 +14,15 @@ export const OptionCards = ({ options, value, onChange, columns }) => (
             textAlign: "left",
             padding: 14,
             borderRadius: 16,
-            border: `1px solid ${active ? "rgba(249,115,22,.6)" : "rgba(255,255,255,.12)"}`,
-            background: active ? "rgba(249,115,22,.16)" : "rgba(255,255,255,.04)",
-            color: active ? "#f97316" : "#ddd",
+            border: `1px solid ${active ? "rgba(255,36,0,.6)" : "rgba(255,255,255,.12)"}`,
+            background: active ? "rgba(255,36,0,.16)" : "rgba(255,255,255,.04)",
+            color: active ? "#ff2400" : "#ddd",
             fontFamily: "inherit",
             cursor: "pointer"
           }}
         >
           <div style={{ fontSize: 20, marginBottom: 8 }}>{option.icon || "•"}</div>
-          <div style={{ fontSize: 13, fontWeight: 900, color: active ? "#f97316" : "#fff" }}>{option.label}</div>
+          <div style={{ fontSize: 13, fontWeight: 900, color: active ? "#ff2400" : "#fff" }}>{option.label}</div>
           {option.description && <div style={{ fontSize: 11, color: "#858585", lineHeight: 1.4, marginTop: 4 }}>{option.description}</div>}
         </button>
       );
