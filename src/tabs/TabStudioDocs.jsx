@@ -320,11 +320,11 @@ export default function TabStudioDocs({state,dispatch,shared}){
 
         <aside className="studio-preview-shell">
           <div className="studio-preview-top">
-            <span style={{fontSize:10,color:C.orange,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase"}}>Preview PDF</span>
-            <span style={{fontSize:10,color:C.muted,fontWeight:900}}>{selectedPreset.label}</span>
+            <span style={{fontSize:10,color:C.orange,fontWeight:900,letterSpacing:".14em",textTransform:"uppercase"}}>Preview do documento</span>
+            <button type="button" onClick={()=>{const w=window.open("","_blank");if(!w){alert("Permita pop-ups para abrir o preview.");return;}w.document.write(html);w.document.close();}} style={{background:"transparent",border:`1px solid ${C.orange}55`,color:C.orange,borderRadius:8,padding:"4px 10px",fontSize:10,fontWeight:900,cursor:"pointer",fontFamily:"inherit"}}>Abrir em nova aba ↗</button>
           </div>
           <div className="studio-preview" style={{padding:0}}>
-            <iframe title="Preview do documento" srcDoc={html} style={{width:"100%",height:"100%",border:"none",background:"#f7f4ee"}}/>
+            <iframe key={form.docType+form.presetId+form.clientId+form.projectKey} title="Preview do documento" srcDoc={html} style={{width:"100%",height:"100%",minHeight:520,border:"none",background:"#f7f4ee",display:"block"}}/>
           </div>
         </aside>
       </div>
