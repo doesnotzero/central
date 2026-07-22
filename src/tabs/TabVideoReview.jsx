@@ -301,13 +301,14 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
 
   const saveComment = async () => {
     if (!current || !commentForm.content.trim()) return;
-    const seconds = commentForm.timestamp !== "" ? Number(commentForm.timestamp) : Math.floor(playerTime || 0);
+    const hasTs = commentForm.timestamp !== "" && Number.isFinite(Number(commentForm.timestamp));
+    const seconds = hasTs ? Number(commentForm.timestamp) : null;
     const comment = {
       author_name: commentForm.name.trim() || (isPublic ? "Cliente" : "Produção"),
       author_type: isPublic ? "client" : "producer",
       content: commentForm.content.trim(),
-      timestamp_seconds: Number.isFinite(seconds) ? seconds : null,
-      timecode: Number.isFinite(seconds) ? fmtTimecode(seconds) : "Geral"
+      timestamp_seconds: hasTs ? seconds : null,
+      timecode: hasTs ? fmtTimecode(seconds) : "Geral"
     };
     if (current.supabaseId) {
       const { data, error } = await createVideoComment({ deliverable_id: current.supabaseId, ...comment });
@@ -317,6 +318,15 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
     }
     setCommentForm({ name: "", content: "", timestamp: "" });
   };
+
+  // Congela o momento atual do vídeo para fixar o comentário no timecode certo.
+  const captureMoment = () => {
+    const v = videoRef.current;
+    const t = Math.floor((v?.currentTime ?? playerTime) || 0);
+    v?.pause();
+    setCommentForm(f => ({ ...f, timestamp: String(t) }));
+  };
+  const clearMoment = () => setCommentForm(f => ({ ...f, timestamp: "" }));
 
   if (publicToken && reviewLoading) {
     return <div className="page-stack"><Card className="page-hero"><div className="page-eyebrow" style={{ color: "#06b6d4" }}>VIDEO REVIEW</div><div className="page-title">Carregando revisão...</div><p className="page-subtitle">Buscando vídeo, status e comentários.</p></Card></div>;
@@ -386,10 +396,17 @@ export default function TabVideoReview({ state, dispatch, publicToken = "", isPu
                 </div>
               ))}
               <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-                <div style={{ fontSize: 12, color: "#ddd", fontWeight: 900 }}>Comentar neste momento: <span style={{ color: C.orange }}>{fmtTimecode(commentForm.timestamp !== "" ? commentForm.timestamp : playerTime)}</span></div>
+                {current.video_source !== "drive" && <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap", padding: "8px 10px", borderRadius: 10, background: commentForm.timestamp !== "" ? "rgba(255,36,0,.1)" : "rgba(255,255,255,.04)", border: `1px solid ${commentForm.timestamp !== "" ? "rgba(255,36,0,.3)" : C.border}` }}>
+                  <div style={{ fontSize: 12, color: "#ddd", fontWeight: 900 }}>
+                    {commentForm.timestamp !== "" ? <>📍 Fixado em <span style={{ color: C.orange }}>{fmtTimecode(commentForm.timestamp)}</span></> : "Comentário geral (sem marca no vídeo)"}
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button type="button" onClick={captureMoment} title="Pausa o vídeo e fixa o comentário no momento atual" style={{ background: "rgba(255,36,0,.12)", border: `1px solid ${C.orange}`, color: C.orange, borderRadius: 8, padding: "4px 9px", fontSize: 10, fontWeight: 900, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>Fixar em {fmtTimecode(playerTime)}</button>
+                    {commentForm.timestamp !== "" && <button type="button" onClick={clearMoment} style={{ background: "transparent", border: `1px solid ${C.border}`, color: C.muted, borderRadius: 8, padding: "4px 9px", fontSize: 10, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>Geral</button>}
+                  </div>
+                </div>}
                 <input value={commentForm.name} onChange={e => setCommentForm(f => ({ ...f, name: e.target.value }))} placeholder={isPublic ? "Seu nome" : "Autor"} style={{ height: 36, borderRadius: 10, border: `1px solid ${C.border}`, background: "rgba(255,255,255,.045)", color: "#fff", padding: "0 10px", fontFamily: "inherit", outline: "none" }} />
-                <input type="number" min="0" value={commentForm.timestamp} onChange={e => setCommentForm(f => ({ ...f, timestamp: e.target.value }))} placeholder="Segundo do vídeo (opcional)" style={{ height: 36, borderRadius: 10, border: `1px solid ${C.border}`, background: "rgba(255,255,255,.045)", color: "#fff", padding: "0 10px", fontFamily: "inherit", outline: "none" }} />
-                <textarea value={commentForm.content} onChange={e => setCommentForm(f => ({ ...f, content: e.target.value }))} placeholder="Escreva o ajuste ou comentário..." rows={4} style={{ borderRadius: 12, border: `1px solid ${C.border}`, background: "rgba(255,255,255,.045)", color: "#fff", padding: 10, fontFamily: "inherit", outline: "none", resize: "vertical" }} />
+                <textarea value={commentForm.content} onFocus={() => { if (commentForm.timestamp === "" && current.video_source !== "drive") captureMoment(); }} onChange={e => setCommentForm(f => ({ ...f, content: e.target.value }))} placeholder="Escreva o ajuste ou comentário..." rows={4} style={{ borderRadius: 12, border: `1px solid ${C.border}`, background: "rgba(255,255,255,.045)", color: "#fff", padding: 10, fontFamily: "inherit", outline: "none", resize: "vertical" }} />
                 <Btn onClick={saveComment} size="sm" disabled={!commentForm.content.trim()}>Enviar comentário</Btn>
               </div>
             </Card>
