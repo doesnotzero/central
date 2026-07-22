@@ -41,28 +41,6 @@ export const QUOTES = [
   "Foque no processo. O resultado vem.",
 ];
 
-// ── GAMIFICATION ──
-export const XP_TABLE = { habit: 50, task: 30 };
-export const LEVELS = [
-  { min: 0, name: "Iniciante", color: "#6b7280" },
-  { min: 200, name: "Consistente", color: "#10b981" },
-  { min: 500, name: "Focado", color: "#3b82f6" },
-  { min: 1000, name: "Disciplinado", color: "#8b5cf6" },
-  { min: 2000, name: "Imparável", color: "#f97316" },
-  { min: 4000, name: "Lendário", color: "#eab308" },
-];
-export const BADGES = [
-  { id: "first_habit", icon: "🌱", label: "Primeiro Passo", req: (s) => s.totalHabitsCompleted >= 1 },
-  { id: "streak7", icon: "🔥", label: "Semana de Fogo", req: (s) => s.habits.some((h) => h.streak >= 7) },
-  { id: "streak30", icon: "💎", label: "Diamante", req: (s) => s.habits.some((h) => h.streak >= 30) },
-  { id: "tasks10", icon: "⚡", label: "Executor", req: (s) => s.totalTasksCompleted >= 10 },
-  { id: "xp500", icon: "🚀", label: "Decolando", req: (s) => s.xp >= 500 },
-  { id: "goals5", icon: "🎯", label: "Estrategista", req: (s) => s.goals.length >= 5 },
-  { id: "client3", icon: "🤝", label: "Networking", req: (s) => (s.clients || []).length >= 3 },
-  { id: "note10", icon: "📝", label: "Cronista", req: (s) => s.notes.length >= 10 },
-  { id: "focus10", icon: "🧠", label: "Modo Foco", req: (s) => (s.focusSessions || 0) >= 10 },
-];
-
 // ── DATE / LOCALE ──
 export const MONTHS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",

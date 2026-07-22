@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { APP_NAME, C } from '../theme.config.js';
 import { QUOTES, PROFILE_PRESETS, normalizeClientStatus } from '../constants/index.js';
-import { todayStr, getLevel, dayDiff, taskBucket, fmtCurrency, fmtDashboardMoney } from '../utils/helpers.js';
+import { dayDiff, taskBucket, fmtCurrency, fmtDashboardMoney } from '../utils/helpers.js';
 import { Card, Tag, Btn, EyeToggle, SectionTitle } from '../components/ui/index.jsx';
 
 const RevenueOSScore = ({state,setTab,privacyMode,isAdmin,onToggleMoney})=>{
@@ -82,7 +82,6 @@ const ExecutiveBriefing = ({state,setTab,privacyMode})=>{
 const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode,userName,isAdmin})=>{
   const [revealDashboardMoney,setRevealDashboardMoney]=useState(false);
   const [showDashboardDetails,setShowDashboardDetails]=useState(false);
-  const today=todayStr(),lv=getLevel(state.xp);
   const pendingTasks=state.tasks.filter(t=>!t.completed);
   const overdueTasks=pendingTasks.filter(t=>taskBucket(t)==="overdue");
   const todayTasks=pendingTasks.filter(t=>taskBucket(t)==="today");
@@ -143,8 +142,6 @@ const TabDashboard = ({state,dispatch,quoteIdx,setTab,privacyMode,setPrivacyMode
             <div style={{fontSize:"clamp(28px,4vw,44px)",fontWeight:900,color:"#fff",fontFamily:"'Syne',sans-serif",lineHeight:1,marginTop:8}}>Bom trabalho, {userName||"criador"}.</div>
             <p style={{fontSize:14,color:"#aaa",lineHeight:1.6,maxWidth:620,margin:"12px 0 0"}}>Seu cockpit mostra o que merece decisão agora: receita prevista, produção aberta, próximos compromissos e execução do dia.</p>
             <div style={{marginTop:16,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <Tag color={lv.color}>{lv.name}</Tag>
-              <span style={{fontSize:11,color:C.muted,fontWeight:900}}>{state.xp} XP</span>
               <span style={{fontSize:11,color:C.muted}}>Atualizado {new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</span>
               <EyeToggle hidden={dashboardPrivacy} onClick={toggleDashboardMoney}/>
             </div>

@@ -1,0 +1,5 @@
+# Arquivos-fonte de midia pesados — nao sao usados no build.
+# O site usa apenas os otimizados em public/dnz-assets/.
+assets/movies
+assets/stills
+docs

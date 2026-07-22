@@ -3,7 +3,7 @@
 
 import { C, APP_NAME, SALES_EMAIL } from "../theme.config.js";
 import {
-  SK, LEVELS, XP_TABLE, DEFAULT_BUSINESS, DEFAULT_SUBSCRIPTION,
+  SK, DEFAULT_BUSINESS, DEFAULT_SUBSCRIPTION,
   AUDIOVISUAL_PRESETS, STUDIO_DOCUMENTS, PRODUCTION_KNOWLEDGE,
   PREMIUM_CHECKLIST_CATALOG, PRODUCTION_PIPELINE, DOC_FIELD_CONFIG,
   normalizeClientStatus,
@@ -68,15 +68,6 @@ export const getUserName = (session) => {
   return clean ? clean.charAt(0).toUpperCase() + clean.slice(1) : "";
 };
 export const onboardingKey = (session) => `dnz_onboarding_${session?.user?.id || "guest"}`;
-
-// ── GAMIFICATION ──
-export const getLevel = (xp) => [...LEVELS].reverse().find((l) => xp >= l.min) || LEVELS[0];
-export const xpToNext = (xp) => {
-  const idx = LEVELS.findIndex((l) => l.min > xp);
-  return idx === -1
-    ? null
-    : { next: LEVELS[idx].min, pct: Math.round(((xp - (LEVELS[idx - 1]?.min || 0)) / (LEVELS[idx].min - (LEVELS[idx - 1]?.min || 0))) * 100) };
-};
 
 // ── SUBSCRIPTION / ACCESS ──
 export const getSubscription = (state) => ({ ...DEFAULT_SUBSCRIPTION, ...(state.subscription || {}) });

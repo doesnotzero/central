@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 
 const SALES_WHATSAPP = "5548998050267";
 const INSTAGRAM_URL = "https://instagram.com/doesnotzero";
+const INSTAGRAM_DEV_URL = "https://instagram.com/doesnotzerodev";
 const LOGO_SRC = "/dnz-assets/dnz-films-logo-transparent.webp";
 
 const portfolioItems = [
@@ -173,6 +174,9 @@ const LandingPage = ({ onLogin }) => {
   const cursorRef = useRef(null);
   const cursorRRef = useRef(null);
   const lastFocusRef = useRef(null);
+  const footerRef = useRef(null);
+
+  const [floatHidden, setFloatHidden] = useState(false);
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxVideo, setLightboxVideo] = useState(null);
@@ -326,6 +330,17 @@ const LandingPage = ({ onLogin }) => {
     if (yr) yr.textContent = new Date().getFullYear().toString();
   }, []);
 
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setFloatHidden(entry.isIntersecting),
+      { threshold: 0.05 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   const scrollTo = (e, id) => {
     e.preventDefault();
     const el = document.querySelector(id);
@@ -353,20 +368,29 @@ const LandingPage = ({ onLogin }) => {
   const checkS4 = answers.nome.length >= 2 && answers.wpp.replace(/\D/g, "").length >= 10;
 
   const buildWppUrl = () => {
-    const pkg = answers.package ? `\nFormato: ${answers.package}` : "";
-    const extra = answers.msg ? `\nContexto: ${answers.msg}` : "";
-    const ig = answers.ig ? `\nInstagram: ${answers.ig}` : "";
-    const text = [
-      `Olá, DNZ! Me chamo ${answers.nome.trim()}.`,
-      "Vim pelo site e quero um orçamento.",
+    const lines = [
+      "🎬 *NOVO BRIEFING — DNZ FILMS*",
       "",
-      `Projeto: ${answers.project}`,
-      `Serviço: ${answers.service}${pkg}`,
-      `Prazo: ${answers.deadline}`,
-      `WhatsApp: ${answers.wpp}${ig}${extra}`,
+      `Olá, DNZ! Me chamo *${answers.nome.trim()}* e vim pelo site pedir um orçamento.`,
       "",
-      "Podemos conversar sobre os próximos passos?"
-    ].join("\n");
+      "*— O PROJETO —*",
+      `📌 Tipo: ${answers.project}`,
+      `🎥 Serviço: ${answers.service}`
+    ];
+    if (answers.package) lines.push(`📦 Formato: ${answers.package}`);
+    lines.push(`⏱️ Prazo: ${answers.deadline}`);
+    lines.push("");
+    lines.push("*— CONTATO —*");
+    lines.push(`📱 WhatsApp: ${answers.wpp}`);
+    if (answers.ig) lines.push(`📷 Instagram: ${answers.ig}`);
+    if (answers.msg) {
+      lines.push("");
+      lines.push("*— CONTEXTO —*");
+      lines.push(`📝 ${answers.msg.trim()}`);
+    }
+    lines.push("");
+    lines.push("Podemos conversar sobre os próximos passos? 🤝");
+    const text = lines.join("\n");
     return `https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(text)}`;
   };
 
@@ -675,15 +699,23 @@ const LandingPage = ({ onLogin }) => {
 .dnz-landing-root .btn-white:hover{background:var(--black);color:var(--white)}
 .dnz-landing-root .btn-out-w{display:inline-flex;align-items:center;gap:12px;border:1px solid rgba(242,242,242,.3);color:var(--white);font-family:var(--M);font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:18px 36px;text-decoration:none;transition:all .25s}
 .dnz-landing-root .btn-out-w:hover{background:rgba(242,242,242,.1)}
-.dnz-landing-root footer{background:var(--black);border-top:1px solid var(--gray3);padding:48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px}
+.dnz-landing-root footer{background:var(--black);border-top:1px solid var(--gray3);padding:64px 48px 32px}
+.dnz-landing-root .f-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:40px;padding-bottom:40px;border-bottom:1px solid var(--gray3)}
+.dnz-landing-root .f-brand{max-width:360px}
 .dnz-landing-root .f-logo{display:block;line-height:0}
 .dnz-landing-root .f-logo img{height:48px;width:auto;filter:hue-rotate(338deg) saturate(1.35) brightness(1.02);opacity:.85}
-.dnz-landing-root .f-tag{font-family:var(--M);font-size:9px;letter-spacing:4px;color:var(--muted);margin-top:4px}
-.dnz-landing-root .f-links{display:flex;gap:28px;list-style:none;flex-wrap:wrap}
+.dnz-landing-root .f-tag{font-family:var(--M);font-size:9px;letter-spacing:4px;color:var(--muted);margin-top:10px}
+.dnz-landing-root .f-blurb{font-size:12px;line-height:1.8;color:rgba(242,242,242,.35);margin-top:18px}
+.dnz-landing-root .f-links{display:flex;gap:24px 28px;list-style:none;flex-wrap:wrap;max-width:520px;justify-content:flex-end}
 .dnz-landing-root .f-links a,.dnz-landing-root .f-links button{font-family:var(--M);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color .2s;background:none;border:0;cursor:pointer}
 .dnz-landing-root .f-links a:hover,.dnz-landing-root .f-links button:hover{color:var(--white)}
-.dnz-landing-root .f-copy{font-family:var(--M);font-size:9px;letter-spacing:2px;color:var(--gray3)}
-.float-actions{position:fixed;bottom:28px;right:28px;z-index:200;display:flex;flex-direction:column;gap:12px;align-items:flex-end}
+.dnz-landing-root .f-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding-top:28px}
+.dnz-landing-root .f-copy{font-family:var(--M);font-size:9px;letter-spacing:2px;color:var(--muted)}
+.dnz-landing-root .f-credit{font-family:var(--M);font-size:9px;letter-spacing:2px;color:var(--muted)}
+.dnz-landing-root .f-credit a{color:rgba(242,242,242,.7);text-decoration:none;border-bottom:1px solid var(--red);padding-bottom:2px;transition:color .2s}
+.dnz-landing-root .f-credit a:hover{color:var(--red)}
+.float-actions{position:fixed;bottom:28px;right:28px;z-index:200;display:flex;flex-direction:column;gap:12px;align-items:flex-end;transition:opacity .3s ease,transform .3s ease}
+.float-actions.hidden{opacity:0;transform:translateY(24px) scale(.9);pointer-events:none}
 .wpp-fixed,.ig-fixed{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;transition:all .3s;position:relative}
 .wpp-fixed{background:#25D366;box-shadow:0 4px 24px rgba(37,211,102,.35)}
 .wpp-fixed:hover{transform:scale(1.08) translateY(-2px);box-shadow:0 8px 32px rgba(37,211,102,.45)}
@@ -719,8 +751,10 @@ const LandingPage = ({ onLogin }) => {
   .dnz-landing-root .case-item{grid-template-columns:1fr;gap:20px}
   .dnz-landing-root .pac-head{flex-direction:column;align-items:flex-start}
   .dnz-landing-root .pac-note{text-align:left}
-  .dnz-landing-root footer{padding:32px 24px}
-  .dnz-landing-root .f-links{flex-wrap:wrap}
+  .dnz-landing-root footer{padding:48px 24px 28px}
+  .dnz-landing-root .f-top{flex-direction:column;gap:32px}
+  .dnz-landing-root .f-links{flex-wrap:wrap;justify-content:flex-start;max-width:none}
+  .dnz-landing-root .f-bottom{flex-direction:column;align-items:flex-start;gap:10px}
 }
       `}</style>
 
@@ -993,14 +1027,14 @@ const LandingPage = ({ onLogin }) => {
             <div className="pac-card">
               <div className="pac-n">01 / MENSAL</div>
               <div className="pac-name">LOOP</div>
-              <div className="pac-tag">Conteúdo recorrente · sua marca sempre em movimento</div>
+              <div className="pac-tag">Sua marca postando sempre — sem quebrar a cabeça</div>
               <ul className="pac-list">
-                <li>4 vídeos editados/mês (reels 9:16 ou cortes)</li>
-                <li>Color grading assinatura DNZ</li>
-                <li>Trilha licenciada + sound design</li>
+                <li>4 vídeos/mês (reels 9:16, cortes ou teaser)</li>
+                <li>Pauta e ideias pensadas junto com você</li>
+                <li>Color grading assinatura DNZ + sound design</li>
                 <li>Legendas e captions prontos pra postar</li>
-                <li>Entrega em até 7 dias por vídeo</li>
-                <li>1 revisão inclusa por vídeo</li>
+                <li>Trilha licenciada — sem dor de cabeça com direitos</li>
+                <li>Até 7 dias por vídeo · 1 revisão cada</li>
                 <li>Calendário de postagem sugerido</li>
                 <li>Ideal pra: atletas, lutadores, surfistas e shapers</li>
               </ul>
@@ -1009,14 +1043,15 @@ const LandingPage = ({ onLogin }) => {
             <div className="pac-card hot">
               <div className="pac-n">02 / PROJETO</div>
               <div className="pac-name">MOTION</div>
-              <div className="pac-tag">Um filme forte + cortes pra girar nas redes</div>
+              <div className="pac-tag">Um filme que vira sua vitrine + cortes pra girar</div>
               <ul className="pac-list">
-                <li>1 filme principal (até 3 min) com direção</li>
+                <li>1 filme principal (até 3 min) com direção e roteiro</li>
                 <li>3 cortes verticais pra redes sociais</li>
                 <li>Captação em campo (treino, luta, sessão, evento)</li>
                 <li>Filmagem + edição completa</li>
                 <li>Color grading cinematográfico + sound design</li>
-                <li>Entrega em até 15 dias · 2 revisões inclusas</li>
+                <li>Até 15 dias · 2 revisões inclusas</li>
+                <li>Arquivos prontos pra site, pitch e redes</li>
                 <li>Ideal pra: marcas, atletas, lutadores e lançamentos</li>
               </ul>
               <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset("Vídeo para marca / negócio", "MOTION — projeto fechado"); }}>Quero o MOTION →</a>
@@ -1024,15 +1059,15 @@ const LandingPage = ({ onLogin }) => {
             <div className="pac-card">
               <div className="pac-n">03 / PREMIUM</div>
               <div className="pac-name">ZERO</div>
-              <div className="pac-tag">Produção completa · documentário e campanha sob medida</div>
+              <div className="pac-tag">Quando o projeto pede cinema de verdade</div>
               <ul className="pac-list">
-                <li>Escopo desenhado do zero com você</li>
+                <li>Escopo desenhado do zero, junto com você</li>
                 <li>Documentário de temporada, campanha ou série</li>
-                <li>Direção criativa + roteiro</li>
-                <li>Captação multi-dia / múltiplas locações</li>
+                <li>Direção criativa + roteiro + pré-produção</li>
+                <li>Captação multi-dia e múltiplas locações</li>
                 <li>Múltiplos vídeos e formatos (16:9, 9:16, 1:1)</li>
                 <li>Color grading e sound design premium</li>
-                <li>Prazo e entregáveis definidos no briefing</li>
+                <li>Acompanhamento próximo do início à entrega</li>
                 <li>Ideal pra: projetos grandes, marcas e atletas premium</li>
               </ul>
               <a href="#form-section" className="pac-btn" onClick={e => { e.preventDefault(); preset("Documentário", "ZERO — sob medida"); }}>Falar sobre ZERO →</a>
@@ -1045,10 +1080,10 @@ const LandingPage = ({ onLogin }) => {
           <h2 className="sec-title">4 PASSOS.<br />SEM ENROLAÇÃO.</h2>
           <div className="proc-grid">
             {[
-              { bg: "01", icon: "💬", t: "BRIEFING", d: "Você preenche o formulário abaixo. A gente entende o projeto, o prazo e o que você precisa. Sem reunião desnecessária." },
-              { bg: "02", icon: "📋", t: "PROPOSTA", d: "Em até 24h você recebe uma proposta clara com escopo, prazo e próximos passos. Sem surpresa depois." },
-              { bg: "03", icon: "🎬", t: "PRODUÇÃO", d: "Você filma ou a gente filma junto. O material entra em edição. Color grading, cortes, trilha. Cada frame com propósito." },
-              { bg: "04", icon: "✅", t: "ENTREGA", d: "Vídeo entregue no prazo combinado. Revisão inclusa. Pronto pra postar, apresentar ou publicar. Simples assim." }
+              { bg: "01", icon: "💬", t: "BRIEFING", d: "Responde 4 perguntas rápidas aqui embaixo. Entendo o projeto, o prazo e o objetivo do vídeo — sem reunião só pra marcar reunião." },
+              { bg: "02", icon: "📋", t: "PROPOSTA", d: "Em até 24h volta uma proposta clara: escopo, prazo e valor na mesa. Sem letra miúda, sem surpresa depois." },
+              { bg: "03", icon: "🎬", t: "PRODUÇÃO", d: "Você filma ou a gente filma junto. O material entra em edição — corte, cor, som e ritmo. Cada frame com propósito." },
+              { bg: "04", icon: "✅", t: "ENTREGA", d: "Vídeo pronto no prazo combinado, com revisão inclusa. Sai daqui pronto pra postar, apresentar ou publicar." }
             ].map(p => (
               <div className="proc-step" key={p.bg}>
                 <div className="proc-bg">{p.bg}</div>
@@ -1066,7 +1101,7 @@ const LandingPage = ({ onLogin }) => {
             <div className="form-intro fu">
               <div className="sec-label">Briefing</div>
               <h2 className="sec-title">4 PERGUNTAS.<br />PROPOSTA EM 24H.</h2>
-              <p>Sem call desnecessária. Responda abaixo e receba uma proposta personalizada no WhatsApp em até 24h.</p>
+              <p>Sem call desnecessária, sem formulário chato. Responde 4 perguntas rápidas e sua mensagem cai organizada direto no WhatsApp da DNZ — a proposta personalizada volta em até 24h.</p>
             </div>
             <div className={`form-steps${submitted ? " hidden" : ""}`}>
               <div className={`form-step-ind${step > 1 ? " done" : ""}${step === 1 ? " active" : ""}`}></div>
@@ -1214,27 +1249,35 @@ const LandingPage = ({ onLogin }) => {
           </div>
         </section>
 
-        <footer>
-          <div>
-            <a href="#hero" className="f-logo" onClick={e => scrollTo(e, "#hero")} aria-label="DNZ Films">
-              <img src={LOGO_SRC} alt="DNZ Films" />
-            </a>
-            <div className="f-tag">DOES NOT ZERO — FLORIANÓPOLIS, BR</div>
+        <footer ref={footerRef}>
+          <div className="f-top">
+            <div className="f-brand">
+              <a href="#hero" className="f-logo" onClick={e => scrollTo(e, "#hero")} aria-label="DNZ Films">
+                <img src={LOGO_SRC} alt="DNZ Films" />
+              </a>
+              <div className="f-tag">DOES NOT ZERO — FLORIANÓPOLIS, BR</div>
+              <p className="f-blurb">Produção audiovisual pra surf, luta, atletas e marcas em movimento. Direção, captação e edição — feito por quem vive o movimento.</p>
+            </div>
+            <ul className="f-links">
+              <li><a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">@doesnotzero</a></li>
+              <li><a href={`https://wa.me/${SALES_WHATSAPP}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
+              <li><a href="#trabalhos" onClick={e => scrollTo(e, "#trabalhos")}>Trabalhos</a></li>
+              <li><a href="#lutas" onClick={e => scrollTo(e, "#lutas")}>Lutas</a></li>
+              <li><a href="#galeria" onClick={e => scrollTo(e, "#galeria")}>Galeria</a></li>
+              <li><a href="#eventos" onClick={e => scrollTo(e, "#eventos")}>Eventos</a></li>
+              <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>Cases</a></li>
+              <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>Sobre</a></li>
+              <li><a href="#pacotes" onClick={e => scrollTo(e, "#pacotes")}>Pacotes</a></li>
+              <li><a href="#form-section" onClick={e => scrollTo(e, "#form-section")}>Briefing</a></li>
+              <li><button type="button" onClick={onLogin}>Login</button></li>
+            </ul>
           </div>
-          <ul className="f-links">
-            <li><a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer">@doesnotzero</a></li>
-            <li><a href={`https://wa.me/${SALES_WHATSAPP}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></li>
-            <li><a href="#trabalhos" onClick={e => scrollTo(e, "#trabalhos")}>Trabalhos</a></li>
-            <li><a href="#lutas" onClick={e => scrollTo(e, "#lutas")}>Lutas</a></li>
-            <li><a href="#galeria" onClick={e => scrollTo(e, "#galeria")}>Galeria</a></li>
-            <li><a href="#eventos" onClick={e => scrollTo(e, "#eventos")}>Eventos</a></li>
-            <li><a href="#cases" onClick={e => scrollTo(e, "#cases")}>Cases</a></li>
-            <li><a href="#sobre" onClick={e => scrollTo(e, "#sobre")}>Sobre</a></li>
-            <li><a href="#pacotes" onClick={e => scrollTo(e, "#pacotes")}>Pacotes</a></li>
-            <li><a href="#form-section" onClick={e => scrollTo(e, "#form-section")}>Briefing</a></li>
-            <li><button type="button" onClick={onLogin}>Login</button></li>
-          </ul>
-          <div className="f-copy">© <span id="year"></span> DNZ Films · Gabriel d. Pimentel</div>
+          <div className="f-bottom">
+            <div className="f-copy">© <span id="year"></span> DNZ Films — Does Not Zero. Todos os direitos reservados.</div>
+            <div className="f-credit">
+              Site desenvolvido por <a href={INSTAGRAM_DEV_URL} target="_blank" rel="noopener noreferrer">doesnotzerodev</a>
+            </div>
+          </div>
         </footer>
 
         {lightboxOpen && (
@@ -1264,7 +1307,7 @@ const LandingPage = ({ onLogin }) => {
           </div>
         )}
 
-        <div className="float-actions">
+        <div className={`float-actions${floatHidden ? " hidden" : ""}`}>
           <a href={`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent("Olá, DNZ! Vim pelo site e quero saber mais sobre um projeto.")}`} className="wpp-fixed" target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp">
             <span className="float-tip">WHATSAPP</span>
             <WhatsAppSvg size={26} />
